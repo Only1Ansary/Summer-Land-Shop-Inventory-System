@@ -1,0 +1,984 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\controllers\\sizescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:controllers\\sizescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\dtos\\sizes\\updatesizedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:dtos\\sizes\\updatesizedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\controllers\\locationcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:controllers\\locationcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\dtos\\locations\\updatelocationdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:dtos\\locations\\updatelocationdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\controllers\\colourscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:controllers\\colourscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\dtos\\colours\\updatecolourdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:dtos\\colours\\updatecolourdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\controllers\\categoriescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:controllers\\categoriescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\controllers\\reportscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:controllers\\reportscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\dtos\\categories\\updatecategorydto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:dtos\\categories\\updatecategorydto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\controllers\\productvariantscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:controllers\\productvariantscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\controllers\\productscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:controllers\\productscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\controllers\\inventorycontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:controllers\\inventorycontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\dtos\\reports\\salesreportdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:dtos\\reports\\salesreportdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\controllers\\returnscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:controllers\\returnscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\controllers\\invoicescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:controllers\\invoicescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\dtos\\returns\\createreturndto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:dtos\\returns\\createreturndto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\dtos\\invoices\\createinvoiceitemdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:dtos\\invoices\\createinvoiceitemdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\dtos\\invoices\\createinvoicedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:dtos\\invoices\\createinvoicedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\controllers\\stockmovementscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:controllers\\stockmovementscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\dtos\\inventory\\addinventorydto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:dtos\\inventory\\addinventorydto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\dtos\\productvariants\\updateproductvariantdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:dtos\\productvariants\\updateproductvariantdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\dtos\\productvariants\\createproductvariantdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:dtos\\productvariants\\createproductvariantdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\dtos\\products\\updateproductdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:dtos\\products\\updateproductdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\dtos\\products\\createproductdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:dtos\\products\\createproductdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Migrations\\20260918121553_InitialCreate.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Migrations\\20260918121553_InitialCreate.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Migrations\\20260918121312_InitialCreate.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Migrations\\20260918121312_InitialCreate.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\data\\shopdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:data\\shopdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\dtos\\reports\\bestsellingproductsreportdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:dtos\\reports\\bestsellingproductsreportdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\dtos\\reports\\stockmovementreportdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:dtos\\reports\\stockmovementreportdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\dtos\\reports\\lowstockreportdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:dtos\\reports\\lowstockreportdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\dtos\\reports\\inventoryreportdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:dtos\\reports\\inventoryreportdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\dtos\\products\\productsearchresponsedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:dtos\\products\\productsearchresponsedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\dtos\\returns\\returnresponsedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:dtos\\returns\\returnresponsedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\models\\return.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:models\\return.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\controllers\\stocktransferscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:controllers\\stocktransferscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\models\\stocktransfer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:models\\stocktransfer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\dtos\\stocktransfers\\stocktransferresponsedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:dtos\\stocktransfers\\stocktransferresponsedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\dtos\\stocktransfers\\createstocktransferdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:dtos\\stocktransfers\\createstocktransferdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\dtos\\productvariants\\productvariantbarcoderesponsedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:dtos\\productvariants\\productvariantbarcoderesponsedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\models\\invoice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:models\\invoice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\dtos\\invoices\\invoiceresponsedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:dtos\\invoices\\invoiceresponsedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\services\\barcodeservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:services\\barcodeservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\dtos\\productvariants\\productvariantresponsedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:dtos\\productvariants\\productvariantresponsedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\models\\productvariant.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:models\\productvariant.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\models\\barcodetype.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:models\\barcodetype.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\dtos\\inventory\\inventoryresponsedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:dtos\\inventory\\inventoryresponsedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\dtos\\stockmovements\\stockmovementresponsedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:dtos\\stockmovements\\stockmovementresponsedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\dtos\\stockmovements\\createstockmovementdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:dtos\\stockmovements\\createstockmovementdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\models\\product.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:models\\product.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\models\\sizes.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:models\\sizes.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\models\\stockmovement.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:models\\stockmovement.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\models\\location.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:models\\location.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\models\\inventory.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:models\\inventory.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\dtos\\products\\productresponsedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:dtos\\products\\productresponsedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\models\\invoiceitem.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:models\\invoiceitem.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\models\\colour.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:models\\colour.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\models\\category.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:models\\category.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 5,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{40ea2e6b-2121-4bb8-a43e-c83c04b51041}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "UpdateSizeDto.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\Sizes\\UpdateSizeDto.cs",
+              "RelativeDocumentMoniker": "DTOs\\Sizes\\UpdateSizeDto.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\Sizes\\UpdateSizeDto.cs",
+              "RelativeToolTip": "DTOs\\Sizes\\UpdateSizeDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAsAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-18T13:37:06.496Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "UpdateLocationDto.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\Locations\\UpdateLocationDto.cs",
+              "RelativeDocumentMoniker": "DTOs\\Locations\\UpdateLocationDto.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\Locations\\UpdateLocationDto.cs",
+              "RelativeToolTip": "DTOs\\Locations\\UpdateLocationDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAkAAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-18T13:36:11.2Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "UpdateColourDto.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\Colours\\UpdateColourDto.cs",
+              "RelativeDocumentMoniker": "DTOs\\Colours\\UpdateColourDto.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\Colours\\UpdateColourDto.cs",
+              "RelativeToolTip": "DTOs\\Colours\\UpdateColourDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAcAAAAYAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-18T13:35:13.486Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "ReportsController.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Controllers\\ReportsController.cs",
+              "RelativeDocumentMoniker": "Controllers\\ReportsController.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Controllers\\ReportsController.cs",
+              "RelativeToolTip": "Controllers\\ReportsController.cs",
+              "ViewState": "AgIAANUAAAAAAAAAAAAiwOMAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-18T11:08:33.781Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "SizesController.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Controllers\\SizesController.cs",
+              "RelativeDocumentMoniker": "Controllers\\SizesController.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Controllers\\SizesController.cs",
+              "RelativeToolTip": "Controllers\\SizesController.cs",
+              "ViewState": "AgIAAEMAAAAAAAAAAAAiwFkAAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-15T22:38:38.03Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "UpdateCategoryDto.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\Categories\\UpdateCategoryDto.cs",
+              "RelativeDocumentMoniker": "DTOs\\Categories\\UpdateCategoryDto.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\Categories\\UpdateCategoryDto.cs",
+              "RelativeToolTip": "DTOs\\Categories\\UpdateCategoryDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAYAAAASAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-18T13:34:10.211Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "LocationController.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Controllers\\LocationController.cs",
+              "RelativeDocumentMoniker": "Controllers\\LocationController.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Controllers\\LocationController.cs",
+              "RelativeToolTip": "Controllers\\LocationController.cs",
+              "ViewState": "AgIAAEMAAAAAAAAAAAAiwFkAAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-15T23:07:25.064Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "ProductVariantsController.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Controllers\\ProductVariantsController.cs",
+              "RelativeDocumentMoniker": "Controllers\\ProductVariantsController.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Controllers\\ProductVariantsController.cs",
+              "RelativeToolTip": "Controllers\\ProductVariantsController.cs",
+              "ViewState": "AgIAAHoBAAAAAAAAAAAiwJABAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-15T23:49:01.307Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "ColoursController.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Controllers\\ColoursController.cs",
+              "RelativeDocumentMoniker": "Controllers\\ColoursController.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Controllers\\ColoursController.cs",
+              "RelativeToolTip": "Controllers\\ColoursController.cs",
+              "ViewState": "AgIAAEQAAAAAAAAAAAAiwFcAAAAqAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-15T22:49:36.759Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 10,
+              "Title": "ProductsController.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Controllers\\ProductsController.cs",
+              "RelativeDocumentMoniker": "Controllers\\ProductsController.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Controllers\\ProductsController.cs",
+              "RelativeToolTip": "Controllers\\ProductsController.cs",
+              "ViewState": "AgIAAC4BAAAAAAAAAAAUwEIBAAAJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-15T21:50:03.165Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "CategoriesController.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Controllers\\CategoriesController.cs",
+              "RelativeDocumentMoniker": "Controllers\\CategoriesController.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Controllers\\CategoriesController.cs*",
+              "RelativeToolTip": "Controllers\\CategoriesController.cs*",
+              "ViewState": "AgIAADkAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-15T22:00:09.443Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 11,
+              "Title": "InventoryController.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Controllers\\InventoryController.cs",
+              "RelativeDocumentMoniker": "Controllers\\InventoryController.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Controllers\\InventoryController.cs",
+              "RelativeToolTip": "Controllers\\InventoryController.cs",
+              "ViewState": "AgIAAGMAAAAAAAAAAAAiwHAAAAAqAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-15T23:54:29.47Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 12,
+              "Title": "SalesReportDto.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\Reports\\SalesReportDto.cs",
+              "RelativeDocumentMoniker": "DTOs\\Reports\\SalesReportDto.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\Reports\\SalesReportDto.cs",
+              "RelativeToolTip": "DTOs\\Reports\\SalesReportDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABUAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-17T23:28:51.083Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 13,
+              "Title": "ReturnsController.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Controllers\\ReturnsController.cs",
+              "RelativeDocumentMoniker": "Controllers\\ReturnsController.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Controllers\\ReturnsController.cs",
+              "RelativeToolTip": "Controllers\\ReturnsController.cs",
+              "ViewState": "AgIAAEEAAAAAAAAAAAASwEwAAAAeAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-16T23:29:41.794Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 14,
+              "Title": "InvoicesController.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Controllers\\InvoicesController.cs",
+              "RelativeDocumentMoniker": "Controllers\\InvoicesController.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Controllers\\InvoicesController.cs",
+              "RelativeToolTip": "Controllers\\InvoicesController.cs",
+              "ViewState": "AgIAAFMAAAAAAAAAAAAiwGAAAAARAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-16T21:48:22.623Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 15,
+              "Title": "CreateReturnDto.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\Returns\\CreateReturnDto.cs",
+              "RelativeDocumentMoniker": "DTOs\\Returns\\CreateReturnDto.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\Returns\\CreateReturnDto.cs",
+              "RelativeToolTip": "DTOs\\Returns\\CreateReturnDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA4AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-16T23:27:11.214Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 16,
+              "Title": "CreateInvoiceItemDto.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\Invoices\\CreateInvoiceItemDto.cs",
+              "RelativeDocumentMoniker": "DTOs\\Invoices\\CreateInvoiceItemDto.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\Invoices\\CreateInvoiceItemDto.cs",
+              "RelativeToolTip": "DTOs\\Invoices\\CreateInvoiceItemDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAsAAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-16T21:40:47.363Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 17,
+              "Title": "CreateInvoiceDto.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\Invoices\\CreateInvoiceDto.cs",
+              "RelativeDocumentMoniker": "DTOs\\Invoices\\CreateInvoiceDto.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\Invoices\\CreateInvoiceDto.cs",
+              "RelativeToolTip": "DTOs\\Invoices\\CreateInvoiceDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-16T21:40:36.03Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 18,
+              "Title": "StockMovementsController.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Controllers\\StockMovementsController.cs",
+              "RelativeDocumentMoniker": "Controllers\\StockMovementsController.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Controllers\\StockMovementsController.cs",
+              "RelativeToolTip": "Controllers\\StockMovementsController.cs",
+              "ViewState": "AgIAAF4AAAAAAAAAAAAIwG4AAAAmAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-16T20:26:38.897Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 19,
+              "Title": "AddInventoryDto.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\Inventory\\AddInventoryDto.cs",
+              "RelativeDocumentMoniker": "DTOs\\Inventory\\AddInventoryDto.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\Inventory\\AddInventoryDto.cs",
+              "RelativeToolTip": "DTOs\\Inventory\\AddInventoryDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAArAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-15T23:53:25.004Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 20,
+              "Title": "UpdateProductVariantDto.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\ProductVariants\\UpdateProductVariantDto.cs",
+              "RelativeDocumentMoniker": "DTOs\\ProductVariants\\UpdateProductVariantDto.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\ProductVariants\\UpdateProductVariantDto.cs",
+              "RelativeToolTip": "DTOs\\ProductVariants\\UpdateProductVariantDto.cs",
+              "ViewState": "AgIAAAoAAAAAAAAAAAAkwBMAAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-15T23:47:18.381Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 21,
+              "Title": "CreateProductVariantDto.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\ProductVariants\\CreateProductVariantDto.cs",
+              "RelativeDocumentMoniker": "DTOs\\ProductVariants\\CreateProductVariantDto.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\ProductVariants\\CreateProductVariantDto.cs",
+              "RelativeToolTip": "DTOs\\ProductVariants\\CreateProductVariantDto.cs",
+              "ViewState": "AgIAAAgAAAAAAAAAAAAQwA0AAAAgAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-15T23:47:06.574Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 22,
+              "Title": "UpdateProductDto.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\Products\\UpdateProductDto.cs",
+              "RelativeDocumentMoniker": "DTOs\\Products\\UpdateProductDto.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\Products\\UpdateProductDto.cs",
+              "RelativeToolTip": "DTOs\\Products\\UpdateProductDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAgAAAA/AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-15T21:58:42.777Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 23,
+              "Title": "CreateProductDto.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\Products\\CreateProductDto.cs",
+              "RelativeDocumentMoniker": "DTOs\\Products\\CreateProductDto.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\Products\\CreateProductDto.cs",
+              "RelativeToolTip": "DTOs\\Products\\CreateProductDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA0AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-15T21:57:55.981Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 24,
+              "Title": "20260918121553_InitialCreate.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Migrations\\20260918121553_InitialCreate.cs",
+              "RelativeDocumentMoniker": "Migrations\\20260918121553_InitialCreate.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Migrations\\20260918121553_InitialCreate.cs",
+              "RelativeToolTip": "Migrations\\20260918121553_InitialCreate.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-18T12:15:53.429Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 25,
+              "Title": "20260918121312_InitialCreate.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Migrations\\20260918121312_InitialCreate.cs",
+              "RelativeDocumentMoniker": "Migrations\\20260918121312_InitialCreate.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Migrations\\20260918121312_InitialCreate.cs",
+              "RelativeToolTip": "Migrations\\20260918121312_InitialCreate.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-18T12:13:12.32Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 26,
+              "Title": "ShopDbContext.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Data\\ShopDbContext.cs",
+              "RelativeDocumentMoniker": "Data\\ShopDbContext.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Data\\ShopDbContext.cs",
+              "RelativeToolTip": "Data\\ShopDbContext.cs",
+              "ViewState": "AgIAACIAAAAAAAAAAAAqwCgAAAAcAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-15T21:47:17.68Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 27,
+              "Title": "BestSellingProductsReportDto.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\Reports\\BestSellingProductsReportDto.cs",
+              "RelativeDocumentMoniker": "DTOs\\Reports\\BestSellingProductsReportDto.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\Reports\\BestSellingProductsReportDto.cs",
+              "RelativeToolTip": "DTOs\\Reports\\BestSellingProductsReportDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAQAAAAmAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-18T11:57:42.661Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 28,
+              "Title": "StockMovementReportDto.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\Reports\\StockMovementReportDto.cs",
+              "RelativeDocumentMoniker": "DTOs\\Reports\\StockMovementReportDto.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\Reports\\StockMovementReportDto.cs",
+              "RelativeToolTip": "DTOs\\Reports\\StockMovementReportDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAMAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-18T11:54:38.702Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 29,
+              "Title": "LowStockReportDto.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\Reports\\LowStockReportDto.cs",
+              "RelativeDocumentMoniker": "DTOs\\Reports\\LowStockReportDto.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\Reports\\LowStockReportDto.cs",
+              "RelativeToolTip": "DTOs\\Reports\\LowStockReportDto.cs",
+              "ViewState": "AgIAABwAAAAAAAAAAAAUwB4AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-18T11:20:47.009Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 30,
+              "Title": "InventoryReportDto.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\Reports\\InventoryReportDto.cs",
+              "RelativeDocumentMoniker": "DTOs\\Reports\\InventoryReportDto.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\Reports\\InventoryReportDto.cs",
+              "RelativeToolTip": "DTOs\\Reports\\InventoryReportDto.cs",
+              "ViewState": "AgIAAA8AAAAAAAAAAAAmwAMAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-18T11:17:38.648Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 31,
+              "Title": "ProductSearchResponseDto.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\Products\\ProductSearchResponseDto.cs",
+              "RelativeDocumentMoniker": "DTOs\\Products\\ProductSearchResponseDto.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\Products\\ProductSearchResponseDto.cs",
+              "RelativeToolTip": "DTOs\\Products\\ProductSearchResponseDto.cs",
+              "ViewState": "AgIAACoAAAAAAAAAAAAgwAQAAAAfAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-17T21:48:23.829Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 33,
+              "Title": "Return.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Models\\Return.cs",
+              "RelativeDocumentMoniker": "Models\\Return.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Models\\Return.cs",
+              "RelativeToolTip": "Models\\Return.cs",
+              "ViewState": "AgIAAAsAAAAAAAAAAAAIwAgAAAAxAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-16T23:25:39.204Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 32,
+              "Title": "ReturnResponseDto.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\Returns\\ReturnResponseDto.cs",
+              "RelativeDocumentMoniker": "DTOs\\Returns\\ReturnResponseDto.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\Returns\\ReturnResponseDto.cs",
+              "RelativeToolTip": "DTOs\\Returns\\ReturnResponseDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAQAAAAfAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-16T23:27:23.218Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 34,
+              "Title": "StockTransfersController.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Controllers\\StockTransfersController.cs",
+              "RelativeDocumentMoniker": "Controllers\\StockTransfersController.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Controllers\\StockTransfersController.cs",
+              "RelativeToolTip": "Controllers\\StockTransfersController.cs",
+              "ViewState": "AgIAAAsAAAAAAAAAAAAQwBAAAAAbAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-16T23:14:04.158Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 35,
+              "Title": "StockTransfer.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Models\\StockTransfer.cs",
+              "RelativeDocumentMoniker": "Models\\StockTransfer.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Models\\StockTransfer.cs",
+              "RelativeToolTip": "Models\\StockTransfer.cs",
+              "ViewState": "AgIAAAIAAAAAAAAAAAAAAAoAAAAvAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-16T23:11:29.891Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 36,
+              "Title": "StockTransferResponseDto.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\StockTransfers\\StockTransferResponseDto.cs",
+              "RelativeDocumentMoniker": "DTOs\\StockTransfers\\StockTransferResponseDto.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\StockTransfers\\StockTransferResponseDto.cs",
+              "RelativeToolTip": "DTOs\\StockTransfers\\StockTransferResponseDto.cs",
+              "ViewState": "AgIAAAsAAAAAAAAAAAAIwBAAAAAvAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-16T23:10:22.874Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 37,
+              "Title": "CreateStockTransferDto.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\StockTransfers\\CreateStockTransferDto.cs",
+              "RelativeDocumentMoniker": "DTOs\\StockTransfers\\CreateStockTransferDto.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\StockTransfers\\CreateStockTransferDto.cs",
+              "RelativeToolTip": "DTOs\\StockTransfers\\CreateStockTransferDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAgAAAAtAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-16T22:44:03.177Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 38,
+              "Title": "ProductVariantBarcodeResponseDto.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\ProductVariants\\ProductVariantBarcodeResponseDto.cs",
+              "RelativeDocumentMoniker": "DTOs\\ProductVariants\\ProductVariantBarcodeResponseDto.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\ProductVariants\\ProductVariantBarcodeResponseDto.cs",
+              "RelativeToolTip": "DTOs\\ProductVariants\\ProductVariantBarcodeResponseDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAQAAAAjAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-16T22:03:05.972Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 40,
+              "Title": "InvoiceResponseDto.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\Invoices\\InvoiceResponseDto.cs",
+              "RelativeDocumentMoniker": "DTOs\\Invoices\\InvoiceResponseDto.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\Invoices\\InvoiceResponseDto.cs",
+              "RelativeToolTip": "DTOs\\Invoices\\InvoiceResponseDto.cs",
+              "ViewState": "AgIAAAQAAAAAAAAAAAA1wAMAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-16T21:40:57.731Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 39,
+              "Title": "Invoice.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Models\\Invoice.cs",
+              "RelativeDocumentMoniker": "Models\\Invoice.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Models\\Invoice.cs",
+              "RelativeToolTip": "Models\\Invoice.cs",
+              "ViewState": "AgIAAAQAAAAAAAAAAAA1wAsAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-15T21:45:18.542Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 42,
+              "Title": "BarcodeService.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Services\\BarcodeService.cs",
+              "RelativeDocumentMoniker": "Services\\BarcodeService.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Services\\BarcodeService.cs",
+              "RelativeToolTip": "Services\\BarcodeService.cs",
+              "ViewState": "AgIAAA4AAAAAAAAAAAA9wBkAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-16T20:43:41.946Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 44,
+              "Title": "ProductVariant.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Models\\ProductVariant.cs",
+              "RelativeDocumentMoniker": "Models\\ProductVariant.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Models\\ProductVariant.cs",
+              "RelativeToolTip": "Models\\ProductVariant.cs",
+              "ViewState": "AgIAAAcAAAAAAAAAAAAgwA0AAAAnAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-15T21:44:48.642Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 41,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Program.cs",
+              "RelativeDocumentMoniker": "Program.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Program.cs",
+              "RelativeToolTip": "Program.cs",
+              "ViewState": "AgIAAAkAAAAAAAAAAAAAABUAAAAtAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-15T21:52:49.718Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 45,
+              "Title": "BarcodeType.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Models\\BarcodeType.cs",
+              "RelativeDocumentMoniker": "Models\\BarcodeType.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Models\\BarcodeType.cs",
+              "RelativeToolTip": "Models\\BarcodeType.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAYAAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-16T20:36:11.093Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 43,
+              "Title": "ProductVariantResponseDto.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\ProductVariants\\ProductVariantResponseDto.cs",
+              "RelativeDocumentMoniker": "DTOs\\ProductVariants\\ProductVariantResponseDto.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\ProductVariants\\ProductVariantResponseDto.cs",
+              "RelativeToolTip": "DTOs\\ProductVariants\\ProductVariantResponseDto.cs",
+              "ViewState": "AgIAABIAAAAAAAAAAAAcwBUAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-15T23:47:29.9Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 46,
+              "Title": "InventoryResponseDto.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\Inventory\\InventoryResponseDto.cs",
+              "RelativeDocumentMoniker": "DTOs\\Inventory\\InventoryResponseDto.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\Inventory\\InventoryResponseDto.cs",
+              "RelativeToolTip": "DTOs\\Inventory\\InventoryResponseDto.cs",
+              "ViewState": "AgIAAAQAAAAAAAAAAAA1wA0AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-15T23:53:56.903Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 47,
+              "Title": "StockMovementResponseDto.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\StockMovements\\StockMovementResponseDto.cs",
+              "RelativeDocumentMoniker": "DTOs\\StockMovements\\StockMovementResponseDto.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\StockMovements\\StockMovementResponseDto.cs",
+              "RelativeToolTip": "DTOs\\StockMovements\\StockMovementResponseDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAMAAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-16T20:25:25.526Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 48,
+              "Title": "CreateStockMovementDto.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\StockMovements\\CreateStockMovementDto.cs",
+              "RelativeDocumentMoniker": "DTOs\\StockMovements\\CreateStockMovementDto.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\StockMovements\\CreateStockMovementDto.cs",
+              "RelativeToolTip": "DTOs\\StockMovements\\CreateStockMovementDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAsAAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-16T20:25:13.046Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 53,
+              "Title": "Inventory.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Models\\Inventory.cs",
+              "RelativeDocumentMoniker": "Models\\Inventory.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Models\\Inventory.cs",
+              "RelativeToolTip": "Models\\Inventory.cs",
+              "ViewState": "AgIAAAQAAAAAAAAAAAA1wAoAAAA3AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-15T22:28:19.3Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 52,
+              "Title": "Location.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Models\\Location.cs",
+              "RelativeDocumentMoniker": "Models\\Location.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Models\\Location.cs",
+              "RelativeToolTip": "Models\\Location.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAUAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-15T21:43:06.028Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 51,
+              "Title": "StockMovement.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Models\\StockMovement.cs",
+              "RelativeDocumentMoniker": "Models\\StockMovement.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Models\\StockMovement.cs",
+              "RelativeToolTip": "Models\\StockMovement.cs",
+              "ViewState": "AgIAAAEAAAAAAAAAAADwvwMAAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-15T21:46:16.688Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 50,
+              "Title": "Sizes.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Models\\Sizes.cs",
+              "RelativeDocumentMoniker": "Models\\Sizes.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Models\\Sizes.cs",
+              "RelativeToolTip": "Models\\Sizes.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAwAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-15T21:43:31.847Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 49,
+              "Title": "Product.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Models\\Product.cs",
+              "RelativeDocumentMoniker": "Models\\Product.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Models\\Product.cs",
+              "RelativeToolTip": "Models\\Product.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABAAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-15T21:42:20.885Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 54,
+              "Title": "ProductResponseDto.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\Products\\ProductResponseDto.cs",
+              "RelativeDocumentMoniker": "DTOs\\Products\\ProductResponseDto.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\Products\\ProductResponseDto.cs",
+              "RelativeToolTip": "DTOs\\Products\\ProductResponseDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAQAAAAjAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-15T21:59:19.959Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 55,
+              "Title": "InvoiceItem.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Models\\InvoiceItem.cs",
+              "RelativeDocumentMoniker": "Models\\InvoiceItem.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Models\\InvoiceItem.cs",
+              "RelativeToolTip": "Models\\InvoiceItem.cs",
+              "ViewState": "AgIAAAYAAAAAAAAAAAA5wBAAAAAuAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-15T21:45:48.1Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 56,
+              "Title": "Colour.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Models\\Colour.cs",
+              "RelativeDocumentMoniker": "Models\\Colour.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Models\\Colour.cs",
+              "RelativeToolTip": "Models\\Colour.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAMAAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-15T21:43:44.505Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 57,
+              "Title": "Category.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Models\\Category.cs",
+              "RelativeDocumentMoniker": "Models\\Category.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Models\\Category.cs",
+              "RelativeToolTip": "Models\\Category.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAQAAAAjAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-15T21:41:34.068Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

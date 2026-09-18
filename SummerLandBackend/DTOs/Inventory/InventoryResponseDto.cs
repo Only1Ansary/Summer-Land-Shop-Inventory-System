@@ -1,0 +1,16 @@
+﻿namespace SummerLandBackend.DTOs.Inventory
+{
+    public class InventoryResponseDto
+    {
+        public int Id { get; set; }
+
+        public int ProductVariantId { get; set; }
+
+        public int LocationId { get; set; }
+
+        public string LocationName { get; set; } = string.Empty;
+
+        public int Quantity { get; set; }
+
+    }
+}
