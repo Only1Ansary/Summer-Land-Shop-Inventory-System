@@ -46,20 +46,11 @@ public class ReturnsController : ControllerBase
         }
 
         // Calculate how much of this item was already returned
-        var alreadyReturned = await _context.Returns
-            .Where(r =>
-                r.InvoiceId == dto.InvoiceId &&
-                r.ProductVariantId == dto.ProductVariantId)
-            .SumAsync(r => r.Quantity);
-
-        var remainingQuantity =
-            invoiceItem.Quantity - alreadyReturned;
-
-        if (dto.Quantity > remainingQuantity)
+        if (dto.Quantity > invoiceItem.Quantity)
         {
             return BadRequest(
                 $"Cannot return {dto.Quantity} item(s). " +
-                $"Remaining returnable quantity: {remainingQuantity}.");
+                $"Remaining returnable quantity: {invoiceItem.Quantity}.");
         }
 
         var variant = await _context.ProductVariants
@@ -82,14 +73,14 @@ public class ReturnsController : ControllerBase
             var inventory = await _context.Inventory
                 .FirstOrDefaultAsync(i =>
                     i.ProductVariantId == dto.ProductVariantId &&
-                    i.LocationId == invoice.LocationId);
+                    i.LocationId == dto.StockLocationId);
 
             if (inventory == null)
             {
                 inventory = new Inventory
                 {
                     ProductVariantId = dto.ProductVariantId,
-                    LocationId = invoice.LocationId,
+                    LocationId = dto.StockLocationId,
                     Quantity = 0
                 };
 
@@ -102,11 +93,21 @@ public class ReturnsController : ControllerBase
             var totalAmount =
                 invoiceItem.UnitPrice * dto.Quantity;
 
+            invoiceItem.Quantity -= dto.Quantity;
+            invoiceItem.TotalPrice -= totalAmount;
+
+            invoice.TotalAmount -= totalAmount;
+
+            if (invoiceItem.Quantity == 0)
+            {
+                _context.InvoiceItems.Remove(invoiceItem);
+            }
+
             var returnRecord = new Return
             {
                 InvoiceId = dto.InvoiceId,
                 ProductVariantId = dto.ProductVariantId,
-                LocationId = invoice.LocationId,
+                LocationId = dto.StockLocationId,
                 Quantity = dto.Quantity,
                 UnitPrice = invoiceItem.UnitPrice,
                 TotalAmount = totalAmount,
@@ -120,7 +121,7 @@ public class ReturnsController : ControllerBase
             var stockMovement = new StockMovement
             {
                 ProductVariantId = dto.ProductVariantId,
-                LocationId = invoice.LocationId,
+                LocationId = dto.StockLocationId,
                 QuantityChange = dto.Quantity,
                 Reason = "Return",
                 CreatedAt = DateTime.UtcNow
@@ -133,7 +134,7 @@ public class ReturnsController : ControllerBase
             await transaction.CommitAsync();
 
             var location = await _context.Locations
-                .FirstAsync(l => l.Id == invoice.LocationId);
+                .FirstAsync(l => l.Id == dto.StockLocationId);
 
             var response = new ReturnResponseDto
             {

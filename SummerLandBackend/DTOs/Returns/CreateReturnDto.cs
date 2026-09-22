@@ -13,6 +13,9 @@ namespace SummerLandBackend.DTOs.Returns
         [Range(1, int.MaxValue)]
         public int Quantity { get; set; }
 
+        [Range(1, int.MaxValue)]
+        public int StockLocationId { get; set; }
+
         public string Reason { get; set; } = string.Empty;
     }
 }

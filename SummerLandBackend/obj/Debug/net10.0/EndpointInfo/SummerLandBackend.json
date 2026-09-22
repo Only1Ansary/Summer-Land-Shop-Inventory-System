@@ -1910,6 +1910,12 @@
             "minimum": 1,
             "type": "integer",
             "format": "int32"
+          },
+          "stockLocationId": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false
@@ -2001,6 +2007,12 @@
             "format": "int32"
           },
           "quantity": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer",
+            "format": "int32"
+          },
+          "stockLocationId": {
             "maximum": 2147483647,
             "minimum": 1,
             "type": "integer",

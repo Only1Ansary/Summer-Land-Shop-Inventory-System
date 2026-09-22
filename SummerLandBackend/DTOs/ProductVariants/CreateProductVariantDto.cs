@@ -22,6 +22,6 @@ namespace SummerLandBackend.DTOs.ProductVariants
         public decimal Price { get; set; }
 
         [Range(0, int.MaxValue)]
-        public int LowStockThreshold { get; set; } = 5;
+        public int LowStockThreshold { get; set; } = 1;
     }
 }
