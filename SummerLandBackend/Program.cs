@@ -17,6 +17,7 @@ builder.Services.AddDbContext<ShopDbContext>(options =>
     options.UseSqlite(
         builder.Configuration.GetConnectionString("DefaultConnection")
     )
+    .AddInterceptors(new SqliteBusyTimeoutInterceptor())
 );
 
 builder.Services.AddScoped<BarcodeService>();

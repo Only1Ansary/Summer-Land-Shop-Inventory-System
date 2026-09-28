@@ -592,6 +592,99 @@ Future<String?> showAppNameDialog(
   );
 }
 
+/// Standardised amount-entry dialog (pay debt etc). Returns the raw input.
+Future<String?> showAppAmountDialog(
+  BuildContext context, {
+  required String title,
+  required String label,
+  String initialValue = '',
+  String helperText = '',
+  String confirmLabel = 'Pay',
+}) {
+  return showDialog<String>(
+    context: context,
+    builder: (ctx) => _AppAmountDialog(
+      title: title,
+      label: label,
+      initialValue: initialValue,
+      helperText: helperText,
+      confirmLabel: confirmLabel,
+    ),
+  );
+}
+
+class _AppAmountDialog extends StatefulWidget {
+  const _AppAmountDialog({
+    required this.title,
+    required this.label,
+    required this.initialValue,
+    required this.helperText,
+    required this.confirmLabel,
+  });
+
+  final String title;
+  final String label;
+  final String initialValue;
+  final String helperText;
+  final String confirmLabel;
+
+  @override
+  State<_AppAmountDialog> createState() => _AppAmountDialogState();
+}
+
+class _AppAmountDialogState extends State<_AppAmountDialog> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = TextEditingController(text: widget.initialValue);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    Navigator.of(context).pop(_controller.text.trim());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.title),
+      content: TextField(
+        controller: _controller,
+        autofocus: true,
+        keyboardType: const TextInputType.numberWithOptions(
+          decimal: true,
+        ),
+        decoration: InputDecoration(
+          labelText: widget.label,
+          prefixText: '\u20a6 ',
+          helperText: widget.helperText.isEmpty
+              ? null
+              : widget.helperText,
+        ),
+        onSubmitted: (_) => _submit(),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: _submit,
+          child: Text(widget.confirmLabel),
+        ),
+      ],
+    );
+  }
+}
+
 class _AppNameDialog extends StatefulWidget {
   const _AppNameDialog({
     required this.title,

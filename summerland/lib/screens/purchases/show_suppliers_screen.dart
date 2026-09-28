@@ -112,6 +112,65 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen> {
     }
   }
 
+  Future<void> _paySupplierDebt(Supplier supplier) async {
+    final remaining = supplier.debt;
+
+    final amountText = await showAppAmountDialog(
+      context,
+      title: 'Pay Debt',
+      label: 'Amount',
+      initialValue: remaining.toStringAsFixed(2),
+      helperText: 'Remaining debt: ${money(remaining)}',
+      confirmLabel: 'Pay',
+    );
+
+    if (amountText == null || !mounted) return;
+
+    final amount = double.tryParse(amountText);
+
+    if (amount == null || amount <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter a valid payment amount.')),
+      );
+      return;
+    }
+
+    if (amount > remaining) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Payment cannot exceed the remaining debt of '
+            '${money(remaining)}.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    try {
+      await _supplierService.payDebt(
+        supplierId: supplier.id,
+        amount: amount,
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Debt payment recorded.'),
+        ),
+      );
+
+      _loadSuppliers();
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    }
+  }
+
   void _toggleExpanded(int id) {
     setState(() {
       if (!_expanded.remove(id)) {
@@ -217,6 +276,14 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen> {
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
+                              if (supplier.debt > 0)
+                                IconButton(
+                                  visualDensity: VisualDensity.compact,
+                                  icon: const Icon(Icons.payments_outlined),
+                                  tooltip: 'Pay debt',
+                                  onPressed: () =>
+                                      _paySupplierDebt(supplier),
+                                ),
                               IconButton(
                                 visualDensity: VisualDensity.compact,
                                 icon: const Icon(Icons.edit_outlined),

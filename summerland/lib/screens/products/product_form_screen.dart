@@ -29,6 +29,15 @@ class _ProductFormScreenState
   final _modelController =
       TextEditingController();
 
+  final _barcodeController =
+      TextEditingController();
+
+  final _purchasePriceController =
+      TextEditingController();
+
+  final _profitMarginController =
+      TextEditingController();
+
   final _nameController =
       TextEditingController();
 
@@ -48,6 +57,19 @@ class _ProductFormScreenState
       _modelController.text =
           widget.product!.modelNumber;
 
+      _barcodeController.text =
+          widget.product!.barcode;
+
+      _purchasePriceController.text =
+          _formatInt(
+            widget.product!.purchasePrice,
+          );
+
+      _profitMarginController.text =
+          _formatInt(
+            widget.product!.profitMargin,
+          );
+
       _nameController.text =
           widget.product!.name;
 
@@ -59,8 +81,37 @@ class _ProductFormScreenState
   @override
   void dispose() {
     _modelController.dispose();
+    _barcodeController.dispose();
+    _purchasePriceController.dispose();
+    _profitMarginController.dispose();
     _nameController.dispose();
     super.dispose();
+  }
+
+  static String _formatInt(double value) {
+    final amount = value.round();
+
+    if (amount == 0) return '';
+
+    return amount.toString();
+  }
+
+  static int? _parseInt(String text) {
+    final value = int.tryParse(text.trim());
+
+    if (value == null) return null;
+
+    return value;
+  }
+
+  double _computedSellingPrice() {
+    final purchasePrice =
+        _parseInt(_purchasePriceController.text) ?? 0;
+    final profitMargin =
+        _parseInt(_profitMarginController.text) ?? 0;
+
+    return purchasePrice +
+        (purchasePrice * profitMargin / 100);
   }
 
   Future<void> _save() async {
@@ -86,12 +137,22 @@ class _ProductFormScreenState
         await _productService.updateProduct(
           id: widget.product!.id,
           modelNumber: _modelController.text.trim(),
+          barcode: _barcodeController.text.trim(),
+          purchasePrice:
+              _parseInt(_purchasePriceController.text)!,
+          profitMargin:
+              _parseInt(_profitMarginController.text)!,
           name: _nameController.text.trim(),
           categoryId: _selectedCategoryId!,
         );
       } else {
         await _productService.createProduct(
           modelNumber: _modelController.text.trim(),
+          barcode: _barcodeController.text.trim(),
+          purchasePrice:
+              _parseInt(_purchasePriceController.text)!,
+          profitMargin:
+              _parseInt(_profitMarginController.text)!,
           name: _nameController.text.trim(),
           categoryId: _selectedCategoryId!,
         );
@@ -152,6 +213,16 @@ class _ProductFormScreenState
               const SizedBox(height: 16),
 
               TextFormField(
+                controller: _barcodeController,
+                decoration: const InputDecoration(
+                  labelText: 'Barcode (optional)',
+                  prefixIcon: Icon(Icons.qr_code_2),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(
                   labelText: 'Product Name',
@@ -166,6 +237,80 @@ class _ProductFormScreenState
                   return null;
                 },
               ),
+
+              const SizedBox(height: 16),
+
+              TextFormField(
+                controller: _purchasePriceController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Purchase Price',
+                  prefixIcon: Icon(Icons.payments_outlined),
+                  suffixText: '₦',
+                ),
+                onChanged: (_) => setState(() {}),
+                validator: (value) {
+                  if (value == null ||
+                      value.trim().isEmpty) {
+                    return 'Purchase price is required.';
+                  }
+
+                  final price = _parseInt(value);
+
+                  if (price == null || price <= 0) {
+                    return 'Enter a positive whole number.';
+                  }
+
+                  return null;
+                },
+              ),
+
+              const SizedBox(height: 16),
+
+              TextFormField(
+                controller: _profitMarginController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Profit Margin (%)',
+                  prefixIcon: Icon(Icons.percent),
+                ),
+                onChanged: (_) => setState(() {}),
+                validator: (value) {
+                  if (value == null ||
+                      value.trim().isEmpty) {
+                    return 'Profit margin is required.';
+                  }
+
+                  final margin = _parseInt(value);
+
+                  if (margin == null || margin <= 0) {
+                    return 'Enter a positive whole number.';
+                  }
+
+                  return null;
+                },
+              ),
+
+              const SizedBox(height: 16),
+
+              if (_computedSellingPrice() > 0)
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(
+                    Icons.sell_outlined,
+                  ),
+                  title: const Text('Selling Price'),
+                  subtitle: const Text(
+                    'Purchase price plus your profit margin',
+                  ),
+                  trailing: Text(
+                    money(_computedSellingPrice()),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
 
               const SizedBox(height: 16),
 

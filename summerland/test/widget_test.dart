@@ -5,7 +5,7 @@ import 'package:summerland/main.dart';
 
 void main() {
   testWidgets('App builds with navigation shell', (WidgetTester tester) async {
-    await tester.pumpWidget(const SummerlandApp());
+    await tester.pumpWidget(SummerlandApp());
 
     await tester.pump();
 

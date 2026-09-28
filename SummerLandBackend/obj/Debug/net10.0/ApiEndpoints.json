@@ -585,6 +585,27 @@
     "ReturnTypes": []
   },
   {
+    "ContainingType": "SummerLandBackend.Controllers.PurchaseInvoicesController",
+    "Method": "PayPurchaseDebt",
+    "RelativePath": "api/PurchaseInvoices/{id}/pay",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "dto",
+        "Type": "SummerLandBackend.DTOs.PurchaseInvoices.PayPurchaseDebtDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
     "ContainingType": "SummerLandBackend.Controllers.PurchaseReturnsController",
     "Method": "CreatePurchaseReturn",
     "RelativePath": "api/PurchaseReturns",
@@ -837,6 +858,26 @@
     "ReturnTypes": [
       {
         "Type": "SummerLandBackend.DTOs.SaleInvoices.InvoiceResponseDto",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "SummerLandBackend.Controllers.SaleInvoicesController",
+    "Method": "GetInvoices",
+    "RelativePath": "api/SaleInvoices",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[SummerLandBackend.DTOs.SaleInvoices.InvoiceResponseDto, SummerLandBackend, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
         "MediaTypes": [
           "text/plain",
           "application/json",
@@ -1147,6 +1188,27 @@
       {
         "Name": "id",
         "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "SummerLandBackend.Controllers.SupplierController",
+    "Method": "PaySupplierDebt",
+    "RelativePath": "api/Supplier/{id}/pay",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "dto",
+        "Type": "SummerLandBackend.DTOs.PaySupplierDebtDto",
         "IsRequired": true
       }
     ],

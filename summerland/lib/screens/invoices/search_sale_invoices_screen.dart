@@ -1,29 +1,29 @@
 import 'package:flutter/material.dart';
 
-import '../../models/purchase_invoice.dart';
+import '../../models/invoice.dart';
 import '../../services/api_service.dart';
-import '../../services/purchase_invoice_service.dart';
+import '../../services/invoice_service.dart';
 import '../../ui/app_widgets.dart';
-import 'purchase_invoice_tile.dart';
-import 'show_purchase_invoice_screen.dart';
+import 'sale_invoice_tile.dart';
+import 'show_sale_invoice_screen.dart';
 
-class SearchPurchaseInvoicesScreen extends StatefulWidget {
-  const SearchPurchaseInvoicesScreen({super.key});
+class SearchSaleInvoicesScreen extends StatefulWidget {
+  const SearchSaleInvoicesScreen({super.key});
 
   @override
-  State<SearchPurchaseInvoicesScreen> createState() =>
-      _SearchPurchaseInvoicesScreenState();
+  State<SearchSaleInvoicesScreen> createState() =>
+      _SearchSaleInvoicesScreenState();
 }
 
-class _SearchPurchaseInvoicesScreenState
-    extends State<SearchPurchaseInvoicesScreen> {
-  final PurchaseInvoiceService _purchaseInvoiceService =
-      PurchaseInvoiceService(ApiService());
+class _SearchSaleInvoicesScreenState
+    extends State<SearchSaleInvoicesScreen> {
+  final InvoiceService _invoiceService =
+      InvoiceService(ApiService());
 
-  final TextEditingController _nameController =
+  final TextEditingController _queryController =
       TextEditingController();
 
-  List<PurchaseInvoice> _invoices = [];
+  List<Invoice> _invoices = [];
 
   DateTime? _fromDate;
   DateTime? _toDate;
@@ -39,7 +39,7 @@ class _SearchPurchaseInvoicesScreenState
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _queryController.dispose();
     super.dispose();
   }
 
@@ -50,7 +50,7 @@ class _SearchPurchaseInvoicesScreenState
     });
 
     try {
-      final invoices = await _purchaseInvoiceService.getPurchaseInvoices();
+      final invoices = await _invoiceService.getInvoices();
 
       if (!mounted) return;
 
@@ -72,22 +72,32 @@ class _SearchPurchaseInvoicesScreenState
     }
   }
 
-  List<PurchaseInvoice> get _results {
-    final query = _nameController.text.trim().toLowerCase();
+  List<Invoice> get _results {
+    final query = _queryController.text.trim().toLowerCase();
 
     return _invoices.where((invoice) {
-      final nameOk = query.isEmpty ||
-          invoice.supplierName.toLowerCase().contains(query);
+      final matchesId = query.isEmpty ||
+          '#${invoice.id}'.contains(query) ||
+          '${invoice.id}'.contains(query);
 
-      final date = invoice.date ?? invoice.createdAt;
+      final matchesLocation =
+          query.isEmpty ||
+              invoice.locationName.toLowerCase().contains(query);
+
+      final matchesItem = query.isEmpty ||
+          invoice.items.any((item) =>
+              item.productName.toLowerCase().contains(query) ||
+              item.modelNumber.toLowerCase().contains(query));
+
+      final textOk = matchesId || matchesLocation || matchesItem;
 
       final fromOk = _fromDate == null ||
-          !_dateOnly(date).isBefore(_dateOnly(_fromDate!));
+          !_dateOnly(invoice.createdAt).isBefore(_dateOnly(_fromDate!));
 
       final toOk = _toDate == null ||
-          !_dateOnly(date).isAfter(_dateOnly(_toDate!));
+          !_dateOnly(invoice.createdAt).isAfter(_dateOnly(_toDate!));
 
-      return nameOk && fromOk && toOk;
+      return textOk && fromOk && toOk;
     }).toList();
   }
 
@@ -128,23 +138,19 @@ class _SearchPurchaseInvoicesScreenState
     setState(() {
       _fromDate = null;
       _toDate = null;
-      _nameController.clear();
+      _queryController.clear();
     });
   }
 
-  Future<void> _openInvoice(PurchaseInvoice invoice) async {
-    await pushScreen<void>(
+  void _openInvoice(Invoice invoice) {
+    pushScreen<void>(
       context,
-      (_) => ShowPurchaseInvoiceScreen(invoiceId: invoice.id),
+      (_) => ShowSaleInvoiceScreen(invoiceId: invoice.id),
     );
-
-    if (mounted) {
-      _loadInvoices();
-    }
   }
 
   bool get _hasFilters =>
-      _nameController.text.isNotEmpty ||
+      _queryController.text.isNotEmpty ||
       _fromDate != null ||
       _toDate != null;
 
@@ -154,7 +160,7 @@ class _SearchPurchaseInvoicesScreenState
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Search Invoices'),
+        title: const Text('Search Sale Invoices'),
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -174,17 +180,16 @@ class _SearchPurchaseInvoicesScreenState
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           TextField(
-            controller: _nameController,
-            textCapitalization: TextCapitalization.words,
+            controller: _queryController,
             decoration: InputDecoration(
-              labelText: 'Supplier name',
-              prefixIcon: const Icon(Icons.factory_outlined),
-              suffixIcon: _nameController.text.isNotEmpty
+              labelText: 'Invoice #, location or product',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: _queryController.text.isNotEmpty
                   ? IconButton(
                       icon: const Icon(Icons.clear),
-                      tooltip: 'Clear name',
+                      tooltip: 'Clear search',
                       onPressed: () {
-                        _nameController.clear();
+                        _queryController.clear();
                         setState(() {});
                       },
                     )
@@ -236,7 +241,7 @@ class _SearchPurchaseInvoicesScreenState
     );
   }
 
-  Widget _buildResults(List<PurchaseInvoice> results) {
+  Widget _buildResults(List<Invoice> results) {
     if (_isLoading) {
       return const LoadingState();
     }
@@ -253,7 +258,7 @@ class _SearchPurchaseInvoicesScreenState
         icon: Icons.search_off_rounded,
         title: 'No matches',
         message:
-            'Try adjusting the supplier name or the date range.',
+            'Try adjusting the invoice number, location, product or the date range.',
       );
     }
 
@@ -263,7 +268,7 @@ class _SearchPurchaseInvoicesScreenState
       itemBuilder: (context, index) {
         final invoice = results[index];
 
-        return PurchaseInvoiceTile(
+        return SaleInvoiceTile(
           invoice: invoice,
           onTap: () => _openInvoice(invoice),
         );

@@ -18,115 +18,90 @@ public class ReportsController : ControllerBase
 
     [HttpGet("sales")]
     public async Task<ActionResult<SalesReportDto>> GetSalesReport(
-        [FromQuery] DateTime? from,
-        [FromQuery] DateTime? to)
+    [FromQuery] DateTime? from,
+    [FromQuery] DateTime? to,
+    CancellationToken ct)
     {
-        var fromDate = from?.ToUniversalTime()
-    ?? DateTime.UtcNow.Date;
+        var fromDate = from.HasValue ? ToUtc(from.Value) : DateTime.UtcNow.Date;
+        var toDate = to.HasValue ? ToUtc(to.Value) : DateTime.UtcNow;
 
-        var toDate = to?.ToUniversalTime()
-            ?? DateTime.UtcNow;
-
+        // A bare date (00:00:00) as "to" means the whole day.
+        // Check the RAW value, not the value after UTC conversion.
         if (to.HasValue && to.Value.TimeOfDay == TimeSpan.Zero)
-        {
-            toDate = toDate.Date.AddDays(1).AddTicks(-1);
-        }
+            toDate = ToUtc(to.Value.Date.AddDays(1)).AddTicks(-1);
 
         if (fromDate > toDate)
-        {
-            return BadRequest(
-                "From date cannot be greater than To date.");
-        }
+            return BadRequest("From date cannot be greater than To date.");
 
-        var invoices = await _context.Invoices
-            .Include(i => i.Items)
-            .Where(i =>
-                i.CreatedAt >= fromDate &&
-                i.CreatedAt <= toDate)
-            .ToListAsync();
+        // ---------- Sales (aggregated in SQL, nothing loaded into memory) ----------
+        var invoices = _context.Invoices.AsNoTracking()
+            .Where(i => i.CreatedAt >= fromDate && i.CreatedAt <= toDate);
 
-        var returns = await _context.Returns
-            .Where(r =>
-                r.CreatedAt >= fromDate &&
-                r.CreatedAt <= toDate)
-            .ToListAsync();
+        var invoiceCount = await invoices.CountAsync(ct);
 
-        var purchases = await _context.PurchaseInvoices
-            .Where(p =>
-                p.CreatedAt >= fromDate &&
-                p.CreatedAt <= toDate)
-            .ToListAsync();
+        // Invoice lines are already net of returns (ReturnsController reduces them)
+        var lines = invoices.SelectMany(i => i.Items);
 
-        var invoiceCount = invoices.Count;
+        var retainedQuantity = await lines.SumAsync(i => (int?)i.Quantity, ct) ?? 0;
+        var retainedAmount = await lines.SumAsync(i => (decimal?)i.TotalPrice, ct) ?? 0m;
 
-        var itemsSold = invoices
-            .SelectMany(i => i.Items)
-            .Sum(i => i.Quantity);
+        // ---------- Returns against the period's invoices ----------
+        var returns = _context.Returns.AsNoTracking()
+            .Where(r => invoices.Any(i => i.Id == r.InvoiceId));
 
-        var grossSales = invoices
-            .Sum(i => i.TotalAmount);
+        var returnsQuantity = await returns.SumAsync(r => (int?)r.Quantity, ct) ?? 0;
+        var returnsAmount = await returns.SumAsync(r => (decimal?)r.TotalAmount, ct) ?? 0m;
 
-        var itemsReturned = returns
-            .Sum(r => r.Quantity);
+        // ---------- Purchases (small set, no Includes) ----------
+        var purchases = await _context.PurchaseInvoices.AsNoTracking()
+            .Where(p => p.CreatedAt >= fromDate && p.CreatedAt <= toDate)
+            .ToListAsync(ct);
 
-        var returnsAmount = returns
-            .Sum(r => r.TotalAmount);
+        var purchaseTotalCost = purchases.Sum(p => p.TotalCost);
 
-        var netSales = grossSales - returnsAmount;
+        // ---------- Suppliers (current balance) ----------
+        var supplierCount = await _context.Suppliers.CountAsync(ct);
+        var supplierDebtTotal = await _context.Suppliers.SumAsync(s => (decimal?)s.Debt, ct) ?? 0m;
 
-        var purchaseInvoiceCount = purchases.Count;
+        // ---------- Figures ----------
+        var itemsSold = retainedQuantity;
+        var grossSales = retainedAmount + returnsAmount;
+        var netSales = grossSales - returnsAmount;      // = retainedAmount
+        // Profit accounts for the purchase cost actually incurred in the period.
+        var profit = netSales - purchases.Sum(p => p.TotalPaid);
 
-        var purchaseTotalCost = purchases
-            .Sum(p => p.TotalCost);
-
-        var purchaseTotalPaid = purchases
-            .Sum(p => p.TotalPaid);
-
-        var purchaseDebt = purchases
-            .Sum(p => p.Debt);
-
-        var supplierCount = await _context.Suppliers
-            .CountAsync();
-
-        var supplierDebtTotal = await _context.Suppliers
-            .SumAsync(s => s.Debt);
-
-        var profit = netSales - purchaseTotalCost;
-
-        var response = new SalesReportDto
+        return Ok(new SalesReportDto
         {
             From = fromDate,
             To = toDate,
 
             InvoiceCount = invoiceCount,
-
             ItemsSold = itemsSold,
-
             GrossSales = grossSales,
-
-            ItemsReturned = itemsReturned,
-
+            ItemsReturned = returnsQuantity,
             ReturnsAmount = returnsAmount,
-
             NetSales = netSales,
 
-            PurchaseInvoiceCount = purchaseInvoiceCount,
-
+            PurchaseInvoiceCount = purchases.Count,
             PurchaseTotalCost = purchaseTotalCost,
-
-            PurchaseTotalPaid = purchaseTotalPaid,
-
-            PurchaseDebt = purchaseDebt,
+            PurchaseTotalPaid = purchases.Sum(p => p.TotalPaid),
+            PurchaseDebt = purchases.Sum(p => p.Debt),
 
             SupplierCount = supplierCount,
-
             SupplierDebtTotal = supplierDebtTotal,
 
             Profit = profit
-        };
-
-        return Ok(response);
+        });
     }
+
+    // Unspecified is treated as UTC (your CreatedAt values are stored with DateTime.UtcNow),
+    // instead of silently using the server's local timezone.
+    private static DateTime ToUtc(DateTime value) => value.Kind switch
+    {
+        DateTimeKind.Utc => value,
+        DateTimeKind.Local => value.ToUniversalTime(),
+        _ => DateTime.SpecifyKind(value, DateTimeKind.Utc)
+    };
 
     [HttpGet("inventory")]
     public async Task<ActionResult<InventoryReportDto>> GetInventoryReport()

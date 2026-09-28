@@ -21,8 +21,7 @@ class _AddSuppliersScreenState extends State<AddSuppliersScreen> {
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
-  final TextEditingController _paidController =
-      TextEditingController();
+
 
   bool _isSaving = false;
 
@@ -42,7 +41,6 @@ class _AddSuppliersScreenState extends State<AddSuppliersScreen> {
   @override
   void dispose() {
     _nameController.dispose();
-    _paidController.dispose();
     super.dispose();
   }
 
@@ -50,11 +48,6 @@ class _AddSuppliersScreenState extends State<AddSuppliersScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final name = _nameController.text.trim();
-    final paidText = _paidController.text.trim();
-    final paid = double.tryParse(paidText);
-    final newDebt = paid == null
-        ? _currentDebt
-        : (_currentDebt - paid).clamp(0, double.infinity);
 
     setState(() {
       _isSaving = true;
@@ -64,8 +57,7 @@ class _AddSuppliersScreenState extends State<AddSuppliersScreen> {
       if (_isEditing) {
         await _supplierService.updateSupplier(
           widget.supplier!.id,
-          supplierName: name,
-          debt: newDebt.toDouble(),
+          supplierName: name, debt: widget.supplier!.debt,
         );
       } else {
         await _supplierService.createSupplier(name);
@@ -143,43 +135,6 @@ class _AddSuppliersScreenState extends State<AddSuppliersScreen> {
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _paidController,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  decoration: const InputDecoration(
-                    labelText: 'Amount Paid',
-                    prefixIcon: Icon(Icons.payments_outlined),
-                    helperText: "Reduces the supplier's debt.",
-                  ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return null;
-                    }
-
-                    final parsed = double.tryParse(value.trim());
-
-                    if (parsed == null) {
-                      return 'Enter a valid amount.';
-                    }
-
-                    if (parsed <= 0) {
-                      return 'Enter an amount greater than zero.';
-                    }
-
-                    if (_currentDebt <= 0) {
-                      return 'No debt to pay.';
-                    }
-
-                    if (parsed > _currentDebt) {
-                      return 'Amount cannot exceed the current debt.';
-                    }
-
-                    return null;
-                  },
                 ),
               ],
               const SizedBox(height: 24),

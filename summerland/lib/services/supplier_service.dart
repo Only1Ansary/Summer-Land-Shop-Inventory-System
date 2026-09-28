@@ -46,4 +46,14 @@ class SupplierService {
   Future<void> deleteSupplier(int id) async {
     await _apiService.delete('$_base/$id');
   }
+
+  Future<void> payDebt({
+    required int supplierId,
+    required double amount,
+  }) async {
+    await _apiService.post(
+      '$_base/$supplierId/pay',
+      {'amount': amount},
+    );
+  }
 }

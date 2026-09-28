@@ -1,28 +1,29 @@
 import 'package:flutter/material.dart';
 
-import '../../models/purchase_invoice.dart';
+import '../../models/invoice.dart';
 import '../../services/api_service.dart';
-import '../../services/purchase_invoice_service.dart';
+import '../../services/invoice_service.dart';
 import '../../ui/app_shell.dart';
 import '../../ui/app_widgets.dart';
-import 'purchase_invoice_tile.dart';
-import 'search_purchase_invoices_screen.dart';
-import 'show_purchase_invoice_screen.dart';
+import 'create_invoice_screen.dart';
+import 'sale_invoice_tile.dart';
+import 'search_sale_invoices_screen.dart';
+import 'show_sale_invoice_screen.dart';
 
-class ShowPurchaseInvoicesScreen extends StatefulWidget {
-  const ShowPurchaseInvoicesScreen({super.key});
+class ShowSaleInvoicesScreen extends StatefulWidget {
+  const ShowSaleInvoicesScreen({super.key});
 
   @override
-  State<ShowPurchaseInvoicesScreen> createState() =>
-      _ShowPurchaseInvoicesScreenState();
+  State<ShowSaleInvoicesScreen> createState() =>
+      _ShowSaleInvoicesScreenState();
 }
 
-class _ShowPurchaseInvoicesScreenState
-    extends State<ShowPurchaseInvoicesScreen> {
-  final PurchaseInvoiceService _purchaseInvoiceService =
-      PurchaseInvoiceService(ApiService());
+class _ShowSaleInvoicesScreenState
+    extends State<ShowSaleInvoicesScreen> {
+  final InvoiceService _invoiceService =
+      InvoiceService(ApiService());
 
-  List<PurchaseInvoice> _invoices = [];
+  List<Invoice> _invoices = [];
 
   bool _isLoading = false;
   String? _error;
@@ -40,7 +41,7 @@ class _ShowPurchaseInvoicesScreenState
     });
 
     try {
-      final invoices = await _purchaseInvoiceService.getPurchaseInvoices();
+      final invoices = await _invoiceService.getInvoices();
 
       if (!mounted) return;
 
@@ -65,16 +66,7 @@ class _ShowPurchaseInvoicesScreenState
   Future<void> _openSearch() async {
     await pushScreen<void>(
       context,
-      (_) => const SearchPurchaseInvoicesScreen(),
-    );
-
-    _loadInvoices();
-  }
-
-  Future<void> _openInvoice(PurchaseInvoice invoice) async {
-    await pushScreen<void>(
-      context,
-      (_) => ShowPurchaseInvoiceScreen(invoiceId: invoice.id),
+      (_) => const SearchSaleInvoicesScreen(),
     );
 
     if (mounted) {
@@ -82,11 +74,29 @@ class _ShowPurchaseInvoicesScreenState
     }
   }
 
+  Future<void> _newSale() async {
+    await pushScreen<void>(
+      context,
+      (_) => const CreateInvoiceScreen(),
+    );
+
+    if (mounted) {
+      _loadInvoices();
+    }
+  }
+
+  void _openInvoice(Invoice invoice) {
+    pushScreen<void>(
+      context,
+      (_) => ShowSaleInvoiceScreen(invoiceId: invoice.id),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return AppShell(
-      title: 'Purchase Invoices',
-      destinationId: 'purchase-invoices',
+      title: 'Sale Invoices',
+      destinationId: 'sale-invoices',
       actions: [
         IconButton(
           onPressed: _openSearch,
@@ -94,6 +104,11 @@ class _ShowPurchaseInvoicesScreenState
           icon: const Icon(Icons.search),
         ),
       ],
+      floatingActionButton: FloatingActionButton(
+        onPressed: _newSale,
+        tooltip: 'New sale',
+        child: const Icon(Icons.add),
+      ),
       body: _buildBody(),
     );
   }
@@ -120,9 +135,9 @@ class _ShowPurchaseInvoicesScreenState
                   SizedBox(height: 120),
                   EmptyState(
                     icon: Icons.receipt_long_outlined,
-                    title: 'No purchase invoices yet',
+                    title: 'No sale invoices yet',
                     message:
-                        'Use "New Purchase" to record your first invoice.',
+                        'Tap + to record your first sale.',
                   ),
                 ],
               )
@@ -132,7 +147,7 @@ class _ShowPurchaseInvoicesScreenState
                 itemBuilder: (context, index) {
                   final invoice = _invoices[index];
 
-                  return PurchaseInvoiceTile(
+                  return SaleInvoiceTile(
                     invoice: invoice,
                     onTap: () => _openInvoice(invoice),
                   );

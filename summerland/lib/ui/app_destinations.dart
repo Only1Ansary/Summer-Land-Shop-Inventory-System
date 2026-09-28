@@ -5,8 +5,10 @@ import '../screens/colours/colours_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/inventory/inventory_screen.dart';
 import '../screens/invoices/create_invoice_screen.dart';
+import '../screens/invoices/show_sale_invoices_screen.dart';
 import '../screens/locations/locations_screen.dart';
 import '../screens/products/products_screen.dart';
+import '../screens/purchases/create_purchase_invoice_screen.dart';
 import '../screens/purchases/show_purchase_invoices_screen.dart';
 import '../screens/purchases/show_suppliers_screen.dart';
 import '../screens/reports/best_selling_report_screen.dart';
@@ -118,6 +120,14 @@ class AppDestinations {
       builder: _sales,
     ),
     const AppNavigationItem(
+      id: 'sale-invoices',
+      title: 'Sale Invoices',
+      icon: Icons.receipt_long_outlined,
+      selectedIcon: Icons.receipt_long_rounded,
+      group: 'Sales',
+      builder: _saleInvoices,
+    ),
+    const AppNavigationItem(
       id: 'returns',
       title: 'Returns',
       icon: Icons.assignment_return_outlined,
@@ -127,6 +137,14 @@ class AppDestinations {
     ),
 
     // Purchases
+    const AppNavigationItem(
+      id: 'add-purchase',
+      title: 'New Purchase',
+      icon: Icons.shopping_cart_checkout_outlined,
+      selectedIcon: Icons.shopping_cart_checkout_rounded,
+      group: 'Purchases',
+      builder: _addPurchase,
+    ),
     const AppNavigationItem(
       id: 'purchase-invoices',
       title: 'Purchase Invoices',
@@ -257,7 +275,9 @@ class AppDestinations {
   static Widget _inventory() => const InventoryScreen();
   static Widget _transfers() => const StockTransfersScreen();
   static Widget _sales() => const CreateInvoiceScreen();
+  static Widget _saleInvoices() => const ShowSaleInvoicesScreen();
   static Widget _returns() => const ReturnsScreen();
+  static Widget _addPurchase() => const CreatePurchaseInvoiceScreen();
   static Widget _purchaseInvoices() =>
       const ShowPurchaseInvoicesScreen();
   static Widget _suppliers() => const ShowSuppliersScreen();

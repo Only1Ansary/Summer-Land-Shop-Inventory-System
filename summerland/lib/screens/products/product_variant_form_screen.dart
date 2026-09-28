@@ -75,9 +75,20 @@ class _ProductVariantFormScreenState
 
       _barcodeType = variant.barcodeType;
     } else {
-      _priceController.text = '0';
+      _priceController.text =
+          _formatPrice(widget.product.sellingPrice);
       _thresholdController.text = '0';
     }
+  }
+
+  static String _formatPrice(double value) {
+    if (value <= 0) return '0';
+
+    final amount = value.round();
+
+    if (value == amount) return amount.toString();
+
+    return value.toString();
   }
 
   @override
@@ -194,6 +205,15 @@ class _ProductVariantFormScreenState
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color:
                                   Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Selling Price: ${money(widget.product.sellingPrice)}',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color:
+                                  Theme.of(context).colorScheme.primary,
+                              fontWeight: FontWeight.w600,
                             ),
                       ),
                     ],
@@ -368,6 +388,8 @@ class _ProductVariantFormScreenState
                 decoration: const InputDecoration(
                   labelText: 'Price',
                   prefixIcon: Icon(Icons.payments_outlined),
+                  helperText:
+                      'Defaults to the product selling price.',
                 ),
                 validator: (value) {
                   final price =

@@ -131,6 +131,12 @@ class _ShowPurchaseInvoiceScreenState
               icon: const Icon(Icons.assignment_return_outlined),
               onPressed: _openReturnScreen,
             ),
+          if (invoice != null && invoice.debt > 0)
+            IconButton(
+              tooltip: 'Pay Debt',
+              icon: const Icon(Icons.payments_outlined),
+              onPressed: _payDebt,
+            ),
         ],
       ),
       body: _buildBody(invoice),
@@ -150,6 +156,95 @@ class _ShowPurchaseInvoiceScreenState
     if (returned == true && mounted) {
       _retry();
     }
+  }
+
+  Future<void> _payDebt() async {
+    final invoice = _invoice;
+
+    if (invoice == null || invoice.debt <= 0) return;
+
+    final remaining = invoice.debt;
+    final controller = TextEditingController(
+      text: remaining.toStringAsFixed(2),
+    );
+
+    final amountText = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Pay Debt'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          keyboardType: const TextInputType.numberWithOptions(
+            decimal: true,
+          ),
+          decoration: InputDecoration(
+            labelText: 'Amount',
+            prefixText: '\u20a6 ',
+            helperText: 'Remaining debt: ${money(remaining)}',
+          ),
+          onSubmitted: (value) => Navigator.of(ctx).pop(value),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(controller.text),
+            child: const Text('Pay'),
+          ),
+        ],
+      ),
+    );
+
+    controller.dispose();
+
+    if (amountText == null || !mounted) return;
+
+    final amount = double.tryParse(amountText.trim());
+
+    if (amount == null || amount <= 0) {
+      _showMessage('Enter a valid payment amount.');
+      return;
+    }
+
+    if (amount > remaining) {
+      _showMessage(
+        'Payment cannot exceed the remaining debt of '
+        '${money(remaining)}.',
+      );
+      return;
+    }
+
+    try {
+      await _purchaseInvoiceService.payDebt(
+        invoiceId: invoice.id,
+        amount: amount,
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Debt payment recorded.'),
+        ),
+      );
+
+      _retry();
+    } catch (e) {
+      if (!mounted) return;
+
+      _showMessage(e.toString());
+    }
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+      ),
+    );
   }
 
   Widget _buildBody(PurchaseInvoice? invoice) {

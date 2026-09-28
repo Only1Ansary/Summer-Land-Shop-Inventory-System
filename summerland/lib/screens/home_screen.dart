@@ -54,6 +54,12 @@ class _HomeDashboard extends StatelessWidget {
       destinationId: 'sales',
     ),
     _HomeTile(
+      title: 'Sale Invoices',
+      subtitle: 'View & search invoices',
+      icon: Icons.receipt_long_rounded,
+      destinationId: 'sale-invoices',
+    ),
+    _HomeTile(
       title: 'Stock Transfers',
       subtitle: 'Move stock around',
       icon: Icons.swap_horiz_rounded,
@@ -67,9 +73,15 @@ class _HomeDashboard extends StatelessWidget {
     ),
     _HomeTile(
       title: 'Purchases',
-      subtitle: 'Record & view purchases',
+      subtitle: 'View & search invoices',
       icon: Icons.shopping_bag_rounded,
       destinationId: 'purchase-invoices',
+    ),
+    _HomeTile(
+      title: 'New Purchase',
+      subtitle: 'Record a purchase',
+      icon: Icons.shopping_cart_checkout_rounded,
+      destinationId: 'add-purchase',
     ),
     _HomeTile(
       title: 'Suppliers',

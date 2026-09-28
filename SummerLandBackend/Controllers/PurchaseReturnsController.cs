@@ -62,6 +62,33 @@ public class PurchaseReturnsController : ControllerBase
                     "Return quantity cannot exceed the purchased quantity.");
         }
 
+        // A purchase return takes goods back to the supplier, so it can
+        // only cover items that are still in stock.
+        foreach (var item in dto.Items)
+        {
+            var variant = await _context.ProductVariants
+                .FirstOrDefaultAsync(v =>
+                    v.ProductId == item.ProductId &&
+                    v.SizeId == null &&
+                    v.ColourId == null);
+
+            var inventory = variant == null
+                ? null
+                : await _context.Inventory.FirstOrDefaultAsync(i =>
+                    i.ProductVariantId == variant.Id &&
+                    i.LocationId == DefaultLocationId);
+
+            var available = inventory?.Quantity ?? 0;
+
+            if (available < item.Quantity)
+            {
+                return BadRequest(
+                    "This item cannot be returned: only "
+                    + $"{available} unit(s) are still in stock "
+                    + "and the rest has already been sold.");
+            }
+        }
+
         await using var transaction =
             await _context.Database.BeginTransactionAsync();
 
@@ -133,12 +160,14 @@ public class PurchaseReturnsController : ControllerBase
             // Recompute the invoice totals from the items that remain.
             // The returned value first wipes out unpaid debt, and any
             // excess reduces total paid (the overpayment is credited
-            // back). Total cost is recomputed from the remaining lines
-            // so it always reflects the items left on the invoice.
+            // back). Total cost drops by the exact value of the returned
+            // goods (subtracting is reliable for full line returns,
+            // where the removed line may still sit in the in-memory
+            // navigation collection).
             var previousDebt = invoice.Debt;
 
             invoice.TotalCost = Math.Max(
-                0, invoice.Items.Sum(i => i.TotalPrice));
+                0, invoice.TotalCost - returnedValue);
 
             invoice.Debt = Math.Max(
                 0, previousDebt - returnedValue);

@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SummerLandBackend.Data;
+using SummerLandBackend.DTOs;
 using SummerLandBackend.Models;
 
 namespace SummerLandBackend.Controllers;
@@ -96,6 +97,89 @@ public class SupplierController : ControllerBase
             nameof(GetSupplier),
             new { id = supplier.Id },
             supplier);
+    }
+
+    // POST: api/Supplier/5/pay
+    [HttpPost("{id:int}/pay")]
+    public async Task<IActionResult> PaySupplierDebt(
+        int id,
+        PaySupplierDebtDto dto)
+    {
+        if (dto.Amount <= 0)
+            return BadRequest("Payment amount must be greater than zero.");
+
+        var supplier = await _context.Suppliers
+            .Include(s => s.PurchaseInvoices)
+            .FirstOrDefaultAsync(s => s.Id == id);
+
+        if (supplier == null)
+            return NotFound("Supplier not found.");
+
+        var unpaidInvoices = supplier.PurchaseInvoices
+            .Where(i => i.Debt > 0)
+            .OrderBy(i => i.Date)
+            .ThenBy(i => i.Id)
+            .ToList();
+
+        if (supplier.Debt <= 0)
+            return BadRequest("This supplier has no debt to pay.");
+
+        if (dto.Amount > supplier.Debt)
+            return BadRequest(
+                $"Payment cannot exceed the supplier's total debt of "
+                + $"{supplier.Debt}.");
+
+        await using var transaction =
+            await _context.Database.BeginTransactionAsync();
+
+        try
+        {
+            var remaining = dto.Amount;
+
+            foreach (var invoice in unpaidInvoices)
+            {
+                if (remaining <= 0)
+                    break;
+
+                var payment = Math.Min(remaining, invoice.Debt);
+
+                invoice.TotalPaid += payment;
+                invoice.Debt -= payment;
+                remaining -= payment;
+            }
+
+            // The payment is distributed only as far as the invoices go;
+            // anything left is kept on the supplier's balance.
+            supplier.Debt -= dto.Amount - remaining;
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            return Ok(new
+            {
+                supplier.Id,
+                supplier.SupplierName,
+                supplier.Debt,
+                AmountApplied = dto.Amount - remaining,
+                PurchaseInvoices = supplier.PurchaseInvoices
+                    .OrderBy(i => i.Date)
+                    .ThenBy(i => i.Id)
+                    .Select(i => new
+                    {
+                        i.Id,
+                        i.Date,
+                        i.CreatedAt,
+                        i.TotalCost,
+                        i.TotalPaid,
+                        i.Debt
+                    })
+            });
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
     }
 
     [HttpPut("{id:int}")]

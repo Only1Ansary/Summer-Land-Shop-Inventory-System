@@ -55,4 +55,14 @@ class PurchaseInvoiceService {
       },
     );
   }
+
+  Future<void> payDebt({
+    required int invoiceId,
+    required double amount,
+  }) async {
+    await _apiService.post(
+      '/api/PurchaseInvoices/$invoiceId/pay',
+      {'amount': amount},
+    );
+  }
 }

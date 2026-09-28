@@ -28,6 +28,9 @@ class ProductService {
 
   Future<Product> createProduct({
     required String modelNumber,
+    required String barcode,
+    required int purchasePrice,
+    required int profitMargin,
     required String name,
     required int categoryId,
   }) async {
@@ -35,6 +38,9 @@ class ProductService {
       '/api/Products',
       {
         'modelNumber': modelNumber,
+        'barcode': barcode,
+        'purchasePrice': purchasePrice,
+        'profitMargin': profitMargin,
         'name': name,
         'categoryId': categoryId,
       },
@@ -46,6 +52,9 @@ class ProductService {
   Future<void> updateProduct({
     required int id,
     required String modelNumber,
+    required String barcode,
+    required int purchasePrice,
+    required int profitMargin,
     required String name,
     required int categoryId,
   }) async {
@@ -53,6 +62,9 @@ class ProductService {
       '/api/Products/$id',
       {
         'modelNumber': modelNumber,
+        'barcode': barcode,
+        'purchasePrice': purchasePrice,
+        'profitMargin': profitMargin,
         'name': name,
         'categoryId': categoryId,
       },

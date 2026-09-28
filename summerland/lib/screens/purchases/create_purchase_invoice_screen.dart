@@ -5,6 +5,7 @@ import '../../services/api_service.dart';
 import '../../services/category_service.dart';
 import '../../services/purchase_invoice_service.dart';
 
+import '../../ui/app_shell.dart';
 import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
 import 'show_purchase_invoice_screen.dart';
@@ -534,10 +535,9 @@ class _CreatePurchaseInvoiceScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('New Purchase'),
-      ),
+    return AppShell(
+      title: 'New Purchase',
+      destinationId: 'add-purchase',
       body: _isLoading
           ? const LoadingState()
           : Column(

@@ -232,6 +232,64 @@ public class SaleInvoicesController : ControllerBase
         }
     }
 
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<InvoiceResponseDto>>> GetInvoices()
+    {
+        var invoices = await _context.Invoices
+            .Include(i => i.Location)
+            .Include(i => i.Items)
+                .ThenInclude(ii => ii.ProductVariant)
+                    .ThenInclude(v => v.Product)
+            .Include(i => i.Items)
+                .ThenInclude(ii => ii.ProductVariant)
+                    .ThenInclude(v => v.Size)
+            .Include(i => i.Items)
+                .ThenInclude(ii => ii.ProductVariant)
+                    .ThenInclude(v => v.Colour)
+            .OrderByDescending(i => i.CreatedAt)
+            .ToListAsync();
+
+        var response = invoices.Select(i =>
+            new InvoiceResponseDto
+            {
+                Id = i.Id,
+                CreatedAt = i.CreatedAt,
+                LocationId = i.LocationId,
+                LocationName = i.Location.Name,
+                TotalAmount = i.TotalAmount,
+
+                Items = i.Items.Select(ii =>
+                    new InvoiceItemResponseDto
+                    {
+                        ProductVariantId =
+                            ii.ProductVariantId,
+
+                        Quantity =
+                            ii.Quantity,
+
+                        UnitPrice =
+                            ii.UnitPrice,
+
+                        TotalPrice =
+                            ii.TotalPrice,
+
+                        ModelNumber =
+                            ii.ProductVariant.Product.ModelNumber,
+
+                        ProductName =
+                            ii.ProductVariant.Product.Name,
+
+                        SizeName =
+                            ii.ProductVariant.Size?.Name,
+
+                        ColourName =
+                            ii.ProductVariant.Colour?.Name
+                    }).ToList()
+            });
+
+        return Ok(response);
+    }
+
     [HttpGet("{id}")]
     public async Task<ActionResult<InvoiceResponseDto>> GetInvoice(int id)
     {

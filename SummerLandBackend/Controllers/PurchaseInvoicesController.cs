@@ -350,6 +350,7 @@ public class PurchaseInvoicesController : ControllerBase
             invoice.TotalCost,
             invoice.TotalPaid,
             InvoiceDebt = invoice.Debt,
+            SupplierTotalDebt = invoice.Supplier.Debt,
             Items = invoice.Items.Select(i => new
             {
                 i.ProductId,
@@ -369,6 +370,50 @@ public class PurchaseInvoicesController : ControllerBase
                 r.Reason,
                 r.CreatedAt
             })
+        });
+    }
+
+    // POST: api/PurchaseInvoices/5/pay
+    [HttpPost("{id:int}/pay")]
+    public async Task<IActionResult> PayPurchaseDebt(
+        int id,
+        PayPurchaseDebtDto dto)
+    {
+        if (dto.Amount <= 0)
+        {
+            return BadRequest("Payment amount must be greater than zero.");
+        }
+
+        var invoice = await _context.PurchaseInvoices
+            .Include(i => i.Supplier)
+            .FirstOrDefaultAsync(i => i.Id == id);
+
+        if (invoice == null)
+        {
+            return NotFound("Purchase invoice not found.");
+        }
+
+        if (dto.Amount > invoice.Debt)
+        {
+            return BadRequest(
+                $"Payment cannot exceed the remaining debt of {invoice.Debt}.");
+        }
+
+        invoice.TotalPaid += dto.Amount;
+        invoice.Debt -= dto.Amount;
+
+        invoice.Supplier.Debt = Math.Max(
+            0, invoice.Supplier.Debt - dto.Amount);
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new
+        {
+            invoice.Id,
+            invoice.TotalCost,
+            invoice.TotalPaid,
+            InvoiceDebt = invoice.Debt,
+            SupplierTotalDebt = invoice.Supplier.Debt
         });
     }
 

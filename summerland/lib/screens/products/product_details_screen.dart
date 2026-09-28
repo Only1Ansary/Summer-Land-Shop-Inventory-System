@@ -266,10 +266,37 @@ class _ProductDetailsScreenState
               label: 'Category',
               value: widget.product.categoryName,
             ),
+            InfoTile(
+              label: 'Barcode',
+              value: widget.product.barcode.isEmpty
+                  ? 'N/A'
+                  : widget.product.barcode,
+            ),
+            InfoTile(
+              label: 'Purchase Price',
+              value: money(widget.product.purchasePrice),
+            ),
+            InfoTile(
+              label: 'Profit Margin',
+              value:
+                  '${_formatPercent(widget.product.profitMargin)}%',
+            ),
+            InfoTile(
+              label: 'Selling Price',
+              value: money(widget.product.sellingPrice),
+            ),
           ],
         ),
       ),
     );
+  }
+
+  static String _formatPercent(double value) {
+    final amount = value.round();
+
+    if (amount == value) return amount.toString();
+
+    return value.toString();
   }
 
   Widget _buildVariants() {
