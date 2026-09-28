@@ -7,6 +7,8 @@ import '../screens/inventory/inventory_screen.dart';
 import '../screens/invoices/create_invoice_screen.dart';
 import '../screens/locations/locations_screen.dart';
 import '../screens/products/products_screen.dart';
+import '../screens/purchases/show_purchase_invoices_screen.dart';
+import '../screens/purchases/show_suppliers_screen.dart';
 import '../screens/reports/best_selling_report_screen.dart';
 import '../screens/reports/inventory_report_screen.dart';
 import '../screens/reports/low_stock_report_screen.dart';
@@ -124,6 +126,24 @@ class AppDestinations {
       builder: _returns,
     ),
 
+    // Purchases
+    const AppNavigationItem(
+      id: 'purchase-invoices',
+      title: 'Purchase Invoices',
+      icon: Icons.shopping_bag_outlined,
+      selectedIcon: Icons.shopping_bag_rounded,
+      group: 'Purchases',
+      builder: _purchaseInvoices,
+    ),
+    const AppNavigationItem(
+      id: 'suppliers',
+      title: 'Suppliers',
+      icon: Icons.factory_outlined,
+      selectedIcon: Icons.factory_rounded,
+      group: 'Purchases',
+      builder: _suppliers,
+    ),
+
     // Reports
     const AppNavigationItem(
       id: 'reports',
@@ -211,13 +231,20 @@ class AppDestinations {
     );
   }
 
-  /// Replaces the current top-level route with the destination screen.
+  /// Swaps the current top-level route for the destination screen.
+  ///
+  /// Uses an instant (zero-duration) replacement so the outgoing route is
+  /// removed in the same frame instead of lingering offstage during a
+  /// transition. This keeps navigation snappy and avoids hit-testing
+  /// partially laid-out routes that can occur mid-animation.
   static void open(BuildContext context, String id) {
     if (id.isEmpty) return;
     final nav = Navigator.of(context);
     nav.pushReplacement(
-      MaterialPageRoute<void>(
-        builder: (_) => byId(id).builder(),
+      PageRouteBuilder<void>(
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
+        pageBuilder: (_, _, _) => byId(id).builder(),
       ),
     );
   }
@@ -231,6 +258,9 @@ class AppDestinations {
   static Widget _transfers() => const StockTransfersScreen();
   static Widget _sales() => const CreateInvoiceScreen();
   static Widget _returns() => const ReturnsScreen();
+  static Widget _purchaseInvoices() =>
+      const ShowPurchaseInvoicesScreen();
+  static Widget _suppliers() => const ShowSuppliersScreen();
   static Widget _reports() => const ReportsScreen();
   static Widget _salesReport() => const SalesReportScreen();
   static Widget _inventoryReport() => const InventoryReportScreen();

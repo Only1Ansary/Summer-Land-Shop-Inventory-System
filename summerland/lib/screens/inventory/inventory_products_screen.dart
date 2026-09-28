@@ -113,11 +113,9 @@ class _InventoryProductsScreenState extends State<InventoryProductsScreen> {
   }
 
   void _openProduct(Product product) {
-    Navigator.push(
+    pushScreen(
       context,
-      MaterialPageRoute(
-        builder: (_) => InventoryVariantsScreen(product: product),
-      ),
+      (_) => InventoryVariantsScreen(product: product),
     );
   }
 

@@ -99,13 +99,11 @@ class _ProductDetailsScreenState
 
     if (!mounted) return;
 
-    final result = await Navigator.push(
+    final result = await pushScreen(
       context,
-      MaterialPageRoute(
-        builder: (_) => ProductFormScreen(
-          product: updatedProduct,
-          categories: categories,
-        ),
+      (_) => ProductFormScreen(
+        product: updatedProduct,
+        categories: categories,
       ),
     );
 
@@ -136,15 +134,12 @@ class _ProductDetailsScreenState
   }
 
   Future<void> _addVariant() async {
-    final result = await Navigator.push(
+    final result = await pushScreen(
       context,
-      MaterialPageRoute(
-        builder: (_) =>
-            ProductVariantFormScreen(
-              product: widget.product,
-              sizes: widget.sizes,
-              colours: widget.colours,
-            ),
+      (_) => ProductVariantFormScreen(
+        product: widget.product,
+        sizes: widget.sizes,
+        colours: widget.colours,
       ),
     );
 
@@ -156,16 +151,13 @@ class _ProductDetailsScreenState
   Future<void> _editVariant(
       ProductVariant variant,
       ) async {
-    final result = await Navigator.push(
+    final result = await pushScreen(
       context,
-      MaterialPageRoute(
-        builder: (_) =>
-            ProductVariantFormScreen(
-              product: widget.product,
-              sizes: widget.sizes,
-              colours: widget.colours,
-              variant: variant,
-            ),
+      (_) => ProductVariantFormScreen(
+        product: widget.product,
+        sizes: widget.sizes,
+        colours: widget.colours,
+        variant: variant,
       ),
     );
 

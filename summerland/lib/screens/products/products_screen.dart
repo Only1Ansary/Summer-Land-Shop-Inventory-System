@@ -169,13 +169,11 @@ class _ProductsScreenState extends State<ProductsScreen> {
   Future<void> _openProductForm({
     Product? product,
   }) async {
-    final result = await Navigator.push(
+    final result = await pushScreen(
       context,
-      MaterialPageRoute(
-        builder: (_) => ProductFormScreen(
-          product: product,
-          categories: _categories,
-        ),
+      (_) => ProductFormScreen(
+        product: product,
+        categories: _categories,
       ),
     );
 
@@ -185,14 +183,12 @@ class _ProductsScreenState extends State<ProductsScreen> {
   }
 
   Future<void> _openDetails(Product product) async {
-    await Navigator.push(
+    await pushScreen(
       context,
-      MaterialPageRoute(
-        builder: (_) => ProductDetailsScreen(
-          product: product,
-          sizes: _sizes,
-          colours: _colours,
-        ),
+      (_) => ProductDetailsScreen(
+        product: product,
+        sizes: _sizes,
+        colours: _colours,
       ),
     );
 

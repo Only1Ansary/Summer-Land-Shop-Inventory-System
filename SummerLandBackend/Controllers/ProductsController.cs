@@ -28,6 +28,10 @@ public class ProductsController : ControllerBase
             {
                 Id = p.Id,
                 ModelNumber = p.ModelNumber,
+                Barcode = p.Barcode,
+                PurchasePrice = p.PurchasePrice,
+                ProfitMargin = p.ProfitMargin,
+                SellingPrice = p.SellingPrice,
                 Name = p.Name,
                 CategoryId = p.CategoryId,
                 CategoryName = p.Category.Name
@@ -48,6 +52,10 @@ public class ProductsController : ControllerBase
             {
                 Id = p.Id,
                 ModelNumber = p.ModelNumber,
+                Barcode = p.Barcode,
+                PurchasePrice = p.PurchasePrice,
+                ProfitMargin = p.ProfitMargin,
+                SellingPrice = p.SellingPrice,
                 Name = p.Name,
                 CategoryId = p.CategoryId,
                 CategoryName = p.Category.Name
@@ -75,6 +83,16 @@ public class ProductsController : ControllerBase
         if (string.IsNullOrWhiteSpace(dto.Name))
         {
             return BadRequest("Product name is required.");
+        }
+
+        if (dto.PurchasePrice <= 0)
+        {
+            return BadRequest("Purchase price must be a positive value.");
+        }
+
+        if (dto.ProfitMargin <= 0)
+        {
+            return BadRequest("Profit margin must be a positive value.");
         }
 
         var categoryExists = await _context.Categories
@@ -107,6 +125,9 @@ public class ProductsController : ControllerBase
         {
             ModelNumber = dto.ModelNumber.Trim(),
             Name = dto.Name.Trim(),
+            Barcode = dto.Barcode?.Trim() ?? string.Empty,
+            PurchasePrice = dto.PurchasePrice,
+            ProfitMargin = dto.ProfitMargin,
             CategoryId = dto.CategoryId
         };
 
@@ -120,6 +141,10 @@ public class ProductsController : ControllerBase
             {
                 Id = p.Id,
                 ModelNumber = p.ModelNumber,
+                Barcode = p.Barcode,
+                PurchasePrice = p.PurchasePrice,
+                ProfitMargin = p.ProfitMargin,
+                SellingPrice = p.SellingPrice,
                 Name = p.Name,
                 CategoryId = p.CategoryId,
                 CategoryName = p.Category.Name
@@ -174,6 +199,9 @@ public class ProductsController : ControllerBase
         product.ModelNumber = dto.ModelNumber.Trim();
         product.Name = dto.Name.Trim();
         product.CategoryId = dto.CategoryId;
+        product.Barcode = dto.Barcode?.Trim() ?? string.Empty;
+        product.PurchasePrice = dto.PurchasePrice;
+        product.ProfitMargin = dto.ProfitMargin;
 
         await _context.SaveChangesAsync();
 
@@ -205,6 +233,7 @@ public class ProductsController : ControllerBase
 
             productsQuery = productsQuery.Where(p =>
                 p.ModelNumber.Contains(query) ||
+                p.Barcode.Contains(query) ||
                 p.Name.Contains(query) ||
                 p.Variants.Any(v => v.Barcode.Contains(query)));
         }
@@ -242,6 +271,14 @@ public class ProductsController : ControllerBase
                 ModelNumber = p.ModelNumber,
 
                 Name = p.Name,
+
+                Barcode = p.Barcode,
+
+                PurchasePrice = p.PurchasePrice,
+
+                ProfitMargin = p.ProfitMargin,
+
+                SellingPrice = p.SellingPrice,
 
                 CategoryId = p.CategoryId,
 
@@ -314,15 +351,6 @@ public class ProductsController : ControllerBase
         if (product == null)
         {
             return NotFound("Product not found.");
-        }
-
-        var hasVariants = await _context.ProductVariants
-            .AnyAsync(v => v.ProductId == id);
-
-        if (hasVariants)
-        {
-            return Conflict(
-                "Cannot delete a product that has product variants.");
         }
 
         _context.Products.Remove(product);

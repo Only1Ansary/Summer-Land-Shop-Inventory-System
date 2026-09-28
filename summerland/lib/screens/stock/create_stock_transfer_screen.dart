@@ -426,8 +426,8 @@ class _CreateStockTransferScreenState
                   onRetry: _loadData,
                 )
               : ResponsiveFormPage(
-                  child: ListView(
-                    padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       _buildVariantSearch(),
                       const SizedBox(height: 24),

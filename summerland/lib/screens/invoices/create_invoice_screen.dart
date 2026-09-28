@@ -299,12 +299,10 @@ class _CreateInvoiceScreenState
         _isCreating = false;
       });
 
-      await Navigator.push(
+      await pushScreen(
         context,
-        MaterialPageRoute(
-          builder: (_) => InvoiceDetailsScreen(
-            invoice: invoice,
-          ),
+        (_) => InvoiceDetailsScreen(
+          invoice: invoice,
         ),
       );
 

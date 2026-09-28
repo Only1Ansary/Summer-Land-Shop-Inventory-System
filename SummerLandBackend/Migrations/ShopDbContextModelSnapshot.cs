@@ -75,58 +75,6 @@ namespace SummerLandBackend.Migrations
                     b.ToTable("Inventory");
                 });
 
-            modelBuilder.Entity("SummerLandBackend.Models.Invoice", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("LocationId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<decimal>("TotalAmount")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("LocationId");
-
-                    b.ToTable("Invoices");
-                });
-
-            modelBuilder.Entity("SummerLandBackend.Models.InvoiceItem", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("InvoiceId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("ProductVariantId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("Quantity")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<decimal>("TotalPrice")
-                        .HasColumnType("TEXT");
-
-                    b.Property<decimal>("UnitPrice")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("InvoiceId");
-
-                    b.HasIndex("ProductVariantId");
-
-                    b.ToTable("InvoiceItems");
-                });
-
             modelBuilder.Entity("SummerLandBackend.Models.Location", b =>
                 {
                     b.Property<int>("Id")
@@ -148,6 +96,10 @@ namespace SummerLandBackend.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("Barcode")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("CategoryId")
                         .HasColumnType("INTEGER");
 
@@ -158,6 +110,17 @@ namespace SummerLandBackend.Migrations
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("TEXT");
+
+                    b.Property<decimal>("ProfitMargin")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("PurchasePrice")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("SellingPrice")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("decimal(18,2)")
+                        .HasComputedColumnSql("([PurchasePrice] + ([PurchasePrice] * [ProfitMargin] / 100))", true);
 
                     b.HasKey("Id");
 
@@ -212,6 +175,100 @@ namespace SummerLandBackend.Migrations
                     b.ToTable("ProductVariants");
                 });
 
+            modelBuilder.Entity("SummerLandBackend.Models.PurchaseInvoice", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("Debt")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("SupplierId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("TotalCost")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("TotalPaid")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SupplierId");
+
+                    b.ToTable("PurchaseInvoices");
+                });
+
+            modelBuilder.Entity("SummerLandBackend.Models.PurchaseInvoiceItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("PurchaseInvoiceId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("TotalPrice")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("UnitPurchasePrice")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("PurchaseInvoiceId");
+
+                    b.ToTable("PurchaseInvoiceItems");
+                });
+
+            modelBuilder.Entity("SummerLandBackend.Models.PurchaseReturn", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("PurchaseInvoiceId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Reason")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("UnitPurchasePrice")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("PurchaseInvoiceId");
+
+                    b.ToTable("PurchaseReturns");
+                });
+
             modelBuilder.Entity("SummerLandBackend.Models.Return", b =>
                 {
                     b.Property<int>("Id")
@@ -252,6 +309,58 @@ namespace SummerLandBackend.Migrations
                     b.HasIndex("ProductVariantId");
 
                     b.ToTable("Returns");
+                });
+
+            modelBuilder.Entity("SummerLandBackend.Models.SaleInvoice", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("LocationId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LocationId");
+
+                    b.ToTable("Invoices");
+                });
+
+            modelBuilder.Entity("SummerLandBackend.Models.SaleInvoiceItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("InvoiceId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ProductVariantId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("TotalPrice")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InvoiceId");
+
+                    b.HasIndex("ProductVariantId");
+
+                    b.ToTable("InvoiceItems");
                 });
 
             modelBuilder.Entity("SummerLandBackend.Models.Sizes", b =>
@@ -332,6 +441,27 @@ namespace SummerLandBackend.Migrations
                     b.ToTable("StockTransfers");
                 });
 
+            modelBuilder.Entity("SummerLandBackend.Models.Supplier", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("Debt")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("SupplierName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SupplierName")
+                        .IsUnique();
+
+                    b.ToTable("Suppliers");
+                });
+
             modelBuilder.Entity("SummerLandBackend.Models.Inventory", b =>
                 {
                     b.HasOne("SummerLandBackend.Models.Location", "Location")
@@ -347,36 +477,6 @@ namespace SummerLandBackend.Migrations
                         .IsRequired();
 
                     b.Navigation("Location");
-
-                    b.Navigation("ProductVariant");
-                });
-
-            modelBuilder.Entity("SummerLandBackend.Models.Invoice", b =>
-                {
-                    b.HasOne("SummerLandBackend.Models.Location", "Location")
-                        .WithMany()
-                        .HasForeignKey("LocationId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Location");
-                });
-
-            modelBuilder.Entity("SummerLandBackend.Models.InvoiceItem", b =>
-                {
-                    b.HasOne("SummerLandBackend.Models.Invoice", "Invoice")
-                        .WithMany("Items")
-                        .HasForeignKey("InvoiceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("SummerLandBackend.Models.ProductVariant", "ProductVariant")
-                        .WithMany("InvoiceItems")
-                        .HasForeignKey("ProductVariantId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Invoice");
 
                     b.Navigation("ProductVariant");
                 });
@@ -417,9 +517,58 @@ namespace SummerLandBackend.Migrations
                     b.Navigation("Size");
                 });
 
+            modelBuilder.Entity("SummerLandBackend.Models.PurchaseInvoice", b =>
+                {
+                    b.HasOne("SummerLandBackend.Models.Supplier", "Supplier")
+                        .WithMany("PurchaseInvoices")
+                        .HasForeignKey("SupplierId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Supplier");
+                });
+
+            modelBuilder.Entity("SummerLandBackend.Models.PurchaseInvoiceItem", b =>
+                {
+                    b.HasOne("SummerLandBackend.Models.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SummerLandBackend.Models.PurchaseInvoice", "PurchaseInvoice")
+                        .WithMany("Items")
+                        .HasForeignKey("PurchaseInvoiceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+
+                    b.Navigation("PurchaseInvoice");
+                });
+
+            modelBuilder.Entity("SummerLandBackend.Models.PurchaseReturn", b =>
+                {
+                    b.HasOne("SummerLandBackend.Models.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SummerLandBackend.Models.PurchaseInvoice", "PurchaseInvoice")
+                        .WithMany("Returns")
+                        .HasForeignKey("PurchaseInvoiceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+
+                    b.Navigation("PurchaseInvoice");
+                });
+
             modelBuilder.Entity("SummerLandBackend.Models.Return", b =>
                 {
-                    b.HasOne("SummerLandBackend.Models.Invoice", "Invoice")
+                    b.HasOne("SummerLandBackend.Models.SaleInvoice", "Invoice")
                         .WithMany()
                         .HasForeignKey("InvoiceId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -434,12 +583,42 @@ namespace SummerLandBackend.Migrations
                     b.HasOne("SummerLandBackend.Models.ProductVariant", "ProductVariant")
                         .WithMany()
                         .HasForeignKey("ProductVariantId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Invoice");
 
                     b.Navigation("Location");
+
+                    b.Navigation("ProductVariant");
+                });
+
+            modelBuilder.Entity("SummerLandBackend.Models.SaleInvoice", b =>
+                {
+                    b.HasOne("SummerLandBackend.Models.Location", "Location")
+                        .WithMany()
+                        .HasForeignKey("LocationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Location");
+                });
+
+            modelBuilder.Entity("SummerLandBackend.Models.SaleInvoiceItem", b =>
+                {
+                    b.HasOne("SummerLandBackend.Models.SaleInvoice", "Invoice")
+                        .WithMany("Items")
+                        .HasForeignKey("InvoiceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SummerLandBackend.Models.ProductVariant", "ProductVariant")
+                        .WithMany("InvoiceItems")
+                        .HasForeignKey("ProductVariantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Invoice");
 
                     b.Navigation("ProductVariant");
                 });
@@ -455,7 +634,7 @@ namespace SummerLandBackend.Migrations
                     b.HasOne("SummerLandBackend.Models.ProductVariant", "ProductVariant")
                         .WithMany()
                         .HasForeignKey("ProductVariantId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Location");
@@ -474,7 +653,7 @@ namespace SummerLandBackend.Migrations
                     b.HasOne("SummerLandBackend.Models.ProductVariant", "ProductVariant")
                         .WithMany()
                         .HasForeignKey("ProductVariantId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("SummerLandBackend.Models.Location", "ToLocation")
@@ -500,11 +679,6 @@ namespace SummerLandBackend.Migrations
                     b.Navigation("ProductVariants");
                 });
 
-            modelBuilder.Entity("SummerLandBackend.Models.Invoice", b =>
-                {
-                    b.Navigation("Items");
-                });
-
             modelBuilder.Entity("SummerLandBackend.Models.Location", b =>
                 {
                     b.Navigation("Inventory");
@@ -522,9 +696,26 @@ namespace SummerLandBackend.Migrations
                     b.Navigation("InvoiceItems");
                 });
 
+            modelBuilder.Entity("SummerLandBackend.Models.PurchaseInvoice", b =>
+                {
+                    b.Navigation("Items");
+
+                    b.Navigation("Returns");
+                });
+
+            modelBuilder.Entity("SummerLandBackend.Models.SaleInvoice", b =>
+                {
+                    b.Navigation("Items");
+                });
+
             modelBuilder.Entity("SummerLandBackend.Models.Sizes", b =>
                 {
                     b.Navigation("ProductVariants");
+                });
+
+            modelBuilder.Entity("SummerLandBackend.Models.Supplier", b =>
+                {
+                    b.Navigation("PurchaseInvoices");
                 });
 #pragma warning restore 612, 618
         }

@@ -70,11 +70,9 @@ class _StockTransfersScreenState
   }
 
   Future<void> _openCreateScreen() async {
-    final result = await Navigator.push<bool>(
+    final result = await pushScreen<bool>(
       context,
-      MaterialPageRoute(
-        builder: (_) => const CreateStockTransferScreen(),
-      ),
+      (_) => const CreateStockTransferScreen(),
     );
 
     if (result == true) {

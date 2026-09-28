@@ -5,6 +5,30 @@ import 'app_theme.dart';
 /// Renders a number as a two-decimal money string.
 String money(num value) => value.toStringAsFixed(2);
 
+/// Renders an unpaid debt as a negative figure (e.g. -100.00).
+String moneyNegative(num value) =>
+    value == 0 ? '0.00' : '-${value.toStringAsFixed(2)}';
+
+/// Pushes a screen using an instant (zero-duration) route.
+///
+/// Animated route transitions leave the covered route offstage while its
+/// subtree rebuilds; on desktop the mouse tracker hit-tests the tree during
+/// that window and can touch a scaffold body that has not been laid out yet,
+/// throwing "Cannot hit test a render box with no size". Using an instant
+/// route removes the outgoing screen in the same frame, which avoids the race.
+Future<T?> pushScreen<T>(
+  BuildContext context,
+  WidgetBuilder builder,
+) {
+  return Navigator.of(context).push<T>(
+    PageRouteBuilder<T>(
+      transitionDuration: Duration.zero,
+      reverseTransitionDuration: Duration.zero,
+      pageBuilder: (context, _, _) => builder(context),
+    ),
+  );
+}
+
 /// Loading state used consistently across all screens.
 class LoadingState extends StatelessWidget {
   const LoadingState({

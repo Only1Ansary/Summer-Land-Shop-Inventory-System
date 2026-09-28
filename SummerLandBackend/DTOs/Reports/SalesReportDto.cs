@@ -17,5 +17,19 @@
         public decimal ReturnsAmount { get; set; }
 
         public decimal NetSales { get; set; }
+
+        public int PurchaseInvoiceCount { get; set; }
+
+        public decimal PurchaseTotalCost { get; set; }
+
+        public decimal PurchaseTotalPaid { get; set; }
+
+        public decimal PurchaseDebt { get; set; }
+
+        public int SupplierCount { get; set; }
+
+        public decimal SupplierDebtTotal { get; set; }
+
+        public decimal Profit { get; set; }
     }
 }

@@ -6,7 +6,7 @@ public class Return
 
     public int InvoiceId { get; set; }
 
-    public Invoice Invoice { get; set; } = null!;
+    public SaleInvoice Invoice { get; set; } = null!;
 
     public int ProductVariantId { get; set; }
 

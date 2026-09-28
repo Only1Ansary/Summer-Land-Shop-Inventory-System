@@ -1,0 +1,58 @@
+import '../models/purchase_invoice.dart';
+import 'api_service.dart';
+
+class PurchaseInvoiceService {
+  final ApiService _apiService;
+
+  PurchaseInvoiceService(this._apiService);
+
+  Future<PurchaseInvoice> createPurchaseInvoice({
+    required String supplierName,
+    required DateTime date,
+    required double totalPaid,
+    required double discount,
+    required List<Map<String, dynamic>> items,
+  }) async {
+    final data = await _apiService.post(
+      '/api/PurchaseInvoices',
+      {
+        'supplierName': supplierName,
+        'date': date.toIso8601String(),
+        'totalPaid': totalPaid,
+        'discount': discount,
+        'items': items,
+      },
+    );
+
+    return PurchaseInvoice.fromJson(data);
+  }
+
+  Future<PurchaseInvoice> getPurchaseInvoice(int id) async {
+    final data = await _apiService.get('/api/PurchaseInvoices/$id');
+
+    return PurchaseInvoice.fromJson(data);
+  }
+
+  Future<List<PurchaseInvoice>> getPurchaseInvoices() async {
+    final data = await _apiService.get('/api/PurchaseInvoices');
+
+    return (data as List)
+        .map((json) => PurchaseInvoice.fromJson(json))
+        .toList();
+  }
+
+  Future<void> createPurchaseReturn({
+    required int invoiceId,
+    required String? reason,
+    required List<Map<String, dynamic>> items,
+  }) async {
+    await _apiService.post(
+      '/api/PurchaseReturns',
+      {
+        'purchaseInvoiceId': invoiceId,
+        'reason': reason,
+        'items': items,
+      },
+    );
+  }
+}

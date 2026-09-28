@@ -66,6 +66,18 @@ class _HomeDashboard extends StatelessWidget {
       destinationId: 'returns',
     ),
     _HomeTile(
+      title: 'Purchases',
+      subtitle: 'Record & view purchases',
+      icon: Icons.shopping_bag_rounded,
+      destinationId: 'purchase-invoices',
+    ),
+    _HomeTile(
+      title: 'Suppliers',
+      subtitle: 'Manage suppliers',
+      icon: Icons.factory_rounded,
+      destinationId: 'suppliers',
+    ),
+    _HomeTile(
       title: 'Reports',
       subtitle: 'Sales & stock insights',
       icon: Icons.assessment_rounded,

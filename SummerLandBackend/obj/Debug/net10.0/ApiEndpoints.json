@@ -186,58 +186,6 @@
     ]
   },
   {
-    "ContainingType": "SummerLandBackend.Controllers.InvoicesController",
-    "Method": "CreateInvoice",
-    "RelativePath": "api/Invoices",
-    "HttpMethod": "POST",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "dto",
-        "Type": "SummerLandBackend.DTOs.Invoices.CreateInvoiceDto",
-        "IsRequired": true
-      }
-    ],
-    "ReturnTypes": [
-      {
-        "Type": "SummerLandBackend.DTOs.Invoices.InvoiceResponseDto",
-        "MediaTypes": [
-          "text/plain",
-          "application/json",
-          "text/json"
-        ],
-        "StatusCode": 200
-      }
-    ]
-  },
-  {
-    "ContainingType": "SummerLandBackend.Controllers.InvoicesController",
-    "Method": "GetInvoice",
-    "RelativePath": "api/Invoices/{id}",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "id",
-        "Type": "System.Int32",
-        "IsRequired": true
-      }
-    ],
-    "ReturnTypes": [
-      {
-        "Type": "SummerLandBackend.DTOs.Invoices.InvoiceResponseDto",
-        "MediaTypes": [
-          "text/plain",
-          "application/json",
-          "text/json"
-        ],
-        "StatusCode": 200
-      }
-    ]
-  },
-  {
     "ContainingType": "SummerLandBackend.Controllers.LocationsController",
     "Method": "GetLocations",
     "RelativePath": "api/Locations",
@@ -595,6 +543,64 @@
     ]
   },
   {
+    "ContainingType": "SummerLandBackend.Controllers.PurchaseInvoicesController",
+    "Method": "CreatePurchaseInvoice",
+    "RelativePath": "api/PurchaseInvoices",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "SummerLandBackend.DTOs.PurchaseInvoices.CreatePurchaseInvoiceDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "SummerLandBackend.Controllers.PurchaseInvoicesController",
+    "Method": "GetPurchaseInvoices",
+    "RelativePath": "api/PurchaseInvoices",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "SummerLandBackend.Controllers.PurchaseInvoicesController",
+    "Method": "GetPurchaseInvoice",
+    "RelativePath": "api/PurchaseInvoices/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "SummerLandBackend.Controllers.PurchaseReturnsController",
+    "Method": "CreatePurchaseReturn",
+    "RelativePath": "api/PurchaseReturns",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "SummerLandBackend.DTOs.PurchaseReturns.CreatePurchaseReturnDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
     "ContainingType": "SummerLandBackend.Controllers.ReportsController",
     "Method": "GetBestSellingProductsReport",
     "RelativePath": "api/Reports/best-selling",
@@ -815,6 +821,58 @@
     ]
   },
   {
+    "ContainingType": "SummerLandBackend.Controllers.SaleInvoicesController",
+    "Method": "CreateInvoice",
+    "RelativePath": "api/SaleInvoices",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "SummerLandBackend.DTOs.SaleInvoices.CreateInvoiceDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "SummerLandBackend.DTOs.SaleInvoices.InvoiceResponseDto",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "SummerLandBackend.Controllers.SaleInvoicesController",
+    "Method": "GetInvoice",
+    "RelativePath": "api/SaleInvoices/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "SummerLandBackend.DTOs.SaleInvoices.InvoiceResponseDto",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
     "ContainingType": "SummerLandBackend.Controllers.SizesController",
     "Method": "GetSizes",
     "RelativePath": "api/Sizes",
@@ -1004,5 +1062,94 @@
         "StatusCode": 200
       }
     ]
+  },
+  {
+    "ContainingType": "SummerLandBackend.Controllers.SupplierController",
+    "Method": "GetSuppliers",
+    "RelativePath": "api/Supplier",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "SummerLandBackend.Controllers.SupplierController",
+    "Method": "CreateSupplier",
+    "RelativePath": "api/Supplier",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "supplier",
+        "Type": "SummerLandBackend.Models.Supplier",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "SummerLandBackend.Models.Supplier",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "SummerLandBackend.Controllers.SupplierController",
+    "Method": "GetSupplier",
+    "RelativePath": "api/Supplier/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "SummerLandBackend.Controllers.SupplierController",
+    "Method": "UpdateSupplier",
+    "RelativePath": "api/Supplier/{id}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "dto",
+        "Type": "SummerLandBackend.Models.Supplier",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "SummerLandBackend.Controllers.SupplierController",
+    "Method": "DeleteSupplier",
+    "RelativePath": "api/Supplier/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
   }
 ]

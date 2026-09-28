@@ -1,0 +1,146 @@
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using SummerLandBackend.Data;
+using SummerLandBackend.Models;
+
+namespace SummerLandBackend.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+public class SupplierController : ControllerBase
+{
+    private readonly ShopDbContext _context;
+
+    public SupplierController(ShopDbContext context)
+    {
+        _context = context;
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetSuppliers()
+    {
+        var suppliers = await _context.Suppliers
+            .Include(s => s.PurchaseInvoices)
+            .OrderBy(s => s.SupplierName)
+            .Select(s => new
+            {
+                s.Id,
+                s.SupplierName,
+                s.Debt,
+                PurchaseInvoices = s.PurchaseInvoices.Select(pi => new
+                {
+                    pi.Id,
+                    pi.Date,
+                    pi.CreatedAt,
+                    pi.TotalCost,
+                    pi.TotalPaid,
+                    pi.Debt
+                })
+            })
+            .ToListAsync();
+
+        return Ok(suppliers);
+    }
+
+    [HttpGet("{id:int}")]
+    public async Task<IActionResult> GetSupplier(int id)
+    {
+        var supplier = await _context.Suppliers
+            .Include(s => s.PurchaseInvoices)
+            .FirstOrDefaultAsync(s => s.Id == id);
+
+        if (supplier == null)
+            return NotFound();
+
+        return Ok(new
+        {
+            supplier.Id,
+            supplier.SupplierName,
+            supplier.Debt,
+            PurchaseInvoices = supplier.PurchaseInvoices.Select(pi => new
+            {
+                pi.Id,
+                pi.Date,
+                pi.CreatedAt,
+                pi.TotalCost,
+                pi.TotalPaid,
+                pi.Debt
+            })
+        });
+    }
+
+    [HttpPost]
+    public async Task<ActionResult<Supplier>> CreateSupplier([FromBody] Supplier supplier)
+    {
+        if (supplier == null)
+            return BadRequest("Supplier data is required.");
+
+        if (string.IsNullOrWhiteSpace(supplier.SupplierName))
+            return BadRequest("Supplier name is required.");
+
+        var name = supplier.SupplierName.Trim();
+
+        var exists = await _context.Suppliers
+            .AnyAsync(s => s.SupplierName.ToLower() == name.ToLower());
+
+        if (exists)
+            return Conflict("Supplier already exists.");
+
+        supplier.SupplierName = name;
+
+        _context.Suppliers.Add(supplier);
+        await _context.SaveChangesAsync();
+
+        return CreatedAtAction(
+            nameof(GetSupplier),
+            new { id = supplier.Id },
+            supplier);
+    }
+
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> UpdateSupplier(int id, [FromBody] Supplier dto)
+    {
+        var supplier = await _context.Suppliers.FindAsync(id);
+
+        if (supplier == null)
+            return NotFound("Supplier not found.");
+
+        if (string.IsNullOrWhiteSpace(dto.SupplierName))
+            return BadRequest("Supplier name is required.");
+
+        var name = dto.SupplierName.Trim();
+
+        var exists = await _context.Suppliers
+            .AnyAsync(s => s.Id != id && s.SupplierName.ToLower() == name.ToLower());
+
+        if (exists)
+            return Conflict("A supplier with this name already exists.");
+
+        supplier.SupplierName = name;
+        supplier.Debt = dto.Debt;
+
+        await _context.SaveChangesAsync();
+
+        return Ok(supplier);
+    }
+
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> DeleteSupplier(int id)
+    {
+        var supplier = await _context.Suppliers
+            .Include(s => s.PurchaseInvoices)
+            .FirstOrDefaultAsync(s => s.Id == id);
+
+        if (supplier == null)
+            return NotFound("Supplier not found.");
+
+        if (supplier.PurchaseInvoices != null && supplier.PurchaseInvoices.Any())
+            return BadRequest("Supplier has purchase invoices and cannot be deleted.");
+
+        _context.Suppliers.Remove(supplier);
+        await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
+}

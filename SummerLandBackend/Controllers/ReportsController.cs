@@ -51,6 +51,12 @@ public class ReportsController : ControllerBase
                 r.CreatedAt <= toDate)
             .ToListAsync();
 
+        var purchases = await _context.PurchaseInvoices
+            .Where(p =>
+                p.CreatedAt >= fromDate &&
+                p.CreatedAt <= toDate)
+            .ToListAsync();
+
         var invoiceCount = invoices.Count;
 
         var itemsSold = invoices
@@ -68,6 +74,25 @@ public class ReportsController : ControllerBase
 
         var netSales = grossSales - returnsAmount;
 
+        var purchaseInvoiceCount = purchases.Count;
+
+        var purchaseTotalCost = purchases
+            .Sum(p => p.TotalCost);
+
+        var purchaseTotalPaid = purchases
+            .Sum(p => p.TotalPaid);
+
+        var purchaseDebt = purchases
+            .Sum(p => p.Debt);
+
+        var supplierCount = await _context.Suppliers
+            .CountAsync();
+
+        var supplierDebtTotal = await _context.Suppliers
+            .SumAsync(s => s.Debt);
+
+        var profit = netSales - purchaseTotalCost;
+
         var response = new SalesReportDto
         {
             From = fromDate,
@@ -83,7 +108,21 @@ public class ReportsController : ControllerBase
 
             ReturnsAmount = returnsAmount,
 
-            NetSales = netSales
+            NetSales = netSales,
+
+            PurchaseInvoiceCount = purchaseInvoiceCount,
+
+            PurchaseTotalCost = purchaseTotalCost,
+
+            PurchaseTotalPaid = purchaseTotalPaid,
+
+            PurchaseDebt = purchaseDebt,
+
+            SupplierCount = supplierCount,
+
+            SupplierDebtTotal = supplierDebtTotal,
+
+            Profit = profit
         };
 
         return Ok(response);

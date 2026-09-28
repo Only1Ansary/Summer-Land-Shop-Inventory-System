@@ -1,0 +1,24 @@
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+
+namespace SummerLandBackend.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    public class SupplierController : ControllerBase
+    {
+        [HttpPost]
+        public async Task<IActionResult> CreateSupplier([FromBody] Supplier supplier)
+        {
+            if (supplier == null)
+            {
+                return BadRequest("Supplier data is required.");
+            }
+            // Add logic to save the supplier to the database here
+            // For example:
+            // _context.Suppliers.Add(supplier);
+            // await _context.SaveChangesAsync();
+            return Ok(new { message = "Supplier created successfully." });
+        })
+    }
+}

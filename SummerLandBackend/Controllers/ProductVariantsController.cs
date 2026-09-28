@@ -144,7 +144,33 @@ public class ProductVariantsController : ControllerBase
 
         if (dto.BarcodeType == BarcodeType.Internal)
         {
-            barcode = await _barcodeService.GenerateInternalBarcodeAsync();
+            var product = await _context.Products
+                .FirstOrDefaultAsync(p => p.Id == dto.ProductId);
+
+            if (product == null)
+            {
+                return BadRequest("Product not found.");
+            }
+
+            var baseBarcode = product.Barcode;
+
+            var suffix = 1;
+
+            while (true)
+            {
+                var candidateBarcode = $"{baseBarcode}{suffix}";
+
+                var exists = await _context.ProductVariants
+                    .AnyAsync(v => v.Barcode == candidateBarcode);
+
+                if (!exists)
+                {
+                    barcode = candidateBarcode;
+                    break;
+                }
+
+                suffix++;
+            }
         }
         else if (dto.BarcodeType == BarcodeType.Manufacturer)
         {
@@ -355,42 +381,6 @@ public class ProductVariantsController : ControllerBase
         if (variant == null)
         {
             return NotFound("Product variant not found.");
-        }
-
-        var hasInvoiceItems = await _context.InvoiceItems
-            .AnyAsync(i => i.ProductVariantId == id);
-
-        if (hasInvoiceItems)
-        {
-            return Conflict(
-                "Cannot delete a product variant that has sales history.");
-        }
-
-        var hasReturns = await _context.Returns
-            .AnyAsync(r => r.ProductVariantId == id);
-
-        if (hasReturns)
-        {
-            return Conflict(
-                "Cannot delete a product variant that has return history.");
-        }
-
-        var hasMovements = await _context.StockMovements
-            .AnyAsync(s => s.ProductVariantId == id);
-
-        if (hasMovements)
-        {
-            return Conflict(
-                "Cannot delete a product variant that has stock movement history.");
-        }
-
-        var hasTransfers = await _context.StockTransfers
-            .AnyAsync(s => s.ProductVariantId == id);
-
-        if (hasTransfers)
-        {
-            return Conflict(
-                "Cannot delete a product variant that has stock transfer history.");
         }
 
         _context.ProductVariants.Remove(variant);

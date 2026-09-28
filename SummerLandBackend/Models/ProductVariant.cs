@@ -24,6 +24,6 @@ public class ProductVariant
     public ICollection<Inventory> Inventory { get; set; }
         = new List<Inventory>();
 
-    public ICollection<InvoiceItem> InvoiceItems { get; set; }
-        = new List<InvoiceItem>();
+    public ICollection<SaleInvoiceItem> InvoiceItems { get; set; }
+        = new List<SaleInvoiceItem>();
 }

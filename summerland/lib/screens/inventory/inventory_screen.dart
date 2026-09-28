@@ -57,12 +57,10 @@ class _InventoryScreenState extends State<InventoryScreen> {
   }
 
   void _openCategory(Category category) {
-    Navigator.push(
+    pushScreen(
       context,
-      MaterialPageRoute(
-        builder: (_) => InventoryProductsScreen(
-          category: category,
-        ),
+      (_) => InventoryProductsScreen(
+        category: category,
       ),
     );
   }

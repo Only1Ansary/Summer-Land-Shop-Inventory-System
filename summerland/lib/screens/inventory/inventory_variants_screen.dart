@@ -146,12 +146,10 @@ class _InventoryVariantsScreenState
   }
 
   Future<void> _openVariant(ProductVariant variant) async {
-    await Navigator.push(
+    await pushScreen(
       context,
-      MaterialPageRoute(
-        builder: (_) => AddInventoryScreen(
-          variant: variant,
-        ),
+      (_) => AddInventoryScreen(
+        variant: variant,
       ),
     );
 

@@ -1,0 +1,21 @@
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace SummerLandBackend.DTOs.SaleInvoices
+{
+    public class CreateInvoiceItemDto
+    {
+        [Required]
+        [MaxLength(200)]
+        public string ProductName { get; set; }
+
+        [Required]
+        [Range(1, int.MaxValue)]
+        public int Barcode { get; set; }
+
+        [Range(1, int.MaxValue)]
+        public int Quantity { get; set; }
+
+        [Range(1, int.MaxValue)]
+        public int StockLocationId { get; set; }
+    }
+}
