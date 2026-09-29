@@ -8,7 +8,7 @@ import '../../services/inventory_service.dart';
 import '../../services/location_service.dart';
 import '../../services/product_variant_service.dart';
 import '../../services/stock_transfer_service.dart';
-
+import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
 
 class CreateStockTransferScreen extends StatefulWidget {
@@ -285,7 +285,11 @@ class _CreateStockTransferScreenState
                             'Barcode: ${variant.barcode}',
                           ),
                           trailing: Text(
-                            variant.price.toStringAsFixed(2),
+                            money(variant.price),
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: amountColor(context, variant.price),
+                            ),
                           ),
                           onTap: () async {
                             setState(() {

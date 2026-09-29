@@ -188,6 +188,7 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
                 InfoTile(
                   label: 'Total',
                   value: money(returnRecord.totalAmount),
+                  valueStyle: amountStyle(context, returnRecord.totalAmount),
                 ),
               ],
             ),
@@ -315,6 +316,7 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
                   InfoTile(
                     label: 'Invoice Total',
                     value: money(invoice.totalAmount),
+                    valueStyle: amountStyle(context, invoice.totalAmount),
                   ),
                 ],
               ),
@@ -343,7 +345,8 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
                     if (details.isNotEmpty) Text(details),
                     Text('Sold: ${item.quantity}'),
                     Text(
-                      'Unit Price: ${item.unitPrice.toStringAsFixed(2)}',
+                      'Unit Price: ${money(item.unitPrice)}',
+                      style: TextStyle(color: amountColor(context, item.unitPrice)),
                     ),
                   ],
                 ),
@@ -487,7 +490,8 @@ class _ReturnItemDialogState extends State<_ReturnItemDialog> {
             Text('Sold Quantity: ${item.quantity}'),
             Text(
               'Unit Price: '
-              '${item.unitPrice.toStringAsFixed(2)}',
+              '${money(item.unitPrice)}',
+              style: TextStyle(color: amountColor(context, item.unitPrice)),
             ),
             const SizedBox(height: 18),
             DropdownButtonFormField<int>(

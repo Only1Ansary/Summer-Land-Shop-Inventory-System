@@ -128,9 +128,7 @@ class _AddSuppliersScreenState extends State<AddSuppliersScreen> {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: _currentDebt > 0
-                              ? AppPalette.danger
-                              : null,
+                          color: amountColor(context, -_currentDebt),
                         ),
                       ),
                     ],

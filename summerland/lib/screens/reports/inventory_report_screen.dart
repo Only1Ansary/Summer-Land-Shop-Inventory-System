@@ -89,6 +89,10 @@ class _InventoryReportScreenState
                               label: 'Inventory Value',
                               value: money(report.totalInventoryValue),
                               icon: Icons.payments_outlined,
+                              valueColor: amountColor(
+                                context,
+                                report.totalInventoryValue,
+                              ),
                             ),
                             StatData(
                               label: 'Low Stock',
@@ -117,8 +121,12 @@ class _InventoryReportScreenState
                                   ? const LowStockBadge()
                                   : Text(
                                       money(item.inventoryValue),
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontWeight: FontWeight.w600,
+                                        color: amountColor(
+                                          context,
+                                          item.inventoryValue,
+                                        ),
                                       ),
                                     ),
                               children: [
@@ -136,7 +144,12 @@ class _InventoryReportScreenState
                                     size: 20,
                                   ),
                                   title: const Text('Price'),
-                                  subtitle: Text(money(item.price)),
+                                  subtitle: Text(
+                                    money(item.price),
+                                    style: TextStyle(
+                                      color: amountColor(context, item.price),
+                                    ),
+                                  ),
                                 ),
                                 ListTile(
                                   leading: const Icon(

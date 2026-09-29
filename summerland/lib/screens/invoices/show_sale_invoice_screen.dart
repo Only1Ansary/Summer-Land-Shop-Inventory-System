@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/invoice.dart';
 import '../../services/api_service.dart';
 import '../../services/invoice_service.dart';
+import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
 
 class ShowSaleInvoiceScreen extends StatefulWidget {
@@ -166,15 +167,35 @@ class _ShowSaleInvoiceScreenState
                 margin: const EdgeInsets.only(bottom: 8),
                 child: ListTile(
                   title: Text(item.productName),
-                  subtitle: Text(
-                    '${item.modelNumber}${variant.isEmpty ? '' : ' · $variant'}\n'
-                    'Qty: ${item.quantity} × '
-                    '${item.unitPrice.toStringAsFixed(2)}',
+                  subtitle: Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(
+                          text:
+                              '${item.modelNumber}${variant.isEmpty ? '' : ' · $variant'}\n'
+                              'Qty: ',
+                        ),
+                        TextSpan(
+                          text: '${item.quantity}',
+                        ),
+                        const TextSpan(text: ' × '),
+                        TextSpan(
+                          text: money(item.unitPrice),
+                          style: TextStyle(
+                            color: amountColor(context, item.unitPrice),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   isThreeLine: true,
                   trailing: Text(
-                    item.totalPrice.toStringAsFixed(2),
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    money(item.totalPrice),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: amountColor(context, item.totalPrice),
+                    ),
                   ),
                 ),
               );
@@ -189,6 +210,7 @@ class _ShowSaleInvoiceScreenState
             child: InfoTile(
               label: 'Total Amount',
               value: money(invoice.totalAmount),
+              valueStyle: amountStyle(context, invoice.totalAmount),
             ),
           ),
         ],

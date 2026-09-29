@@ -31,5 +31,17 @@
         public decimal SupplierDebtTotal { get; set; }
 
         public decimal Profit { get; set; }
+
+        public List<CategorySalesDto> CategorySales { get; set; }
+            = new List<CategorySalesDto>();
+    }
+
+    public class CategorySalesDto
+    {
+        public string CategoryName { get; set; } = string.Empty;
+
+        public int QuantitySold { get; set; }
+
+        public decimal Amount { get; set; }
     }
 }

@@ -7,6 +7,7 @@ import '../../services/location_service.dart';
 import '../../services/report_service.dart';
 
 import '../../ui/app_shell.dart';
+import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
 
 class BestSellingReportScreen extends StatefulWidget {
@@ -210,8 +211,12 @@ class _BestSellingReportScreenState
                                       isThreeLine: true,
                                       trailing: Text(
                                         money(item.totalSales),
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontWeight: FontWeight.bold,
+                                          color: amountColor(
+                                            context,
+                                            item.totalSales,
+                                          ),
                                         ),
                                       ),
                                     ),

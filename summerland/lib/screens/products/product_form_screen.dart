@@ -5,6 +5,7 @@ import '../../models/product.dart';
 import '../../services/api_service.dart';
 import '../../services/product_service.dart';
 
+import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
 
 class ProductFormScreen extends StatefulWidget {
@@ -308,6 +309,7 @@ class _ProductFormScreenState
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
+                      color: amountColor(context, _computedSellingPrice()),
                     ),
                   ),
                 ),

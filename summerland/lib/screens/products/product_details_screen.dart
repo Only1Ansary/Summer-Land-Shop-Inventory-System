@@ -9,7 +9,7 @@ import '../../services/api_service.dart';
 import '../../services/category_service.dart';
 import '../../services/product_service.dart';
 import '../../services/product_variant_service.dart';
-
+import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
 
 import 'product_form_screen.dart';
@@ -275,6 +275,7 @@ class _ProductDetailsScreenState
             InfoTile(
               label: 'Purchase Price',
               value: money(widget.product.purchasePrice),
+              valueStyle: amountStyle(context, widget.product.purchasePrice),
             ),
             InfoTile(
               label: 'Profit Margin',
@@ -284,6 +285,7 @@ class _ProductDetailsScreenState
             InfoTile(
               label: 'Selling Price',
               value: money(widget.product.sellingPrice),
+              valueStyle: amountStyle(context, widget.product.sellingPrice),
             ),
           ],
         ),
@@ -376,6 +378,7 @@ class _ProductDetailsScreenState
             InfoTile(
               label: 'Price',
               value: money(variant.price),
+              valueStyle: amountStyle(context, variant.price),
             ),
             InfoTile(
               label: 'Barcode',

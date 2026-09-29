@@ -39,17 +39,29 @@ class PurchaseInvoiceTile extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        subtitle: Text(
-          '${_formatDate(invoice.date)} · '
-          '${invoice.items.length} '
-          'item${invoice.items.length == 1 ? '' : 's'} · '
-          '${money(invoice.totalCost)}',
+        subtitle: Text.rich(
+          TextSpan(
+            children: [
+              TextSpan(
+                text:
+                    '${_formatDate(invoice.date)} · '
+                    '${invoice.items.length} '
+                    'item${invoice.items.length == 1 ? '' : 's'} · ',
+              ),
+              TextSpan(
+                text: money(invoice.totalCost),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
         ),
         trailing: Text(
           moneyNegative(invoice.debt),
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: invoice.debt > 0 ? AppPalette.danger : null,
+            color: amountColor(context, -invoice.debt),
           ),
         ),
         onTap: onTap,

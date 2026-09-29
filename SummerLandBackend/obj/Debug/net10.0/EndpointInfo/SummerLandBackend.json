@@ -2210,6 +2210,24 @@
         },
         "additionalProperties": false
       },
+      "CategorySalesDto": {
+        "type": "object",
+        "properties": {
+          "categoryName": {
+            "type": "string",
+            "nullable": true
+          },
+          "quantitySold": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "amount": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
       "Colour": {
         "type": "object",
         "properties": {
@@ -3592,6 +3610,13 @@
           "profit": {
             "type": "number",
             "format": "double"
+          },
+          "categorySales": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CategorySalesDto"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false

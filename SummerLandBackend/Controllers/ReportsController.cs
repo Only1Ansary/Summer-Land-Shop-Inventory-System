@@ -45,6 +45,22 @@ public class ReportsController : ControllerBase
         var retainedQuantity = await lines.SumAsync(i => (int?)i.Quantity, ct) ?? 0;
         var retainedAmount = await lines.SumAsync(i => (decimal?)i.TotalPrice, ct) ?? 0m;
 
+        // ---------- Sales by category ----------
+        var categorySales = await lines
+            .Include(i => i.ProductVariant)
+                .ThenInclude(v => v.Product)
+                    .ThenInclude(p => p.Category)
+            .GroupBy(i =>
+                i.ProductVariant.Product.Category.Name)
+            .Select(g => new CategorySalesDto
+            {
+                CategoryName = g.Key,
+                QuantitySold = g.Sum(i => i.Quantity),
+                Amount = g.Sum(i => i.TotalPrice)
+            })
+            .OrderByDescending(g => g.Amount)
+            .ToListAsync(ct);
+
         // ---------- Returns against the period's invoices ----------
         var returns = _context.Returns.AsNoTracking()
             .Where(r => invoices.Any(i => i.Id == r.InvoiceId));
@@ -90,7 +106,9 @@ public class ReportsController : ControllerBase
             SupplierCount = supplierCount,
             SupplierDebtTotal = supplierDebtTotal,
 
-            Profit = profit
+            Profit = profit,
+
+            CategorySales = categorySales
         });
     }
 

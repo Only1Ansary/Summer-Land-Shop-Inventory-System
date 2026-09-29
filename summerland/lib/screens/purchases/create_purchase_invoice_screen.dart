@@ -397,10 +397,26 @@ class _CreatePurchaseInvoiceScreenState
                       color: Theme.of(context).colorScheme.primary,
                     ),
                     title: Text(item.name),
-                    subtitle: Text(
-                      '${item.modelNumber} • ${item.barcode}\n'
-                      'Qty: ${item.quantity} × '
-                      '${item.purchasePrice.toStringAsFixed(2)}',
+                    subtitle: Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text: '${item.modelNumber} • ${item.barcode}\n'
+                                'Qty: ',
+                          ),
+                          TextSpan(
+                            text: '${item.quantity}',
+                          ),
+                          const TextSpan(text: ' × '),
+                          TextSpan(
+                            text: money(item.purchasePrice),
+                            style: TextStyle(
+                              color: amountColor(context, item.purchasePrice),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     isThreeLine: true,
                     trailing: Row(
@@ -462,7 +478,7 @@ class _CreatePurchaseInvoiceScreenState
               Text(
                 'Total (items): ${money(totalCost)}',
                 style: TextStyle(
-                  color: theme.colorScheme.onSurfaceVariant,
+                  color: amountColor(context, totalCost),
                 ),
               ),
             ],
@@ -474,9 +490,9 @@ class _CreatePurchaseInvoiceScreenState
                 children: [
                   const Spacer(),
                   Text(
-                    'Discount: -${money(discount)}',
+                    'Discount: ${moneyNegative(discount)}',
                     style: TextStyle(
-                      color: theme.colorScheme.onSurfaceVariant,
+                      color: amountColor(context, -discount),
                     ),
                   ),
                 ],
@@ -489,9 +505,10 @@ class _CreatePurchaseInvoiceScreenState
                 const Spacer(),
                 Text(
                   'Total: ${money(total)}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
+                    color: amountColor(context, total),
                   ),
                 ),
               ],
@@ -504,10 +521,10 @@ class _CreatePurchaseInvoiceScreenState
                 children: [
                   const Spacer(),
                   Text(
-                    'Remaining Debt: ${money(debt)}',
-                    style: const TextStyle(
+                    'Remaining Debt: ${moneyNegative(debt)}',
+                    style: TextStyle(
                       fontWeight: FontWeight.w600,
-                      color: AppPalette.danger,
+                      color: amountColor(context, -debt),
                     ),
                   ),
                 ],

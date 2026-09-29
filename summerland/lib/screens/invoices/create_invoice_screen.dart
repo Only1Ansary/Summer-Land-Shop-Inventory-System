@@ -452,9 +452,10 @@ class _CreateInvoiceScreenState
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    variant.price.toStringAsFixed(2),
-                    style: const TextStyle(
+                    money(variant.price),
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
+                      color: amountColor(context, variant.price),
                     ),
                   ),
                   if (inCart)
@@ -462,10 +463,12 @@ class _CreateInvoiceScreenState
                       padding: const EdgeInsets.only(top: 4),
                       child: Text(
                         'Qty: $cartQuantity',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: AppPalette.success,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurfaceVariant,
                         ),
                       ),
                     ),
@@ -506,9 +509,10 @@ class _CreateInvoiceScreenState
               const Spacer(),
               Text(
                 'Total: ${money(_cartTotal)}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 20,
+                  color: amountColor(context, _cartTotal),
                 ),
               ),
             ],
@@ -544,9 +548,14 @@ class _CreateInvoiceScreenState
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        (item.variant.price * item.totalQuantity)
-                            .toStringAsFixed(2),
-                        style: const TextStyle(fontWeight: FontWeight.w600),
+                        money(item.variant.price * item.totalQuantity),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: amountColor(
+                            context,
+                            item.variant.price * item.totalQuantity,
+                          ),
+                        ),
                       ),
                       IconButton(
                         onPressed: () => _removeCartItem(index),
@@ -772,11 +781,11 @@ class _AddItemDialogState extends State<_AddItemDialog> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  variant.price.toStringAsFixed(2),
+                  money(variant.price),
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 17,
-                    color: Theme.of(context).colorScheme.primary,
+                    color: amountColor(context, variant.price),
                   ),
                 ),
               ],
@@ -817,10 +826,8 @@ class _AddItemDialogState extends State<_AddItemDialog> {
               Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(
-                  'Available: ${_availableAt(_selectedStockLocation!).quantity}',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                  ),
+                  'Available: '
+                  '${_availableAt(_selectedStockLocation!).quantity}',
                 ),
               ),
             const SizedBox(height: 16),
@@ -908,16 +915,35 @@ class InvoiceDetailsScreen extends StatelessWidget {
                 margin: const EdgeInsets.only(bottom: 8),
                 child: ListTile(
                   title: Text(item.productName),
-                  subtitle: Text(
-                    '${item.modelNumber}'
-                    '${variantDetails.isEmpty ? '' : ' • $variantDetails'}\n'
-                    'Qty: ${item.quantity} × '
-                    '${item.unitPrice.toStringAsFixed(2)}',
+                  subtitle: Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(
+                          text: '${item.modelNumber}'
+                              '${variantDetails.isEmpty ? '' : ' • $variantDetails'}\n'
+                              'Qty: ',
+                        ),
+                        TextSpan(
+                          text: '${item.quantity}',
+                        ),
+                        const TextSpan(text: ' × '),
+                        TextSpan(
+                          text: money(item.unitPrice),
+                          style: TextStyle(
+                            color: amountColor(context, item.unitPrice),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   isThreeLine: true,
                   trailing: Text(
-                    item.totalPrice.toStringAsFixed(2),
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    money(item.totalPrice),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: amountColor(context, item.totalPrice),
+                    ),
                   ),
                 ),
               );

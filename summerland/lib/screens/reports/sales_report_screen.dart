@@ -7,6 +7,7 @@ import '../../models/reports/sales_report.dart';
 import '../../ui/app_shell.dart';
 import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
+import '../../ui/category_pie_chart.dart';
 
 class SalesReportScreen extends StatefulWidget {
   const SalesReportScreen({super.key});
@@ -126,17 +127,29 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
                               label: 'Gross Sales',
                               value: money(report!.grossSales),
                               icon: Icons.attach_money_outlined,
+                              valueColor: amountColor(
+                                context,
+                                report.grossSales,
+                              ),
                             ),
                             StatData(
                               label: 'Returns',
-                              value: money(report.returnsAmount),
+                              value: moneyNegative(report.returnsAmount),
                               icon: Icons.currency_exchange_rounded,
                               color: AppPalette.danger,
+                              valueColor: amountColor(
+                                context,
+                                -report.returnsAmount,
+                              ),
                             ),
                             StatData(
                               label: 'Net Revenue',
                               value: money(report.netSales),
                               icon: Icons.account_balance_wallet_outlined,
+                              valueColor: amountColor(
+                                context,
+                                report.netSales,
+                              ),
                             ),
                             StatData(
                               label: 'Estimated Profit',
@@ -145,9 +158,20 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
                               color: report.profit >= 0
                                   ? null
                                   : AppPalette.danger,
+                              valueColor: amountColor(
+                                context,
+                                report.profit,
+                              ),
                             ),
                           ],
                         ),
+                        const SizedBox(height: 16),
+                        const SectionHeader(
+                          title: 'Sales by Category',
+                          subtitle: 'Share of net sales in this period',
+                        ),
+                        const SizedBox(height: 8),
+                        CategoryPieChart(categories: report.categorySales),
                         const SizedBox(height: 16),
                         const SectionHeader(
                           title: 'Sales Activity',
@@ -203,6 +227,10 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
                               color: report.purchaseDebt > 0
                                   ? AppPalette.danger
                                   : null,
+                              valueColor: amountColor(
+                                context,
+                                -report.purchaseDebt,
+                              ),
                             ),
                           ],
                         ),
@@ -226,6 +254,10 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
                               color: report.supplierDebtTotal > 0
                                   ? AppPalette.danger
                                   : null,
+                              valueColor: amountColor(
+                                context,
+                                -report.supplierDebtTotal,
+                              ),
                             ),
                           ],
                         ),

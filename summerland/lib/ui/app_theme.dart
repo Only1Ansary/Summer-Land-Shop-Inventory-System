@@ -21,6 +21,24 @@ class AppPalette {
   static const Color danger = Color(0xFFC62828);
 }
 
+/// Returns the semantic colour for a numeric figure shown in the app:
+/// negative values are danger (red), positive values are success (green),
+/// and zero stays neutral.
+Color amountColor(BuildContext context, num value) {
+  if (value < 0) return AppPalette.danger;
+  if (value > 0) return AppPalette.success;
+  return Theme.of(context).colorScheme.onSurfaceVariant;
+}
+
+/// Convenience for building a themed text style with the sign-based colour.
+TextStyle? amountStyle(BuildContext context, num value,
+    {TextStyle? base}) {
+  final theme = Theme.of(context);
+  return (base ?? theme.textTheme.bodyMedium)?.copyWith(
+    color: amountColor(context, value),
+  );
+}
+
 /// App-wide Material 3 theme.
 class AppTheme {
   AppTheme._();

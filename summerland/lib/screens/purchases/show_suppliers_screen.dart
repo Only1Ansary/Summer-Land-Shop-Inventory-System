@@ -256,13 +256,13 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen> {
                               children: [
                                 const TextSpan(text: 'Debt: '),
                                 TextSpan(
-                                  text:
-                                      moneyNegative(supplier.debt),
+                                  text: moneyNegative(supplier.debt),
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    color: supplier.debt > 0
-                                        ? AppPalette.danger
-                                        : null,
+                                    color: amountColor(
+                                      context,
+                                      -supplier.debt,
+                                    ),
                                   ),
                                 ),
                                 TextSpan(
@@ -344,9 +344,7 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen> {
               moneyNegative(invoice.debt),
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: invoice.debt > 0
-                    ? AppPalette.danger
-                    : null,
+                color: amountColor(context, -invoice.debt),
               ),
             ),
           );

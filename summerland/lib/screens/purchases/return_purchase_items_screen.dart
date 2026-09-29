@@ -4,6 +4,7 @@ import '../../models/purchase_invoice.dart';
 import '../../models/purchase_invoice_item.dart';
 import '../../services/api_service.dart';
 import '../../services/purchase_invoice_service.dart';
+import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
 
 class ReturnPurchaseItemsScreen extends StatefulWidget {
@@ -167,10 +168,31 @@ class _ReturnPurchaseItemsScreenState
                     margin: const EdgeInsets.only(bottom: 8),
                     child: ListTile(
                       title: Text(displayName),
-                      subtitle: Text(
-                        '${model == null ? '' : '$model\n'}'
-                        'Purchased: ${item.quantity} × '
-                        '${item.unitPurchasePrice.toStringAsFixed(2)}',
+                      subtitle: Text.rich(
+                        TextSpan(
+                          children: [
+                            TextSpan(
+                              text:
+                                  '${model == null ? '' : '$model\n'}'
+                                  'Purchased: ',
+                            ),
+                            TextSpan(
+                              text: '${item.quantity}',
+                            ),
+                            const TextSpan(text: ' × '),
+                            TextSpan(
+                              text:
+                                  money(item.unitPurchasePrice),
+                              style: TextStyle(
+                                color: amountColor(
+                                  context,
+                                  item.unitPurchasePrice,
+                                ),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                       isThreeLine: model != null,
                       trailing: Row(
@@ -236,9 +258,10 @@ class _ReturnPurchaseItemsScreenState
                       const Spacer(),
                       Text(
                         'Credit: ${money(_returnedValue)}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 18,
+                          color: amountColor(context, _returnedValue),
                         ),
                       ),
                     ],

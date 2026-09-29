@@ -311,15 +311,34 @@ class _ShowPurchaseInvoiceScreenState
               margin: const EdgeInsets.only(bottom: 8),
               child: ListTile(
                 title: Text(displayName),
-                subtitle: Text(
-                  '${model == null ? '' : '$model\n'}'
-                  'Qty: ${item.quantity} × '
-                  '${item.unitPurchasePrice.toStringAsFixed(2)}',
+                subtitle: Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(
+                        text:
+                            '${model == null ? '' : '$model\n'}Qty: ',
+                      ),
+                      TextSpan(
+                        text: '${item.quantity}',
+                      ),
+                      const TextSpan(text: ' × '),
+                      TextSpan(
+                        text: money(item.unitPurchasePrice),
+                        style: TextStyle(
+                          color: amountColor(context, item.unitPurchasePrice),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 isThreeLine: model != null,
                 trailing: Text(
-                  item.totalPrice.toStringAsFixed(2),
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  money(item.totalPrice),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: amountColor(context, item.totalPrice),
+                  ),
                 ),
               ),
             );
@@ -342,17 +361,35 @@ class _ShowPurchaseInvoiceScreenState
                         ? 'Product #${ret.productId}'
                         : ret.productName,
                   ),
-                  subtitle: Text(
-                    '${ret.quantity} × '
-                    '${ret.unitPurchasePrice.toStringAsFixed(2)}'
-                    '${ret.reason.isEmpty ? '' : '\n${ret.reason}'}'
-                    '${date == null ? '' : '\n$date'}',
+                  subtitle: Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(
+                          text: '${ret.quantity} × ',
+                        ),
+                        TextSpan(
+                          text: money(ret.unitPurchasePrice),
+                          style: TextStyle(
+                            color: amountColor(
+                              context,
+                              ret.unitPurchasePrice,
+                            ),
+                          ),
+                        ),
+                        if (ret.reason.isNotEmpty)
+                          TextSpan(text: '\n${ret.reason}'),
+                        if (date != null) TextSpan(text: '\n$date'),
+                      ],
+                    ),
                   ),
                   isThreeLine:
                       ret.reason.isNotEmpty || date != null,
                   trailing: Text(
-                    ret.totalPrice.toStringAsFixed(2),
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    money(ret.totalPrice),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: amountColor(context, ret.totalPrice),
+                    ),
                   ),
                 ),
               );
@@ -378,22 +415,12 @@ class _ShowPurchaseInvoiceScreenState
                 InfoTile(
                   label: 'Debt',
                   value: moneyNegative(invoice.debt),
-                  valueStyle: invoice.debt > 0
-                      ? TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: AppPalette.danger,
-                        )
-                      : null,
+                  valueStyle: amountStyle(context, -invoice.debt),
                 ),
                 InfoTile(
                   label: 'Supplier Total Debt',
                   value: moneyNegative(invoice.supplierTotalDebt),
-                  valueStyle: invoice.supplierTotalDebt > 0
-                      ? TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: AppPalette.danger,
-                        )
-                      : null,
+                  valueStyle: amountStyle(context, -invoice.supplierTotalDebt),
                 ),
               ],
             ),

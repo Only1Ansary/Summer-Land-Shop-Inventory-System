@@ -62,8 +62,7 @@
               "RelativeToolTip": "Controllers\\PurchaseReturnsController.cs",
               "ViewState": "AgIAAAsAAAAAAAAAAAAQwBQAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-09-28T03:08:17.211Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-09-28T03:08:17.211Z"
             },
             {
               "$type": "Document",
@@ -97,7 +96,7 @@
               "RelativeDocumentMoniker": "Controllers\\ReportsController.cs",
               "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Controllers\\ReportsController.cs",
               "RelativeToolTip": "Controllers\\ReportsController.cs",
-              "ViewState": "AgIAADAAAAAAAAAAAAAmwDYAAABDAAAAAAAAAA==",
+              "ViewState": "AgIAAEAAAAAAAAAAAAAmwEYAAABDAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-09-27T00:49:59.452Z",
               "EditorCaption": ""

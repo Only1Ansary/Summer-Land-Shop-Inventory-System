@@ -10,6 +10,7 @@ import '../../services/colour_service.dart';
 import '../../services/product_variant_service.dart';
 import '../../services/size_service.dart';
 
+import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
 
 import 'add_inventory_screen.dart';
@@ -400,8 +401,29 @@ class _InventoryVariantsScreenState
                             Text(
                               'Barcode: ${variant.barcode}',
                             ),
-                          Text(
-                            'Stock: ${variant.totalQuantity}  •  Price: ${money(variant.price)}',
+                          Text.rich(
+                            TextSpan(
+                              children: [
+                                const TextSpan(text: 'Stock: '),
+                                TextSpan(
+                                  text: '${variant.totalQuantity}',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const TextSpan(text: '  •  Price: '),
+                                TextSpan(
+                                  text: money(variant.price),
+                                  style: TextStyle(
+                                    color: amountColor(
+                                      context,
+                                      variant.price,
+                                    ),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),

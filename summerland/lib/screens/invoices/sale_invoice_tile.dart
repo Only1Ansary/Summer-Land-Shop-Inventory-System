@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../models/invoice.dart';
+import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
 
 class SaleInvoiceTile extends StatelessWidget {
@@ -46,8 +47,9 @@ class SaleInvoiceTile extends StatelessWidget {
         ),
         trailing: Text(
           money(invoice.totalAmount),
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.bold,
+            color: amountColor(context, invoice.totalAmount),
           ),
         ),
         onTap: onTap,

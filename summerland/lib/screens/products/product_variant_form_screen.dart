@@ -8,6 +8,7 @@ import '../../models/size_model.dart';
 import '../../services/api_service.dart';
 import '../../services/product_variant_service.dart';
 
+import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
 
 class ProductVariantFormScreen extends StatefulWidget {
@@ -211,8 +212,10 @@ class _ProductVariantFormScreenState
                       Text(
                         'Selling Price: ${money(widget.product.sellingPrice)}',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color:
-                                  Theme.of(context).colorScheme.primary,
+                              color: amountColor(
+                                context,
+                                widget.product.sellingPrice,
+                              ),
                               fontWeight: FontWeight.w600,
                             ),
                       ),

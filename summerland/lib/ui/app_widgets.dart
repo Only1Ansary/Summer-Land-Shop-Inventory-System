@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 
 import 'app_theme.dart';
 
-/// Renders a number as a two-decimal money string.
-String money(num value) => value.toStringAsFixed(2);
+/// Renders a number as a two-decimal money string with the EGP currency.
+String money(num value) => '${value.toStringAsFixed(2)} EGP';
 
-/// Renders an unpaid debt as a negative figure (e.g. -100.00).
+/// Renders an unpaid debt as a negative figure (e.g. -100.00 EGP).
 String moneyNegative(num value) =>
-    value == 0 ? '0.00' : '-${value.toStringAsFixed(2)}';
+    value == 0 ? '0.00 EGP' : '-${value.toStringAsFixed(2)} EGP';
 
 /// Pushes a screen using an instant (zero-duration) route.
 ///
@@ -235,12 +235,14 @@ class StatCard extends StatelessWidget {
     required this.value,
     this.icon,
     this.color,
+    this.valueColor,
   });
 
   final String label;
   final String value;
   final IconData? icon;
   final Color? color;
+  final Color? valueColor;
 
   @override
   Widget build(BuildContext context) {
@@ -274,6 +276,7 @@ class StatCard extends StatelessWidget {
               value,
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.w700,
+                color: valueColor,
               ),
             ),
           ],
@@ -290,12 +293,14 @@ class StatData {
     required this.value,
     this.icon,
     this.color,
+    this.valueColor,
   });
 
   final String label;
   final String value;
   final IconData? icon;
   final Color? color;
+  final Color? valueColor;
 }
 
 /// Responsive grid of [StatCard]s used by report screens.
@@ -333,6 +338,7 @@ class StatGrid extends StatelessWidget {
                     value: stat.value,
                     icon: stat.icon,
                     color: stat.color,
+                    valueColor: stat.valueColor,
                   ),
                 ),
               )

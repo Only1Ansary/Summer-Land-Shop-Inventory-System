@@ -14,6 +14,7 @@ class SalesReport {
   final int supplierCount;
   final double supplierDebtTotal;
   final double profit;
+  final List<CategorySales> categorySales;
 
   SalesReport({
     required this.from,
@@ -31,6 +32,7 @@ class SalesReport {
     required this.supplierCount,
     required this.supplierDebtTotal,
     required this.profit,
+    required this.categorySales,
   });
 
   factory SalesReport.fromJson(Map<String, dynamic> json) {
@@ -52,6 +54,29 @@ class SalesReport {
       supplierCount: json['supplierCount'] ?? 0,
       supplierDebtTotal: amount('supplierDebtTotal'),
       profit: amount('profit'),
+      categorySales: (json['categorySales'] as List<dynamic>? ?? [])
+          .map((e) => CategorySales.fromJson(e as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+}
+
+class CategorySales {
+  final String categoryName;
+  final int quantitySold;
+  final double amount;
+
+  CategorySales({
+    required this.categoryName,
+    required this.quantitySold,
+    required this.amount,
+  });
+
+  factory CategorySales.fromJson(Map<String, dynamic> json) {
+    return CategorySales(
+      categoryName: json['categoryName'] as String? ?? 'Uncategorized',
+      quantitySold: json['quantitySold'] ?? 0,
+      amount: (json['amount'] as num? ?? 0).toDouble(),
     );
   }
 }
