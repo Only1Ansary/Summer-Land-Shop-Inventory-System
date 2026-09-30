@@ -12,6 +12,8 @@ public class InvoiceResponseDto
 
     public decimal TotalAmount { get; set; }
 
+    public decimal DiscountAmount { get; set; }
+
     public List<InvoiceItemResponseDto> Items { get; set; }
         = new List<InvoiceItemResponseDto>();
 }

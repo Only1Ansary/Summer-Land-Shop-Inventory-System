@@ -71,6 +71,27 @@ public class SupplierController : ControllerBase
         });
     }
 
+    // GET: api/Supplier/5/payments
+    [HttpGet("{id:int}/payments")]
+    public async Task<IActionResult> GetSupplierPayments(int id)
+    {
+        var payments = await _context.SupplierPayments
+            .AsNoTracking()
+            .Where(p => p.SupplierId == id)
+            .OrderByDescending(p => p.PaidAt)
+            .ThenByDescending(p => p.Id)
+            .Select(p => new
+            {
+                p.Id,
+                p.Amount,
+                p.PaidAt,
+                p.PurchaseInvoiceId
+            })
+            .ToListAsync();
+
+        return Ok(payments);
+    }
+
     [HttpPost]
     public async Task<ActionResult<Supplier>> CreateSupplier([FromBody] Supplier supplier)
     {
@@ -151,6 +172,19 @@ public class SupplierController : ControllerBase
             // The payment is distributed only as far as the invoices go;
             // anything left is kept on the supplier's balance.
             supplier.Debt -= dto.Amount - remaining;
+
+            var amountApplied = dto.Amount - remaining;
+
+            if (amountApplied > 0)
+            {
+                _context.SupplierPayments.Add(new SupplierPayment
+                {
+                    SupplierId = supplier.Id,
+                    PurchaseInvoiceId = null,
+                    Amount = amountApplied,
+                    PaidAt = DateTime.UtcNow
+                });
+            }
 
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();

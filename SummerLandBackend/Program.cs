@@ -24,6 +24,14 @@ builder.Services.AddScoped<BarcodeService>();
 
 var app = builder.Build();
 
+// Apply any pending migrations automatically on startup so the schema
+// stays in sync with the models when the server is restarted.
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ShopDbContext>();
+    db.Database.Migrate();
+}
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {

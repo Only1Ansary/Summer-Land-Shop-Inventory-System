@@ -25,12 +25,19 @@ class _ShowSaleInvoicesScreenState
 
   List<Invoice> _invoices = [];
 
+  DateTime? _from;
+  DateTime? _to;
+  bool _edited = false;
+
   bool _isLoading = false;
   String? _error;
 
   @override
   void initState() {
     super.initState();
+    final today = DateTime.now();
+    _from = today;
+    _to = today;
     _loadInvoices();
   }
 
@@ -41,7 +48,10 @@ class _ShowSaleInvoicesScreenState
     });
 
     try {
-      final invoices = await _invoiceService.getInvoices();
+      final invoices = await _invoiceService.getInvoices(
+        from: _from,
+        to: _to,
+      );
 
       if (!mounted) return;
 
@@ -61,6 +71,46 @@ class _ShowSaleInvoicesScreenState
         });
       }
     }
+  }
+
+  Future<void> _pickDate(bool isFrom) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: isFrom
+          ? (_from ?? DateTime.now())
+          : (_to ?? DateTime.now()),
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+    );
+
+    if (picked == null) return;
+
+    setState(() {
+      if (isFrom) {
+        _from = picked;
+      } else {
+        _to = picked;
+      }
+      _edited = true;
+    });
+
+    await _loadInvoices();
+  }
+
+  void _resetDates() {
+    final today = DateTime.now();
+
+    setState(() {
+      _from = today;
+      _to = today;
+      _edited = false;
+    });
+
+    _loadInvoices();
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
   }
 
   Future<void> _openSearch() async {
@@ -99,6 +149,11 @@ class _ShowSaleInvoicesScreenState
       destinationId: 'sale-invoices',
       actions: [
         IconButton(
+          onPressed: _resetDates,
+          tooltip: 'Reset to today',
+          icon: const Icon(Icons.today_outlined),
+        ),
+        IconButton(
           onPressed: _openSearch,
           tooltip: 'Search invoices',
           icon: const Icon(Icons.search),
@@ -109,50 +164,63 @@ class _ShowSaleInvoicesScreenState
         tooltip: 'New sale',
         child: const Icon(Icons.add),
       ),
-      body: _buildBody(),
+      body: _isLoading
+          ? const LoadingState()
+          : _error != null
+              ? ErrorState(
+                  message: _error!,
+                  onRetry: _loadInvoices,
+                )
+              : _buildList(),
     );
   }
 
-  Widget _buildBody() {
-    if (_isLoading) {
-      return const LoadingState();
-    }
-
-    if (_error != null) {
-      return ErrorState(
-        message: _error!,
-        onRetry: _loadInvoices,
-      );
-    }
-
+  Widget _buildList() {
     return WideContent(
-      child: RefreshIndicator(
-        onRefresh: _loadInvoices,
-        child: _invoices.isEmpty
-            ? ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                children: const [
-                  SizedBox(height: 120),
-                  EmptyState(
-                    icon: Icons.receipt_long_outlined,
-                    title: 'No sale invoices yet',
-                    message:
-                        'Tap + to record your first sale.',
-                  ),
-                ],
-              )
-            : ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: _invoices.length,
-                itemBuilder: (context, index) {
-                  final invoice = _invoices[index];
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: DateFilterBar(
+              fromLabel: _from == null ? 'From' : _formatDate(_from!),
+              toLabel: _to == null ? 'To' : _formatDate(_to!),
+              onFrom: () => _pickDate(true),
+              onTo: () => _pickDate(false),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _loadInvoices,
+              child: _invoices.isEmpty
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        const SizedBox(height: 120),
+                        EmptyState(
+                          icon: Icons.receipt_long_outlined,
+                          title: _edited
+                              ? 'No invoices in this period'
+                              : 'No invoices today',
+                          message: 'Try changing the date range.',
+                        ),
+                      ],
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                      itemCount: _invoices.length,
+                      itemBuilder: (context, index) {
+                        final invoice = _invoices[index];
 
-                  return SaleInvoiceTile(
-                    invoice: invoice,
-                    onTap: () => _openInvoice(invoice),
-                  );
-                },
-              ),
+                        return SaleInvoiceTile(
+                          invoice: invoice,
+                          onTap: () => _openInvoice(invoice),
+                        );
+                      },
+                    ),
+            ),
+          ),
+        ],
       ),
     );
   }

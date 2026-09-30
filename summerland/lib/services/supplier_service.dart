@@ -56,4 +56,12 @@ class SupplierService {
       {'amount': amount},
     );
   }
+
+  Future<List<SupplierPayment>> getSupplierPayments(int supplierId) async {
+    final data = await _apiService.get('$_base/$supplierId/payments');
+
+    return (data as List)
+        .map((json) => SupplierPayment.fromJson(json as Map<String, dynamic>))
+        .toList();
+  }
 }

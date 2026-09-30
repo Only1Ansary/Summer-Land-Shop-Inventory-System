@@ -11,5 +11,7 @@ namespace SummerLandBackend.DTOs.SaleInvoices
         [MinLength(1)]
         public List<CreateInvoiceItemDto> Items { get; set; }
             = new List<CreateInvoiceItemDto>();
+
+        public decimal DiscountAmount { get; set; }
     }
 }

@@ -129,7 +129,16 @@ class ApiService {
           }
         }
       } catch (_) {
-        // Body is not JSON; fall through to the status description below.
+        // Body is not JSON. ASP.NET may return a plain-text message (e.g.
+        // from BadRequest("reason")) - surface that reason instead of
+        // dropping it. HTML pages are discarded to avoid dumping markup.
+        final plain = body.trim();
+
+        if (!plain.startsWith('<') && plain.isNotEmpty) {
+          return plain.length > 300
+              ? plain.substring(0, 300)
+              : plain;
+        }
       }
     }
 

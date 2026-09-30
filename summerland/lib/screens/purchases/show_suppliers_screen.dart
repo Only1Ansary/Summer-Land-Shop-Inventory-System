@@ -179,6 +179,17 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen> {
     });
   }
 
+  void _showPaymentHistory(Supplier supplier) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => _PaymentHistorySheet(
+        supplierService: _supplierService,
+        supplier: supplier,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return AppShell(
@@ -286,6 +297,13 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen> {
                                 ),
                               IconButton(
                                 visualDensity: VisualDensity.compact,
+                                icon: const Icon(Icons.history),
+                                tooltip: 'Payment history',
+                                onPressed: () =>
+                                    _showPaymentHistory(supplier),
+                              ),
+                              IconButton(
+                                visualDensity: VisualDensity.compact,
                                 icon: const Icon(Icons.edit_outlined),
                                 tooltip: 'Edit',
                                 onPressed: () =>
@@ -358,5 +376,183 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen> {
     if (date == null) return '-';
 
     return '${date.day}/${date.month}/${date.year}';
+  }
+}
+
+/// Bottom sheet that loads and lists a supplier's recorded payments.
+class _PaymentHistorySheet extends StatefulWidget {
+  const _PaymentHistorySheet({
+    required this.supplierService,
+    required this.supplier,
+  });
+
+  final SupplierService supplierService;
+  final Supplier supplier;
+
+  @override
+  State<_PaymentHistorySheet> createState() => _PaymentHistorySheetState();
+}
+
+class _PaymentHistorySheetState extends State<_PaymentHistorySheet> {
+  List<SupplierPayment>? _payments;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _payments = null;
+      _error = null;
+    });
+
+    try {
+      final payments =
+          await widget.supplierService.getSupplierPayments(widget.supplier.id);
+
+      if (!mounted) return;
+
+      setState(() {
+        _payments = payments;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _error = e.toString();
+      });
+    }
+  }
+
+  String _formatDateTime(DateTime date) {
+    final h = date.hour % 12 == 0 ? 12 : date.hour % 12;
+    final minute = date.minute.toString().padLeft(2, '0');
+    final amPm = date.hour < 12 ? 'AM' : 'PM';
+
+    return '${date.day}/${date.month}/${date.year}  $h:$minute $amPm';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    final payments = _payments;
+    final totalPaid = payments?.fold<double>(0, (sum, p) => sum + p.amount);
+
+    return DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.6,
+      maxChildSize: 0.9,
+      builder: (context, scrollController) {
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 12, 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Payment History',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          widget.supplier.supplierName,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    icon: const Icon(Icons.close),
+                    tooltip: 'Close',
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: _error != null
+                  ? ErrorState(
+                      message: _error!,
+                      onRetry: _load,
+                    )
+                  : payments == null
+                      ? const LoadingState()
+                      : payments.isEmpty
+                          ? const EmptyState(
+                              icon: Icons.history,
+                              title: 'No payments recorded yet',
+                              message:
+                                  'Payments appear here when you pay a '
+                                  'purchase invoice or supplier debt.',
+                            )
+                          : ListView.builder(
+                              controller: scrollController,
+                              padding: const EdgeInsets.fromLTRB(
+                                  16, 8, 16, 16),
+                              itemCount: payments.length + 1,
+                              itemBuilder: (context, index) {
+                                if (index == 0) {
+                                  return Padding(
+                                    padding:
+                                        const EdgeInsets.only(bottom: 8),
+                                    child: Text(
+                                      'Total paid: ${money(totalPaid!)}',
+                                      style: theme.textTheme.titleSmall!
+                                          .copyWith(
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  );
+                                }
+
+                                final payment = payments[index - 1];
+
+                                return ListTile(
+                                  dense: true,
+                                  leading: const Icon(
+                                    Icons.payments_outlined,
+                                    size: 20,
+                                  ),
+                                  title: Text(
+                                    money(payment.amount),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  subtitle: Text(
+                                    _formatDateTime(payment.paidAt),
+                                  ),
+                                  trailing: payment.purchaseInvoiceId == null
+                                      ? null
+                                      : Text(
+                                          'Invoice #${payment.purchaseInvoiceId}',
+                                          style: theme.textTheme.bodySmall
+                                              ?.copyWith(
+                                            color: theme.colorScheme
+                                                .onSurfaceVariant,
+                                          ),
+                                        ),
+                                );
+                              },
+                            ),
+            ),
+          ],
+        );
+      },
+    );
   }
 }

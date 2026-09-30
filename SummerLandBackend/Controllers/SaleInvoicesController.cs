@@ -169,6 +169,21 @@ public class SaleInvoicesController : ControllerBase
                 invoice.TotalAmount += totalPrice;
             }
 
+            if (dto.DiscountAmount < 0)
+            {
+                return BadRequest("Discount amount cannot be negative.");
+            }
+
+            if (dto.DiscountAmount > invoice.TotalAmount)
+            {
+                return BadRequest(
+                    $"Discount cannot exceed the invoice total of " +
+                    $"{invoice.TotalAmount}.");
+            }
+
+            invoice.DiscountAmount = dto.DiscountAmount;
+            invoice.TotalAmount -= dto.DiscountAmount;
+
             await _context.SaveChangesAsync();
 
             await transaction.CommitAsync();
@@ -193,6 +208,7 @@ public class SaleInvoicesController : ControllerBase
                 LocationId = createdInvoice.LocationId,
                 LocationName = createdInvoice.Location.Name,
                 TotalAmount = createdInvoice.TotalAmount,
+                DiscountAmount = createdInvoice.DiscountAmount,
 
                 Items = createdInvoice.Items.Select(ii =>
                     new InvoiceItemResponseDto
@@ -233,9 +249,11 @@ public class SaleInvoicesController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<InvoiceResponseDto>>> GetInvoices()
+    public async Task<ActionResult<IEnumerable<InvoiceResponseDto>>> GetInvoices(
+        [FromQuery] DateTime? from,
+        [FromQuery] DateTime? to)
     {
-        var invoices = await _context.Invoices
+        var query = _context.Invoices
             .Include(i => i.Location)
             .Include(i => i.Items)
                 .ThenInclude(ii => ii.ProductVariant)
@@ -246,6 +264,26 @@ public class SaleInvoicesController : ControllerBase
             .Include(i => i.Items)
                 .ThenInclude(ii => ii.ProductVariant)
                     .ThenInclude(v => v.Colour)
+            .AsQueryable();
+
+        if (from.HasValue)
+        {
+            var fromDate = ToUtc(from.Value);
+            query = query.Where(i => i.CreatedAt >= fromDate);
+        }
+
+        if (to.HasValue)
+        {
+            var toDate = ToUtc(to.Value);
+
+            // A bare date (00:00:00) as "to" means the whole day.
+            if (to.Value.TimeOfDay == TimeSpan.Zero)
+                toDate = toDate.Date.AddDays(1).AddTicks(-1);
+
+            query = query.Where(i => i.CreatedAt <= toDate);
+        }
+
+        var invoices = await query
             .OrderByDescending(i => i.CreatedAt)
             .ToListAsync();
 
@@ -257,6 +295,7 @@ public class SaleInvoicesController : ControllerBase
                 LocationId = i.LocationId,
                 LocationName = i.Location.Name,
                 TotalAmount = i.TotalAmount,
+                DiscountAmount = i.DiscountAmount,
 
                 Items = i.Items.Select(ii =>
                     new InvoiceItemResponseDto
@@ -318,6 +357,7 @@ public class SaleInvoicesController : ControllerBase
             LocationId = invoice.LocationId,
             LocationName = invoice.Location.Name,
             TotalAmount = invoice.TotalAmount,
+            DiscountAmount = invoice.DiscountAmount,
 
             Items = invoice.Items.Select(item => new InvoiceItemResponseDto
             {
@@ -334,4 +374,13 @@ public class SaleInvoicesController : ControllerBase
 
         return Ok(response);
     }
+
+    // Unspecified is treated as UTC (your CreatedAt values are stored with
+    // DateTime.UtcNow), instead of silently using the server's local timezone.
+    private static DateTime ToUtc(DateTime value) => value.Kind switch
+    {
+        DateTimeKind.Utc => value,
+        DateTimeKind.Local => value.ToUniversalTime(),
+        _ => DateTime.SpecifyKind(value, DateTimeKind.Utc)
+    };
 }

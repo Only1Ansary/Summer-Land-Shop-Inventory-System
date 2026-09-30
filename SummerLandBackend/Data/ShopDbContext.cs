@@ -16,6 +16,7 @@ public class ShopDbContext : DbContext
     public DbSet<Product> Products { get; set; }
     public DbSet<ProductVariant> ProductVariants { get; set; }
     public DbSet<Supplier> Suppliers { get; set; }
+    public DbSet<SupplierPayment> SupplierPayments { get; set; }
     public DbSet<PurchaseInvoice> PurchaseInvoices { get; set; }
     public DbSet<PurchaseInvoiceItem> PurchaseInvoiceItems { get; set; }
     public DbSet<PurchaseReturn> PurchaseReturns { get; set; }
@@ -214,6 +215,22 @@ public class ShopDbContext : DbContext
         modelBuilder.Entity<PurchaseInvoiceItem>()
             .Property(i => i.TotalPrice)
             .HasColumnType("decimal(18,2)");
+
+        modelBuilder.Entity<SupplierPayment>()
+            .Property(p => p.Amount)
+            .HasColumnType("decimal(18,2)");
+
+        modelBuilder.Entity<SupplierPayment>()
+            .HasOne(p => p.Supplier)
+            .WithMany()
+            .HasForeignKey(p => p.SupplierId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<SupplierPayment>()
+            .HasOne(p => p.PurchaseInvoice)
+            .WithMany()
+            .HasForeignKey(p => p.PurchaseInvoiceId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<PurchaseReturn>()
             .HasOne(r => r.PurchaseInvoice)

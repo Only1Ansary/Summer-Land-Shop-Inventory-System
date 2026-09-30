@@ -1002,6 +1002,24 @@
         "tags": [
           "PurchaseInvoices"
         ],
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -1502,6 +1520,24 @@
       "get": {
         "tags": [
           "SaleInvoices"
+        ],
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -2065,6 +2101,29 @@
         }
       }
     },
+    "/api/Supplier/{id}/payments": {
+      "get": {
+        "tags": [
+          "Supplier"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/Supplier/{id}/pay": {
       "post": {
         "tags": [
@@ -2267,6 +2326,10 @@
             "items": {
               "$ref": "#/components/schemas/CreateInvoiceItemDto"
             }
+          },
+          "discountAmount": {
+            "type": "number",
+            "format": "double"
           }
         },
         "additionalProperties": false
@@ -2783,6 +2846,10 @@
             "nullable": true
           },
           "totalAmount": {
+            "type": "number",
+            "format": "double"
+          },
+          "discountAmount": {
             "type": "number",
             "format": "double"
           },
@@ -3499,6 +3566,10 @@
             "$ref": "#/components/schemas/Location"
           },
           "totalAmount": {
+            "type": "number",
+            "format": "double"
+          },
+          "discountAmount": {
             "type": "number",
             "format": "double"
           },

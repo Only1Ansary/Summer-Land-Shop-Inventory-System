@@ -262,6 +262,20 @@ public class PurchaseInvoicesController : ControllerBase
             _context.PurchaseInvoices.Add(invoice);
 
             await _context.SaveChangesAsync();
+
+            if (dto.TotalPaid > 0)
+            {
+                _context.SupplierPayments.Add(new SupplierPayment
+                {
+                    SupplierId = supplier.Id,
+                    PurchaseInvoiceId = invoice.Id,
+                    Amount = dto.TotalPaid,
+                    PaidAt = DateTime.UtcNow
+                });
+
+                await _context.SaveChangesAsync();
+            }
+
             await transaction.CommitAsync();
 
             return Ok(new
@@ -300,11 +314,33 @@ public class PurchaseInvoicesController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetPurchaseInvoices()
+    public async Task<IActionResult> GetPurchaseInvoices(
+        [FromQuery] DateTime? from,
+        [FromQuery] DateTime? to)
     {
-        var invoices = await _context.PurchaseInvoices
+        var query = _context.PurchaseInvoices
             .Include(i => i.Supplier)
             .Include(i => i.Items)
+            .AsQueryable();
+
+        if (from.HasValue)
+        {
+            var fromDate = ToUtc(from.Value);
+            query = query.Where(i => i.Date >= fromDate);
+        }
+
+        if (to.HasValue)
+        {
+            var toDate = ToUtc(to.Value);
+
+            // A bare date (00:00:00) as "to" means the whole day.
+            if (to.Value.TimeOfDay == TimeSpan.Zero)
+                toDate = toDate.Date.AddDays(1).AddTicks(-1);
+
+            query = query.Where(i => i.Date <= toDate);
+        }
+
+        var invoices = await query
             .OrderByDescending(i => i.Date)
             .ThenByDescending(i => i.CreatedAt)
             .Select(i => new
@@ -327,6 +363,15 @@ public class PurchaseInvoicesController : ControllerBase
             .ToListAsync();
         return Ok(invoices);
     }
+
+    // Unspecified is treated as UTC (your CreatedAt values are stored with
+    // DateTime.UtcNow), instead of silently using the server's local timezone.
+    private static DateTime ToUtc(DateTime value) => value.Kind switch
+    {
+        DateTimeKind.Utc => value,
+        DateTimeKind.Local => value.ToUniversalTime(),
+        _ => DateTime.SpecifyKind(value, DateTimeKind.Utc)
+    };
 
     [HttpGet("{id}")]
     public async Task<IActionResult> GetPurchaseInvoice(int id)
@@ -404,6 +449,14 @@ public class PurchaseInvoicesController : ControllerBase
 
         invoice.Supplier.Debt = Math.Max(
             0, invoice.Supplier.Debt - dto.Amount);
+
+        _context.SupplierPayments.Add(new SupplierPayment
+        {
+            SupplierId = invoice.SupplierId,
+            PurchaseInvoiceId = invoice.Id,
+            Amount = dto.Amount,
+            PaidAt = DateTime.UtcNow
+        });
 
         await _context.SaveChangesAsync();
 

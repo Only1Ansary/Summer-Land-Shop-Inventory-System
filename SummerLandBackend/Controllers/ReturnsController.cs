@@ -98,6 +98,15 @@ public class ReturnsController : ControllerBase
 
             invoice.TotalAmount -= totalAmount;
 
+            // A return is always valued at the real (pre-discount) unit
+            // price, so returning everything on a discounted invoice would
+            // leave the total at -DiscountAmount. The total the customer
+            // actually pays can never go below zero.
+            if (invoice.TotalAmount < 0)
+            {
+                invoice.TotalAmount = 0;
+            }
+
             if (invoiceItem.Quantity == 0)
             {
                 _context.InvoiceItems.Remove(invoiceItem);

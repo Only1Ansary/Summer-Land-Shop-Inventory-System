@@ -207,10 +207,25 @@ class _ShowSaleInvoiceScreenState
               color: Theme.of(context).colorScheme.primaryContainer,
               borderRadius: BorderRadius.circular(14),
             ),
-            child: InfoTile(
-              label: 'Total Amount',
-              value: money(invoice.totalAmount),
-              valueStyle: amountStyle(context, invoice.totalAmount),
+            child: Column(
+              children: [
+                InfoTile(
+                  label: 'Subtotal',
+                  value: money(invoice.totalAmount + invoice.discountAmount),
+                ),
+                if (invoice.discountAmount > 0)
+                  InfoTile(
+                    label: 'Discount',
+                    value: moneyNegative(invoice.discountAmount),
+                    valueStyle:
+                        amountStyle(context, -invoice.discountAmount),
+                  ),
+                InfoTile(
+                  label: 'Total Amount',
+                  value: money(invoice.totalAmount),
+                  valueStyle: amountStyle(context, invoice.totalAmount),
+                ),
+              ],
             ),
           ),
         ],

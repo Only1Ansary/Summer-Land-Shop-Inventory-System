@@ -42,6 +42,9 @@ class _CreateInvoiceScreenState
   final TextEditingController _searchController =
       TextEditingController();
 
+  final TextEditingController _discountController =
+      TextEditingController();
+
   bool _isLoading = true;
   bool _isCreating = false;
 
@@ -60,6 +63,7 @@ class _CreateInvoiceScreenState
   @override
   void dispose() {
     _searchController.dispose();
+    _discountController.dispose();
     super.dispose();
   }
 
@@ -256,6 +260,18 @@ class _CreateInvoiceScreenState
     );
   }
 
+  // Discount is a flat amount, clamped to the items total so the payable
+  // can never go below zero.
+  double get _discount {
+    final value = double.tryParse(_discountController.text.trim());
+
+    if (value == null || value <= 0) return 0;
+
+    return value > _cartTotal ? _cartTotal : value;
+  }
+
+  double get _netTotal => _cartTotal - _discount;
+
   Future<void> _createInvoice() async {
     if (_selectedCashierLocation == null) {
       _showError(
@@ -267,6 +283,22 @@ class _CreateInvoiceScreenState
     if (_cart.isEmpty) {
       _showError(
         'Please add at least one item.',
+      );
+      return;
+    }
+
+    final discount =
+        double.tryParse(_discountController.text.trim()) ?? 0;
+
+    if (discount < 0) {
+      _showError('Discount cannot be negative.');
+      return;
+    }
+
+    if (discount > _cartTotal) {
+      _showError(
+        'Discount cannot exceed the items total of '
+        '${money(_cartTotal)}.',
       );
       return;
     }
@@ -291,12 +323,14 @@ class _CreateInvoiceScreenState
       final invoice = await _invoiceService.createInvoice(
         locationId: _selectedCashierLocation!.id,
         items: items,
+        discountAmount: discount,
       );
 
       if (!mounted) return;
 
       setState(() {
         _isCreating = false;
+        _discountController.clear();
       });
 
       await pushScreen(
@@ -497,27 +531,72 @@ class _CreateInvoiceScreenState
       ),
       child: Column(
         children: [
-          Row(
-            children: [
-              Text(
-                'Items: ${_cart.length}',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: theme.colorScheme.onSurfaceVariant,
+        Row(
+          children: [
+            Text(
+              'Items: ${_cart.length}',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const Spacer(),
+            Text(
+              'Total: ${money(_netTotal)}',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+                color: amountColor(context, _netTotal),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            SizedBox(
+              width: 180,
+              child: TextField(
+                controller: _discountController,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                onChanged: (_) => setState(() {}),
+                decoration: InputDecoration(
+                  labelText: 'Discount',
+                  prefixText: '\u20a6 ',
+                  isDense: true,
+                  suffixIcon: _discountController.text.isEmpty
+                      ? null
+                      : IconButton(
+                          onPressed: () {
+                            _discountController.clear();
+                            setState(() {});
+                          },
+                          icon: const Icon(Icons.clear),
+                        ),
                 ),
               ),
-              const Spacer(),
-              Text(
-                'Total: ${money(_cartTotal)}',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20,
-                  color: amountColor(context, _cartTotal),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _discount > 0
+                  ? Text(
+                      'Discount applied: -${money(_discount)} '
+                      '(items ${money(_cartTotal)})',
+                      style: TextStyle(
+                        color: amountColor(context, -_discount),
+                      ),
+                    )
+                  : Text(
+                      'Flat discount off the total.',
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
           SizedBox(
             height: 160,
             child: ListView.builder(
@@ -948,6 +1027,13 @@ class InvoiceDetailsScreen extends StatelessWidget {
                 ),
               );
             }),
+            if (invoice.discountAmount > 0)
+              InfoTile(
+                label: 'Discount',
+                value: moneyNegative(invoice.discountAmount),
+                valueStyle:
+                    amountStyle(context, -invoice.discountAmount),
+              ),
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.all(16),

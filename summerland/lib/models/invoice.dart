@@ -6,6 +6,7 @@ class Invoice {
   final int locationId;
   final String locationName;
   final double totalAmount;
+  final double discountAmount;
   final List<InvoiceItem> items;
 
   Invoice({
@@ -14,6 +15,7 @@ class Invoice {
     required this.locationId,
     required this.locationName,
     required this.totalAmount,
+    this.discountAmount = 0.0,
     required this.items,
   });
 
@@ -24,6 +26,8 @@ class Invoice {
       locationId: json['locationId'],
       locationName: json['locationName'],
       totalAmount: (json['totalAmount'] as num).toDouble(),
+      discountAmount:
+          (json['discountAmount'] as num?)?.toDouble() ?? 0.0,
       items: (json['items'] as List)
           .map(
             (item) => InvoiceItem.fromJson(item),

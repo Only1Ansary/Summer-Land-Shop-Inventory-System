@@ -58,3 +58,26 @@ class PurchaseInvoiceSummary {
     );
   }
 }
+
+class SupplierPayment {
+  final int id;
+  final double amount;
+  final DateTime paidAt;
+  final int? purchaseInvoiceId;
+
+  SupplierPayment({
+    required this.id,
+    required this.amount,
+    required this.paidAt,
+    required this.purchaseInvoiceId,
+  });
+
+  factory SupplierPayment.fromJson(Map<String, dynamic> json) {
+    return SupplierPayment(
+      id: json['id'],
+      amount: (json['amount'] as num? ?? 0).toDouble(),
+      paidAt: DateTime.parse(json['paidAt']),
+      purchaseInvoiceId: json['purchaseInvoiceId'] as int?,
+    );
+  }
+}

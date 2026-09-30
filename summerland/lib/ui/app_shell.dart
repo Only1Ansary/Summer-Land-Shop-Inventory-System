@@ -78,7 +78,7 @@ class AppShell extends StatelessWidget {
 }
 
 /// Renders the grouped destination list for both rail and drawer layouts.
-class _AppNavPanel extends StatelessWidget {
+class _AppNavPanel extends StatefulWidget {
   const _AppNavPanel({
     required this.items,
     required this.selectedId,
@@ -90,13 +90,38 @@ class _AppNavPanel extends StatelessWidget {
   final bool inDrawer;
 
   @override
+  State<_AppNavPanel> createState() => _AppNavPanelState();
+}
+
+class _AppNavPanelState extends State<_AppNavPanel> {
+  final TextEditingController _searchController = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    final String query = _query.trim().toLowerCase();
+    final List<AppNavigationItem> visible = query.isEmpty
+        ? widget.items
+        : widget.items
+            .where(
+              (item) =>
+                  item.title.toLowerCase().contains(query) ||
+                  item.group.toLowerCase().contains(query),
+            )
+            .toList();
 
     final List<Widget> rows = [];
     String? previousGroup;
 
-    for (final item in items) {
+    for (final item in visible) {
       if (item.group != previousGroup) {
         rows.add(_GroupLabel(item.group));
         previousGroup = item.group;
@@ -105,30 +130,66 @@ class _AppNavPanel extends StatelessWidget {
       rows.add(
         _NavTile(
           item: item,
-          selected: item.id == selectedId,
-          inDrawer: inDrawer,
+          selected: item.id == widget.selectedId,
+          inDrawer: widget.inDrawer,
         ),
       );
     }
 
-    final Color? railColor = inDrawer
+    final Color? railColor = widget.inDrawer
         ? null
         : theme.colorScheme.surfaceContainerLow;
 
     return Material(
       color: railColor ?? Colors.transparent,
       child: SizedBox(
-        width: inDrawer ? null : 268,
+        width: widget.inDrawer ? null : 268,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const _BrandHeader(),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 10, 10, 4),
+              child: TextField(
+                controller: _searchController,
+                onChanged: (value) => setState(() => _query = value),
+                decoration: InputDecoration(
+                  hintText: 'Search pages…',
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  prefixIcon: const Icon(Icons.search, size: 20),
+                  suffixIcon: _query.isEmpty
+                      ? null
+                      : IconButton(
+                          icon: const Icon(Icons.close, size: 18),
+                          visualDensity: VisualDensity.compact,
+                          tooltip: 'Clear search',
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() => _query = '');
+                          },
+                        ),
+                ),
+              ),
+            ),
             const Divider(height: 1),
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(10, 10, 10, 24),
-                children: rows,
-              ),
+              child: visible.isEmpty
+                  ? Center(
+                      child: Text(
+                        'No pages match “$_query”',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.outline,
+                        ),
+                      ),
+                    )
+                  : ListView(
+                      padding: const EdgeInsets.fromLTRB(10, 10, 10, 24),
+                      children: rows,
+                    ),
             ),
           ],
         ),

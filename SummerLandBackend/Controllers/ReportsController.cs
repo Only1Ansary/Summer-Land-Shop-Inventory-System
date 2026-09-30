@@ -33,33 +33,62 @@ public class ReportsController : ControllerBase
         if (fromDate > toDate)
             return BadRequest("From date cannot be greater than To date.");
 
-        // ---------- Sales (aggregated in SQL, nothing loaded into memory) ----------
+        // ---------- Sales (headline figures aggregated in SQL) ----------
         var invoices = _context.Invoices.AsNoTracking()
             .Where(i => i.CreatedAt >= fromDate && i.CreatedAt <= toDate);
 
         var invoiceCount = await invoices.CountAsync(ct);
 
+        // Net revenue is the sum of the invoice totals: items at real price,
+        // minus the invoice discount, minus returns at real price, floored
+        // at zero. This reconciles with the Sale Invoices screen.
+        var netSales = await invoices
+            .SumAsync(i => (decimal?)i.TotalAmount, ct) ?? 0m;
+
         // Invoice lines are already net of returns (ReturnsController reduces them)
         var lines = invoices.SelectMany(i => i.Items);
 
         var retainedQuantity = await lines.SumAsync(i => (int?)i.Quantity, ct) ?? 0;
-        var retainedAmount = await lines.SumAsync(i => (decimal?)i.TotalPrice, ct) ?? 0m;
 
         // ---------- Sales by category ----------
-        var categorySales = await lines
-            .Include(i => i.ProductVariant)
-                .ThenInclude(v => v.Product)
-                    .ThenInclude(p => p.Category)
-            .GroupBy(i =>
-                i.ProductVariant.Product.Category.Name)
-            .Select(g => new CategorySalesDto
+        // Each invoice's discount is spread pro-rata over its lines, so the
+        // category slices add up to exactly the Net Revenue figure.
+        var invoiceLines = await lines
+            .Select(l => new
             {
-                CategoryName = g.Key,
-                QuantitySold = g.Sum(i => i.Quantity),
-                Amount = g.Sum(i => i.TotalPrice)
+                l.InvoiceId,
+                l.Quantity,
+                l.TotalPrice,
+                CategoryName = l.ProductVariant.Product.Category.Name
+            })
+            .ToListAsync(ct);
+
+        var lineTotalByInvoice = invoiceLines
+            .GroupBy(l => l.InvoiceId)
+            .ToDictionary(
+                group => group.Key,
+                group => group.Sum(l => l.TotalPrice));
+
+        var netByInvoice = await invoices
+            .ToDictionaryAsync(i => i.Id, i => i.TotalAmount, ct);
+
+        var categorySales = invoiceLines
+            .GroupBy(l => l.CategoryName)
+            .Select(group => new CategorySalesDto
+            {
+                CategoryName = group.Key,
+                QuantitySold = group.Sum(l => l.Quantity),
+                Amount = group.Sum(l =>
+                {
+                    var lineTotal = lineTotalByInvoice[l.InvoiceId];
+
+                    return lineTotal > 0
+                        ? l.TotalPrice * netByInvoice[l.InvoiceId] / lineTotal
+                        : l.TotalPrice;
+                })
             })
             .OrderByDescending(g => g.Amount)
-            .ToListAsync(ct);
+            .ToList();
 
         // ---------- Returns against the period's invoices ----------
         var returns = _context.Returns.AsNoTracking()
@@ -81,8 +110,8 @@ public class ReportsController : ControllerBase
 
         // ---------- Figures ----------
         var itemsSold = retainedQuantity;
-        var grossSales = retainedAmount + returnsAmount;
-        var netSales = grossSales - returnsAmount;      // = retainedAmount
+
+        var grossSales = netSales + returnsAmount;
         // Profit accounts for the purchase cost actually incurred in the period.
         var profit = netSales - purchases.Sum(p => p.TotalPaid);
 

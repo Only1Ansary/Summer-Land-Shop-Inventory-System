@@ -12,6 +12,8 @@
 
         public decimal TotalAmount { get; set; }
 
+        public decimal DiscountAmount { get; set; }
+
         public ICollection<SaleInvoiceItem> Items { get; set; }
             = new List<SaleInvoiceItem>();
     }
