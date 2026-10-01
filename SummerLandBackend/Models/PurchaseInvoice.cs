@@ -22,5 +22,12 @@
 
         public ICollection<PurchaseReturn> Returns { get; set; }
             = new List<PurchaseReturn>();
+
+        /// <summary>
+        /// Extra costs such as shipping or customs. Included in TotalCost but
+        /// deliberately excluded from Debt, so fees are never owed to the supplier.
+        /// </summary>
+        public ICollection<PurchaseInvoiceFee> Fees { get; set; }
+            = new List<PurchaseInvoiceFee>();
     }
 }

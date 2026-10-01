@@ -17,11 +17,11 @@ class SearchPurchaseInvoicesScreen extends StatefulWidget {
 
 class _SearchPurchaseInvoicesScreenState
     extends State<SearchPurchaseInvoicesScreen> {
-  final PurchaseInvoiceService _purchaseInvoiceService =
-      PurchaseInvoiceService(ApiService());
+  final PurchaseInvoiceService _purchaseInvoiceService = PurchaseInvoiceService(
+    ApiService(),
+  );
 
-  final TextEditingController _nameController =
-      TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
 
   List<PurchaseInvoice> _invoices = [];
 
@@ -34,6 +34,8 @@ class _SearchPurchaseInvoicesScreenState
   @override
   void initState() {
     super.initState();
+    _fromDate = defaultFilterFromDate();
+    _toDate = defaultFilterToDate();
     _loadInvoices();
   }
 
@@ -76,16 +78,16 @@ class _SearchPurchaseInvoicesScreenState
     final query = _nameController.text.trim().toLowerCase();
 
     return _invoices.where((invoice) {
-      final nameOk = query.isEmpty ||
-          invoice.supplierName.toLowerCase().contains(query);
+      final nameOk =
+          query.isEmpty || invoice.supplierName.toLowerCase().contains(query);
 
       final date = invoice.date ?? invoice.createdAt;
 
-      final fromOk = _fromDate == null ||
-          !_dateOnly(date).isBefore(_dateOnly(_fromDate!));
+      final fromOk =
+          _fromDate == null || !_dateOnly(date).isBefore(_dateOnly(_fromDate!));
 
-      final toOk = _toDate == null ||
-          !_dateOnly(date).isAfter(_dateOnly(_toDate!));
+      final toOk =
+          _toDate == null || !_dateOnly(date).isAfter(_dateOnly(_toDate!));
 
       return nameOk && fromOk && toOk;
     }).toList();
@@ -126,8 +128,8 @@ class _SearchPurchaseInvoicesScreenState
 
   void _clearFilters() {
     setState(() {
-      _fromDate = null;
-      _toDate = null;
+      _fromDate = defaultFilterFromDate();
+      _toDate = defaultFilterToDate();
       _nameController.clear();
     });
   }
@@ -143,19 +145,26 @@ class _SearchPurchaseInvoicesScreenState
     }
   }
 
-  bool get _hasFilters =>
-      _nameController.text.isNotEmpty ||
-      _fromDate != null ||
-      _toDate != null;
+  bool get _hasFilters => _nameController.text.isNotEmpty || !_datesAreDefault;
+
+  bool get _datesAreDefault =>
+      _sameDay(_fromDate, defaultFilterFromDate()) &&
+      _sameDay(_toDate, defaultFilterToDate());
+
+  bool _sameDay(DateTime? value, DateTime other) {
+    if (value == null) return false;
+
+    return value.year == other.year &&
+        value.month == other.month &&
+        value.day == other.day;
+  }
 
   @override
   Widget build(BuildContext context) {
     final results = _results;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Search Invoices'),
-      ),
+      appBar: AppBar(title: const Text('Search Invoices')),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -200,9 +209,7 @@ class _SearchPurchaseInvoicesScreenState
                   onPressed: _pickFromDate,
                   icon: const Icon(Icons.event_outlined),
                   label: Text(
-                    _fromDate == null
-                        ? 'From date'
-                        : _formatDate(_fromDate!),
+                    _fromDate == null ? 'From date' : _formatDate(_fromDate!),
                   ),
                 ),
               ),
@@ -212,9 +219,7 @@ class _SearchPurchaseInvoicesScreenState
                   onPressed: _pickToDate,
                   icon: const Icon(Icons.event_outlined),
                   label: Text(
-                    _toDate == null
-                        ? 'To date'
-                        : _formatDate(_toDate!),
+                    _toDate == null ? 'To date' : _formatDate(_toDate!),
                   ),
                 ),
               ),
@@ -242,18 +247,14 @@ class _SearchPurchaseInvoicesScreenState
     }
 
     if (_error != null) {
-      return ErrorState(
-        message: _error!,
-        onRetry: _loadInvoices,
-      );
+      return ErrorState(message: _error!, onRetry: _loadInvoices);
     }
 
     if (results.isEmpty) {
       return const EmptyState(
         icon: Icons.search_off_rounded,
         title: 'No matches',
-        message:
-            'Try adjusting the supplier name or the date range.',
+        message: 'Try adjusting the supplier name or the date range.',
       );
     }
 

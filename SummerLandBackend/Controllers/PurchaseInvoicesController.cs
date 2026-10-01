@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SummerLandBackend.Data;
 using SummerLandBackend.DTOs.PurchaseInvoices;
 using SummerLandBackend.Models;
+using SummerLandBackend.Services;
 
 namespace SummerLandBackend.Controllers;
 
@@ -97,10 +98,37 @@ public class PurchaseInvoicesController : ControllerBase
         if (dto.Discount > itemsTotal)
             return BadRequest("Discount cannot exceed the total cost.");
 
-        var totalCost = itemsTotal - dto.Discount;
+        // Extra fees (shipping, customs, handling...). They are part of what the
+        // goods actually cost, so they are added to TotalCost, but they are not
+        // owed to the supplier, so they are excluded from Debt.
+        var fees = new List<PurchaseInvoiceFee>();
 
-        if (dto.TotalPaid > totalCost)
-            return BadRequest("TotalPaid cannot exceed TotalCost.");
+        foreach (var feeDto in dto.Fees)
+        {
+            var description = (feeDto.Description ?? string.Empty).Trim();
+
+            if (description.Length == 0)
+                return BadRequest("Every extra fee needs a description.");
+
+            if (feeDto.Amount <= 0)
+                return BadRequest(
+                    $"The amount for '{description}' must be greater than zero.");
+
+            fees.Add(new PurchaseInvoiceFee
+            {
+                Description = description,
+                Amount = feeDto.Amount
+            });
+        }
+
+        var feesTotal = fees.Sum(f => f.Amount);
+
+        var goodsTotal = itemsTotal - dto.Discount;
+
+        var totalCost = goodsTotal + feesTotal;
+
+        if (dto.TotalPaid > goodsTotal)
+            return BadRequest("TotalPaid cannot exceed the cost of the purchased items.");
 
         await using var transaction =
             await _context.Database.BeginTransactionAsync();
@@ -125,7 +153,7 @@ public class PurchaseInvoicesController : ControllerBase
                 await _context.SaveChangesAsync();
             }
 
-            var invoiceDebt = totalCost - dto.TotalPaid;
+            var invoiceDebt = goodsTotal - dto.TotalPaid;
 
             var invoice = new PurchaseInvoice
             {
@@ -136,6 +164,11 @@ public class PurchaseInvoicesController : ControllerBase
                 TotalPaid = dto.TotalPaid,
                 Debt = invoiceDebt
             };
+
+            foreach (var fee in fees)
+            {
+                invoice.Fees.Add(fee);
+            }
 
             foreach (var itemDto in dto.Items)
             {
@@ -290,6 +323,14 @@ public class PurchaseInvoicesController : ControllerBase
                 invoice.TotalPaid,
                 InvoiceDebt = invoice.Debt,
                 SupplierTotalDebt = supplier.Debt,
+                FeesTotal = feesTotal,
+                ItemsTotal = itemsTotal,
+                Fees = invoice.Fees.Select(f => new
+                {
+                    f.Id,
+                    f.Description,
+                    f.Amount
+                }),
                 Items = invoice.Items.Select(i => new
                 {
                     i.ProductId,
@@ -321,23 +362,17 @@ public class PurchaseInvoicesController : ControllerBase
         var query = _context.PurchaseInvoices
             .Include(i => i.Supplier)
             .Include(i => i.Items)
+            .Include(i => i.Fees)
             .AsQueryable();
 
         if (from.HasValue)
         {
-            var fromDate = ToUtc(from.Value);
-            query = query.Where(i => i.Date >= fromDate);
+            query = query.Where(i => i.Date >= QueryDateRange.Start(from));
         }
 
         if (to.HasValue)
         {
-            var toDate = ToUtc(to.Value);
-
-            // A bare date (00:00:00) as "to" means the whole day.
-            if (to.Value.TimeOfDay == TimeSpan.Zero)
-                toDate = toDate.Date.AddDays(1).AddTicks(-1);
-
-            query = query.Where(i => i.Date <= toDate);
+            query = query.Where(i => i.Date <= QueryDateRange.End(to));
         }
 
         var invoices = await query
@@ -352,6 +387,13 @@ public class PurchaseInvoicesController : ControllerBase
                 i.TotalCost,
                 i.TotalPaid,
                 InvoiceDebt = i.Debt,
+                FeesTotal = i.Fees.Sum(f => f.Amount),
+                Fees = i.Fees.Select(f => new
+                {
+                    f.Id,
+                    f.Description,
+                    f.Amount
+                }),
                 Items = i.Items.Select(item => new
                 {
                     item.ProductId,
@@ -364,15 +406,6 @@ public class PurchaseInvoicesController : ControllerBase
         return Ok(invoices);
     }
 
-    // Unspecified is treated as UTC (your CreatedAt values are stored with
-    // DateTime.UtcNow), instead of silently using the server's local timezone.
-    private static DateTime ToUtc(DateTime value) => value.Kind switch
-    {
-        DateTimeKind.Utc => value,
-        DateTimeKind.Local => value.ToUniversalTime(),
-        _ => DateTime.SpecifyKind(value, DateTimeKind.Utc)
-    };
-
     [HttpGet("{id}")]
     public async Task<IActionResult> GetPurchaseInvoice(int id)
     {
@@ -380,6 +413,7 @@ public class PurchaseInvoicesController : ControllerBase
             .Include(i => i.Supplier)
             .Include(i => i.Items)
                 .ThenInclude(item => item.Product)
+            .Include(i => i.Fees)
             .Include(i => i.Returns)
                 .ThenInclude(r => r.Product)
             .FirstOrDefaultAsync(i => i.Id == id);
@@ -396,6 +430,14 @@ public class PurchaseInvoicesController : ControllerBase
             invoice.TotalPaid,
             InvoiceDebt = invoice.Debt,
             SupplierTotalDebt = invoice.Supplier.Debt,
+            ItemsTotal = invoice.Items.Sum(i => i.TotalPrice),
+            FeesTotal = invoice.Fees.Sum(f => f.Amount),
+            Fees = invoice.Fees.Select(f => new
+            {
+                f.Id,
+                f.Description,
+                f.Amount
+            }),
             Items = invoice.Items.Select(i => new
             {
                 i.ProductId,

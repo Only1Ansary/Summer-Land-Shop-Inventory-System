@@ -7,8 +7,10 @@ import '../../models/size_model.dart';
 
 import '../../services/api_service.dart';
 import '../../services/category_service.dart';
+import '../../services/colour_service.dart';
 import '../../services/product_service.dart';
 import '../../services/product_variant_service.dart';
+import '../../services/size_service.dart';
 import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
 
@@ -40,7 +42,17 @@ class _ProductDetailsScreenState
   final ProductService _productService =
       ProductService(ApiService());
 
+  final SizeService _sizeService =
+      SizeService(ApiService());
+
+  final ColourService _colourService =
+      ColourService(ApiService());
+
   List<ProductVariant> _variants = [];
+
+  List<SizeModel> _sizes = [];
+
+  List<Colour> _colours = [];
 
   bool _isLoading = false;
   String? _error;
@@ -48,7 +60,33 @@ class _ProductDetailsScreenState
   @override
   void initState() {
     super.initState();
+
+    _sizes = List.of(widget.sizes);
+    _colours = List.of(widget.colours);
+
     _loadVariants();
+  }
+
+  Future<void> _loadLookups() async {
+    try {
+      final results = await Future.wait([
+        _sizeService.getSizes(),
+        _colourService.getColours(),
+      ]);
+
+      if (!mounted) return;
+
+      setState(() {
+        _sizes = results[0] as List<SizeModel>;
+        _colours = results[1] as List<Colour>;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      debugPrint(
+        'Failed to refresh sizes and colours: $e',
+      );
+    }
   }
 
   Future<void> _loadVariants() async {
@@ -58,6 +96,8 @@ class _ProductDetailsScreenState
     });
 
     try {
+      await _loadLookups();
+
       final variants =
           await _variantService.getVariants();
 
@@ -138,8 +178,8 @@ class _ProductDetailsScreenState
       context,
       (_) => ProductVariantFormScreen(
         product: widget.product,
-        sizes: widget.sizes,
-        colours: widget.colours,
+        sizes: _sizes,
+        colours: _colours,
       ),
     );
 
@@ -155,8 +195,8 @@ class _ProductDetailsScreenState
       context,
       (_) => ProductVariantFormScreen(
         product: widget.product,
-        sizes: widget.sizes,
-        colours: widget.colours,
+        sizes: _sizes,
+        colours: _colours,
         variant: variant,
       ),
     );

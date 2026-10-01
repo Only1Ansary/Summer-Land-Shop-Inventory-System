@@ -19,8 +19,9 @@ class ShowPurchaseInvoicesScreen extends StatefulWidget {
 
 class _ShowPurchaseInvoicesScreenState
     extends State<ShowPurchaseInvoicesScreen> {
-  final PurchaseInvoiceService _purchaseInvoiceService =
-      PurchaseInvoiceService(ApiService());
+  final PurchaseInvoiceService _purchaseInvoiceService = PurchaseInvoiceService(
+    ApiService(),
+  );
 
   List<PurchaseInvoice> _invoices = [];
 
@@ -34,9 +35,8 @@ class _ShowPurchaseInvoicesScreenState
   @override
   void initState() {
     super.initState();
-    final today = DateTime.now();
-    _from = today;
-    _to = today;
+    _from = defaultFilterFromDate();
+    _to = defaultFilterToDate();
     _loadInvoices();
   }
 
@@ -75,9 +75,7 @@ class _ShowPurchaseInvoicesScreenState
   Future<void> _pickDate(bool isFrom) async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: isFrom
-          ? (_from ?? DateTime.now())
-          : (_to ?? DateTime.now()),
+      initialDate: isFrom ? (_from ?? DateTime.now()) : (_to ?? DateTime.now()),
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
     );
@@ -97,11 +95,9 @@ class _ShowPurchaseInvoicesScreenState
   }
 
   void _resetDates() {
-    final today = DateTime.now();
-
     setState(() {
-      _from = today;
-      _to = today;
+      _from = defaultFilterFromDate();
+      _to = defaultFilterToDate();
       _edited = false;
     });
 
@@ -152,11 +148,8 @@ class _ShowPurchaseInvoicesScreenState
       body: _isLoading
           ? const LoadingState()
           : _error != null
-              ? ErrorState(
-                  message: _error!,
-                  onRetry: _loadInvoices,
-                )
-              : _buildList(),
+          ? ErrorState(message: _error!, onRetry: _loadInvoices)
+          : _buildList(),
     );
   }
 
@@ -167,8 +160,7 @@ class _ShowPurchaseInvoicesScreenState
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
             child: DateFilterBar(
-              fromLabel:
-                  _from == null ? 'From' : _formatDate(_from!),
+              fromLabel: _from == null ? 'From' : _formatDate(_from!),
               toLabel: _to == null ? 'To' : _formatDate(_to!),
               onFrom: () => _pickDate(true),
               onTo: () => _pickDate(false),
@@ -188,8 +180,7 @@ class _ShowPurchaseInvoicesScreenState
                           title: _edited
                               ? 'No invoices in this period'
                               : 'No invoices today',
-                          message:
-                              'Try changing the date range.',
+                          message: 'Try changing the date range.',
                         ),
                       ],
                     )

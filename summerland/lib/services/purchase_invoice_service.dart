@@ -12,6 +12,7 @@ class PurchaseInvoiceService {
     required double totalPaid,
     required double discount,
     required List<Map<String, dynamic>> items,
+    List<Map<String, dynamic>> fees = const [],
   }) async {
     final data = await _apiService.post(
       '/api/PurchaseInvoices',
@@ -21,6 +22,7 @@ class PurchaseInvoiceService {
         'totalPaid': totalPaid,
         'discount': discount,
         'items': items,
+        'fees': fees,
       },
     );
 

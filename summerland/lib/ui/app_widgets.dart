@@ -9,6 +9,17 @@ String money(num value) => '${value.toStringAsFixed(2)} EGP';
 String moneyNegative(num value) =>
     value == 0 ? '0.00 EGP' : '-${value.toStringAsFixed(2)} EGP';
 
+/// Strips the time component from a date.
+DateTime dateOnly(DateTime value) =>
+    DateTime(value.year, value.month, value.day);
+
+/// Default start of a date filter that has not been set: yesterday.
+DateTime defaultFilterFromDate() =>
+    dateOnly(DateTime.now().subtract(const Duration(days: 1)));
+
+/// Default end of a date filter that has not been set: today.
+DateTime defaultFilterToDate() => dateOnly(DateTime.now());
+
 /// Pushes a screen using an instant (zero-duration) route.
 ///
 /// Animated route transitions leave the covered route offstage while its
@@ -16,10 +27,7 @@ String moneyNegative(num value) =>
 /// that window and can touch a scaffold body that has not been laid out yet,
 /// throwing "Cannot hit test a render box with no size". Using an instant
 /// route removes the outgoing screen in the same frame, which avoids the race.
-Future<T?> pushScreen<T>(
-  BuildContext context,
-  WidgetBuilder builder,
-) {
+Future<T?> pushScreen<T>(BuildContext context, WidgetBuilder builder) {
   return Navigator.of(context).push<T>(
     PageRouteBuilder<T>(
       transitionDuration: Duration.zero,
@@ -31,10 +39,7 @@ Future<T?> pushScreen<T>(
 
 /// Loading state used consistently across all screens.
 class LoadingState extends StatelessWidget {
-  const LoadingState({
-    super.key,
-    this.message = 'Loading\u2026',
-  });
+  const LoadingState({super.key, this.message = 'Loading\u2026'});
 
   final String message;
 
@@ -108,10 +113,7 @@ class EmptyState extends StatelessWidget {
                 ),
               ),
             ],
-            if (action != null) ...[
-              const SizedBox(height: 20),
-              action!,
-            ],
+            if (action != null) ...[const SizedBox(height: 20), action!],
           ],
         ),
       ),
@@ -121,11 +123,7 @@ class EmptyState extends StatelessWidget {
 
 /// Shared error state with an optional retry action.
 class ErrorState extends StatelessWidget {
-  const ErrorState({
-    super.key,
-    required this.message,
-    this.onRetry,
-  });
+  const ErrorState({super.key, required this.message, this.onRetry});
 
   final String message;
   final VoidCallback? onRetry;
@@ -305,11 +303,7 @@ class StatData {
 
 /// Responsive grid of [StatCard]s used by report screens.
 class StatGrid extends StatelessWidget {
-  const StatGrid({
-    super.key,
-    required this.stats,
-    this.columns = 2,
-  });
+  const StatGrid({super.key, required this.stats, this.columns = 2});
 
   final List<StatData> stats;
 
@@ -323,8 +317,8 @@ class StatGrid extends StatelessWidget {
         final wide = constraints.maxWidth >= 640;
         final perRow = wide ? columns : 1;
         final spacing = 12.0;
-        final cardWidth = (constraints.maxWidth - (spacing * (perRow - 1))) /
-            perRow;
+        final cardWidth =
+            (constraints.maxWidth - (spacing * (perRow - 1))) / perRow;
 
         return Wrap(
           spacing: spacing,
@@ -485,7 +479,8 @@ class InfoTile extends StatelessWidget {
             child: Text(
               value,
               textAlign: TextAlign.right,
-              style: valueStyle ??
+              style:
+                  valueStyle ??
                   theme.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
@@ -665,15 +660,11 @@ class _AppAmountDialogState extends State<_AppAmountDialog> {
       content: TextField(
         controller: _controller,
         autofocus: true,
-        keyboardType: const TextInputType.numberWithOptions(
-          decimal: true,
-        ),
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
         decoration: InputDecoration(
           labelText: widget.label,
           prefixText: '\u20a6 ',
-          helperText: widget.helperText.isEmpty
-              ? null
-              : widget.helperText,
+          helperText: widget.helperText.isEmpty ? null : widget.helperText,
         ),
         onSubmitted: (_) => _submit(),
       ),
@@ -682,10 +673,7 @@ class _AppAmountDialogState extends State<_AppAmountDialog> {
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Cancel'),
         ),
-        FilledButton(
-          onPressed: _submit,
-          child: Text(widget.confirmLabel),
-        ),
+        FilledButton(onPressed: _submit, child: Text(widget.confirmLabel)),
       ],
     );
   }
@@ -747,10 +735,7 @@ class _AppNameDialogState extends State<_AppNameDialog> {
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Cancel'),
         ),
-        FilledButton(
-          onPressed: _submit,
-          child: Text(widget.confirmLabel),
-        ),
+        FilledButton(onPressed: _submit, child: Text(widget.confirmLabel)),
       ],
     );
   }

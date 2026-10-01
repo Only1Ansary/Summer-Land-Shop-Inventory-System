@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using SummerLandBackend.Data;
 using SummerLandBackend.DTOs.Reports;
+using SummerLandBackend.Services;
 
 namespace SummerLandBackend.Controllers;
 
@@ -22,13 +23,8 @@ public class ReportsController : ControllerBase
     [FromQuery] DateTime? to,
     CancellationToken ct)
     {
-        var fromDate = from.HasValue ? ToUtc(from.Value) : DateTime.UtcNow.Date;
-        var toDate = to.HasValue ? ToUtc(to.Value) : DateTime.UtcNow;
-
-        // A bare date (00:00:00) as "to" means the whole day.
-        // Check the RAW value, not the value after UTC conversion.
-        if (to.HasValue && to.Value.TimeOfDay == TimeSpan.Zero)
-            toDate = ToUtc(to.Value.Date.AddDays(1)).AddTicks(-1);
+        var fromDate = QueryDateRange.Start(from);
+        var toDate = QueryDateRange.End(to);
 
         if (fromDate > toDate)
             return BadRequest("From date cannot be greater than To date.");
@@ -98,8 +94,11 @@ public class ReportsController : ControllerBase
         var returnsAmount = await returns.SumAsync(r => (decimal?)r.TotalAmount, ct) ?? 0m;
 
         // ---------- Purchases (small set, no Includes) ----------
+        // Filtered by the invoice's own Date (when the purchase happened),
+        // not CreatedAt (when the row was entered). toDate already covers the
+        // whole day when a bare date is supplied.
         var purchases = await _context.PurchaseInvoices.AsNoTracking()
-            .Where(p => p.CreatedAt >= fromDate && p.CreatedAt <= toDate)
+            .Where(p => p.Date >= fromDate && p.Date <= toDate)
             .ToListAsync(ct);
 
         var purchaseTotalCost = purchases.Sum(p => p.TotalCost);
@@ -140,15 +139,6 @@ public class ReportsController : ControllerBase
             CategorySales = categorySales
         });
     }
-
-    // Unspecified is treated as UTC (your CreatedAt values are stored with DateTime.UtcNow),
-    // instead of silently using the server's local timezone.
-    private static DateTime ToUtc(DateTime value) => value.Kind switch
-    {
-        DateTimeKind.Utc => value,
-        DateTimeKind.Local => value.ToUniversalTime(),
-        _ => DateTime.SpecifyKind(value, DateTimeKind.Utc)
-    };
 
     [HttpGet("inventory")]
     public async Task<ActionResult<InventoryReportDto>> GetInventoryReport()
@@ -276,16 +266,9 @@ public class ReportsController : ControllerBase
     [FromQuery] int? locationId,
     [FromQuery] int? productVariantId)
     {
-        var fromDate = from?.ToUniversalTime()
-    ?? DateTime.UtcNow.Date;
+        var fromDate = QueryDateRange.Start(from);
 
-        var toDate = to?.ToUniversalTime()
-            ?? DateTime.UtcNow;
-
-        if (to.HasValue && to.Value.TimeOfDay == TimeSpan.Zero)
-        {
-            toDate = toDate.Date.AddDays(1).AddTicks(-1);
-        }
+        var toDate = QueryDateRange.End(to);
 
         if (fromDate > toDate)
         {
@@ -365,11 +348,9 @@ public class ReportsController : ControllerBase
     [FromQuery] DateTime? to,
     [FromQuery] int? locationId)
     {
-        var fromDate = from?.ToUniversalTime()
-            ?? DateTime.UtcNow.Date;
+        var fromDate = QueryDateRange.Start(from);
 
-        var toDate = to?.ToUniversalTime()
-            ?? DateTime.UtcNow;
+        var toDate = QueryDateRange.End(to);
 
         if (fromDate > toDate)
         {
@@ -410,8 +391,13 @@ public class ReportsController : ControllerBase
 
                 TotalSales = g.Sum(i => i.TotalPrice)
             })
+            // Lines are already net of returns (ReturnsController reduces the
+            // quantity and removes the line once it is fully returned), so
+            // these sums are what was actually kept.
             .OrderByDescending(i => i.TotalQuantitySold)
-            .ThenByDescending(i => i.TotalSales)
+            // Rank strictly by units sold. Revenue must not break ties,
+            // otherwise equal-quantity products look revenue-sorted.
+            .ThenBy(i => i.ProductName)
             .ToListAsync();
 
         var response = new BestSellingProductsReportDto

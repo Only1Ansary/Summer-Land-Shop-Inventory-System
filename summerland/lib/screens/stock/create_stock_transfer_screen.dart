@@ -123,7 +123,6 @@ class _CreateStockTransferScreenState
       _filteredVariants = _variants.where((variant) {
         return variant.modelNumber.toLowerCase().contains(value) ||
             variant.productName.toLowerCase().contains(value) ||
-            variant.totalQuantity > -1 ||
             variant.barcode.toLowerCase().contains(value) ||
             (variant.sizeName?.toLowerCase().contains(value) ?? false) ||
             (variant.colourName?.toLowerCase().contains(value) ?? false);

@@ -34,6 +34,7 @@ class _CreatePurchaseInvoiceScreenState
 
   List<Category> _categories = [];
   final List<_PurchaseItem> _items = [];
+  final List<_PurchaseFee> _fees = [];
 
   DateTime _date = DateTime.now();
 
@@ -86,12 +87,25 @@ class _CreatePurchaseInvoiceScreenState
     );
   }
 
-  double get _discount {
+double get _discount {
     return double.tryParse(_discountController.text.trim()) ?? 0;
-  }
+}
 
-  double get _totalAfterDiscount =>
-      (_totalCost - _discount).clamp(0, double.infinity);
+double get _totalAfterDiscount =>
+    (_totalCost - _discount).clamp(0, double.infinity);
+
+double get _feesTotal {
+    return _fees.fold(
+      0,
+      (total, fee) => total + fee.amount,
+    );
+}
+
+/// Goods after discount. Extra fees are excluded: they are a real cost but
+/// are never owed to the supplier.
+double get _payableTotal => _totalAfterDiscount;
+
+double get _grandTotal => _payableTotal + _feesTotal;
 
   Future<void> _pickDate() async {
     final now = DateTime.now();
@@ -178,6 +192,34 @@ class _CreatePurchaseInvoiceScreenState
     });
   }
 
+  Future<void> _addFee({_PurchaseFee? existing}) async {
+    final fee = await showDialog<_PurchaseFee>(
+      context: context,
+      builder: (context) => _PurchaseFeeDialog(fee: existing),
+    );
+
+    if (fee == null) return;
+
+    setState(() {
+      if (existing == null) {
+        _fees.add(fee);
+        return;
+      }
+
+      final index = _fees.indexWhere((f) => f.id == existing.id);
+
+      if (index != -1) {
+        _fees[index] = fee;
+      }
+    });
+  }
+
+  void _removeFee(int index) {
+    setState(() {
+      _fees.removeAt(index);
+    });
+  }
+
   Future<void> _createPurchaseInvoice() async {
     final supplierName = _supplierNameController.text.trim();
 
@@ -214,9 +256,23 @@ class _CreatePurchaseInvoiceScreenState
       return;
     }
 
-    if (totalPaid > _totalAfterDiscount) {
-      _showError('Total paid cannot exceed the discounted total.');
+    if (totalPaid > _payableTotal) {
+      _showError('Total paid cannot exceed the cost of the purchased items.');
       return;
+    }
+
+    for (final fee in _fees) {
+      if (fee.description.trim().isEmpty) {
+        _showError('Every extra fee needs a description.');
+        return;
+      }
+
+      if (fee.amount <= 0) {
+        _showError(
+          'The amount for "${fee.description.trim()}" must be greater than zero.',
+        );
+        return;
+      }
     }
 
     setState(() {
@@ -236,12 +292,22 @@ class _CreatePurchaseInvoiceScreenState
         };
       }).toList();
 
+      final fees = _fees
+          .map(
+            (fee) => {
+              'description': fee.description.trim(),
+              'amount': fee.amount,
+            },
+          )
+          .toList();
+
       final invoice = await _purchaseInvoiceService.createPurchaseInvoice(
         supplierName: supplierName,
         date: _date,
         totalPaid: totalPaid,
         discount: discount,
         items: items,
+        fees: fees,
       );
 
       if (!mounted) return;
@@ -262,6 +328,7 @@ class _CreatePurchaseInvoiceScreenState
 
       setState(() {
         _items.clear();
+        _fees.clear();
         _totalPaidController.clear();
         _discountController.clear();
       });
@@ -443,15 +510,98 @@ class _CreatePurchaseInvoiceScreenState
     );
   }
 
+  Widget _buildFeesSection() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SectionHeader(
+              title: '3. Extra Fees',
+              subtitle:
+                  'Shipping, customs, handling and other charges. Added to the total cost but not owed to the supplier.',
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => _addFee(),
+                icon: const Icon(Icons.add),
+                label: const Text('Add Fee'),
+              ),
+            ),
+            const SizedBox(height: 12),
+            if (_fees.isEmpty)
+              const EmptyState(
+                icon: Icons.local_shipping_outlined,
+                title: 'No extra fees',
+                message:
+                    'Add shipping or other charges if they apply to this purchase.',
+              )
+            else
+              ..._fees.asMap().entries.map((entry) {
+                final index = entry.key;
+                final fee = entry.value;
+
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: ListTile(
+                    leading: Icon(
+                      Icons.local_shipping_outlined,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    title: Text(fee.description),
+                    subtitle: Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text: money(fee.amount),
+                            style: TextStyle(
+                              color: amountColor(context, fee.amount),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const TextSpan(
+                            text: '  •  not payable to supplier',
+                          ),
+                        ],
+                      ),
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          tooltip: 'Edit',
+                          icon: const Icon(Icons.edit_outlined),
+                          onPressed: () => _addFee(existing: fee),
+                        ),
+                        IconButton(
+                          tooltip: 'Remove',
+                          icon: const Icon(Icons.delete_outline),
+                          onPressed: () => _removeFee(index),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildTotalsBar() {
     final theme = Theme.of(context);
     final totalCost = _totalCost;
     final discount = _discount;
-    final total = _totalAfterDiscount;
+    final payable = _payableTotal;
+    final fees = _feesTotal;
     final totalPaidText = _totalPaidController.text.trim();
     final totalPaid = double.tryParse(totalPaidText) ?? 0;
 
-    final debt = (total - totalPaid).clamp(0, double.infinity);
+    final debt = (payable - totalPaid).clamp(0, double.infinity);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -498,17 +648,38 @@ class _CreatePurchaseInvoiceScreenState
                 ],
               ),
             ),
+          if (fees > 0)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Row(
+                children: [
+                  Text(
+                    'Extra Fees: ${_fees.length}',
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    '+${money(fees)}',
+                    style: TextStyle(
+                      color: amountColor(context, fees),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.only(top: 4),
             child: Row(
               children: [
                 const Spacer(),
                 Text(
-                  'Total: ${money(total)}',
+                  'Total Cost: ${money(_grandTotal)}',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
-                    color: amountColor(context, total),
+                    color: amountColor(context, _grandTotal),
                   ),
                 ),
               ],
@@ -566,6 +737,8 @@ class _CreatePurchaseInvoiceScreenState
                       _buildSupplierSection(),
                       const SizedBox(height: 16),
                       _buildItemsSection(),
+                      const SizedBox(height: 16),
+                      _buildFeesSection(),
                     ],
                   ),
                 ),
@@ -596,6 +769,132 @@ class _PurchaseItem {
     required this.categoryId,
     required this.profitMargin,
   });
+}
+
+class _PurchaseFee {
+  final int id;
+  final String description;
+  final double amount;
+
+  _PurchaseFee({
+    required this.id,
+    required this.description,
+    required this.amount,
+  });
+}
+
+class _PurchaseFeeDialog extends StatefulWidget {
+  const _PurchaseFeeDialog({this.fee});
+
+  final _PurchaseFee? fee;
+
+  @override
+  State<_PurchaseFeeDialog> createState() => _PurchaseFeeDialogState();
+}
+
+class _PurchaseFeeDialogState extends State<_PurchaseFeeDialog> {
+  late final TextEditingController _descriptionController;
+  late final TextEditingController _amountController;
+
+  @override
+  void initState() {
+    super.initState();
+
+    final fee = widget.fee;
+
+    _descriptionController = TextEditingController(
+      text: fee?.description ?? '',
+    );
+    _amountController = TextEditingController(
+      text: fee == null ? '' : fee.amount.toStringAsFixed(2),
+    );
+  }
+
+  @override
+  void dispose() {
+    _descriptionController.dispose();
+    _amountController.dispose();
+    super.dispose();
+  }
+
+  void _add() {
+    final navigator = Navigator.of(context);
+
+    final description = _descriptionController.text.trim();
+
+    if (description.isEmpty) {
+      _showError('Describe what the fee is for.');
+      return;
+    }
+
+    final amount = double.tryParse(_amountController.text.trim());
+
+    if (amount == null || amount <= 0) {
+      _showError('The fee amount must be greater than zero.');
+      return;
+    }
+
+    navigator.pop(
+      _PurchaseFee(
+        id: widget.fee?.id ?? DateTime.now().microsecondsSinceEpoch,
+        description: description,
+        amount: amount,
+      ),
+    );
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.fee == null ? 'Add Fee' : 'Edit Fee'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: _descriptionController,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: const InputDecoration(
+              labelText: 'Description',
+              hintText: 'Shipping, customs, handling...',
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _amountController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(
+              labelText: 'Amount',
+              prefixText: '₦ ',
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Added to the total cost, but not owed to the supplier.',
+            style: TextStyle(fontSize: 12),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: _add,
+          child: Text(widget.fee == null ? 'Add' : 'Save'),
+        ),
+      ],
+    );
+  }
 }
 
 class _PurchaseItemDialog extends StatefulWidget {

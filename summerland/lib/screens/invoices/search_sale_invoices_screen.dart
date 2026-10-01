@@ -15,13 +15,10 @@ class SearchSaleInvoicesScreen extends StatefulWidget {
       _SearchSaleInvoicesScreenState();
 }
 
-class _SearchSaleInvoicesScreenState
-    extends State<SearchSaleInvoicesScreen> {
-  final InvoiceService _invoiceService =
-      InvoiceService(ApiService());
+class _SearchSaleInvoicesScreenState extends State<SearchSaleInvoicesScreen> {
+  final InvoiceService _invoiceService = InvoiceService(ApiService());
 
-  final TextEditingController _queryController =
-      TextEditingController();
+  final TextEditingController _queryController = TextEditingController();
 
   List<Invoice> _invoices = [];
 
@@ -34,6 +31,8 @@ class _SearchSaleInvoicesScreenState
   @override
   void initState() {
     super.initState();
+    _fromDate = defaultFilterFromDate();
+    _toDate = defaultFilterToDate();
     _loadInvoices();
   }
 
@@ -76,25 +75,30 @@ class _SearchSaleInvoicesScreenState
     final query = _queryController.text.trim().toLowerCase();
 
     return _invoices.where((invoice) {
-      final matchesId = query.isEmpty ||
+      final matchesId =
+          query.isEmpty ||
           '#${invoice.id}'.contains(query) ||
           '${invoice.id}'.contains(query);
 
       final matchesLocation =
-          query.isEmpty ||
-              invoice.locationName.toLowerCase().contains(query);
+          query.isEmpty || invoice.locationName.toLowerCase().contains(query);
 
-      final matchesItem = query.isEmpty ||
-          invoice.items.any((item) =>
-              item.productName.toLowerCase().contains(query) ||
-              item.modelNumber.toLowerCase().contains(query));
+      final matchesItem =
+          query.isEmpty ||
+          invoice.items.any(
+            (item) =>
+                item.productName.toLowerCase().contains(query) ||
+                item.modelNumber.toLowerCase().contains(query),
+          );
 
       final textOk = matchesId || matchesLocation || matchesItem;
 
-      final fromOk = _fromDate == null ||
+      final fromOk =
+          _fromDate == null ||
           !_dateOnly(invoice.createdAt).isBefore(_dateOnly(_fromDate!));
 
-      final toOk = _toDate == null ||
+      final toOk =
+          _toDate == null ||
           !_dateOnly(invoice.createdAt).isAfter(_dateOnly(_toDate!));
 
       return textOk && fromOk && toOk;
@@ -136,8 +140,8 @@ class _SearchSaleInvoicesScreenState
 
   void _clearFilters() {
     setState(() {
-      _fromDate = null;
-      _toDate = null;
+      _fromDate = defaultFilterFromDate();
+      _toDate = defaultFilterToDate();
       _queryController.clear();
     });
   }
@@ -149,19 +153,26 @@ class _SearchSaleInvoicesScreenState
     );
   }
 
-  bool get _hasFilters =>
-      _queryController.text.isNotEmpty ||
-      _fromDate != null ||
-      _toDate != null;
+  bool get _hasFilters => _queryController.text.isNotEmpty || !_datesAreDefault;
+
+  bool get _datesAreDefault =>
+      _sameDay(_fromDate, defaultFilterFromDate()) &&
+      _sameDay(_toDate, defaultFilterToDate());
+
+  bool _sameDay(DateTime? value, DateTime other) {
+    if (value == null) return false;
+
+    return value.year == other.year &&
+        value.month == other.month &&
+        value.day == other.day;
+  }
 
   @override
   Widget build(BuildContext context) {
     final results = _results;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Search Sale Invoices'),
-      ),
+      appBar: AppBar(title: const Text('Search Sale Invoices')),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -205,9 +216,7 @@ class _SearchSaleInvoicesScreenState
                   onPressed: _pickFromDate,
                   icon: const Icon(Icons.event_outlined),
                   label: Text(
-                    _fromDate == null
-                        ? 'From date'
-                        : _formatDate(_fromDate!),
+                    _fromDate == null ? 'From date' : _formatDate(_fromDate!),
                   ),
                 ),
               ),
@@ -217,9 +226,7 @@ class _SearchSaleInvoicesScreenState
                   onPressed: _pickToDate,
                   icon: const Icon(Icons.event_outlined),
                   label: Text(
-                    _toDate == null
-                        ? 'To date'
-                        : _formatDate(_toDate!),
+                    _toDate == null ? 'To date' : _formatDate(_toDate!),
                   ),
                 ),
               ),
@@ -247,18 +254,14 @@ class _SearchSaleInvoicesScreenState
     }
 
     if (_error != null) {
-      return ErrorState(
-        message: _error!,
-        onRetry: _loadInvoices,
-      );
+      return ErrorState(message: _error!, onRetry: _loadInvoices);
     }
 
     if (results.isEmpty) {
       return const EmptyState(
         icon: Icons.search_off_rounded,
         title: 'No matches',
-        message:
-            'Try adjusting the invoice number, location, product or the date range.',
+        message: 'Try adjusting the invoice number, location, product or the date range.',
       );
     }
 

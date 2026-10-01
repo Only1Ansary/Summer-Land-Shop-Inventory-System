@@ -42,6 +42,9 @@ class _StockMovementsReportScreenState
     _reportService = ReportService(apiService);
     _locationService = LocationService(apiService);
 
+    _from = defaultFilterFromDate();
+    _to = defaultFilterToDate();
+
     _loadData();
   }
 
@@ -54,8 +57,7 @@ class _StockMovementsReportScreenState
     try {
       final locations = await _locationService.getLocations();
 
-      final report =
-          await _reportService.getStockMovementReport(
+      final report = await _reportService.getStockMovementReport(
         from: _from,
         to: _to,
         locationId: _selectedLocationId,
@@ -77,9 +79,7 @@ class _StockMovementsReportScreenState
   Future<void> _pickDate(bool isFrom) async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: isFrom
-          ? (_from ?? DateTime.now())
-          : (_to ?? DateTime.now()),
+      initialDate: isFrom ? (_from ?? DateTime.now()) : (_to ?? DateTime.now()),
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
     );
@@ -111,99 +111,93 @@ class _StockMovementsReportScreenState
       body: _loading
           ? const LoadingState()
           : _error != null
-              ? ErrorState(
-                  message: _error!,
-                  onRetry: _loadData,
-                )
-              : RefreshIndicator(
-                  onRefresh: _loadData,
-                  child: WideContent(
-                    child: ListView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.all(16),
-                      children: [
-                        DateFilterBar(
-                          fromLabel: _from == null
-                              ? 'From'
-                              : _formatDate(_from!),
-                          toLabel:
-                              _to == null ? 'To' : _formatDate(_to!),
-                          onFrom: () => _pickDate(true),
-                          onTo: () => _pickDate(false),
+          ? ErrorState(message: _error!, onRetry: _loadData)
+          : RefreshIndicator(
+              onRefresh: _loadData,
+              child: WideContent(
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    DateFilterBar(
+                      fromLabel: _from == null ? 'From' : _formatDate(_from!),
+                      toLabel: _to == null ? 'To' : _formatDate(_to!),
+                      onFrom: () => _pickDate(true),
+                      onTo: () => _pickDate(false),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<int?>(
+                      key: ValueKey('location-$_selectedLocationId'),
+                      initialValue: _selectedLocationId,
+                      decoration: const InputDecoration(
+                        labelText: 'Location',
+                        prefixIcon: Icon(Icons.location_on_outlined),
+                      ),
+                      items: [
+                        const DropdownMenuItem<int?>(
+                          value: null,
+                          child: Text('All Locations'),
                         ),
-                        const SizedBox(height: 12),
-                        DropdownButtonFormField<int?>(
-                          key: ValueKey('location-$_selectedLocationId'),
-                          initialValue: _selectedLocationId,
-                          decoration: const InputDecoration(
-                            labelText: 'Location',
-                            prefixIcon: Icon(Icons.location_on_outlined),
-                          ),
-                          items: [
-                            const DropdownMenuItem<int?>(
-                              value: null,
-                              child: Text('All Locations'),
-                            ),
-                            ..._locations.map(
-                              (location) => DropdownMenuItem<int?>(
-                                value: location.id,
-                                child: Text(location.name),
-                              ),
-                            ),
-                          ],
-                          onChanged: (value) async {
-                            setState(() {
-                              _selectedLocationId = value;
-                            });
-
-                            await _loadData();
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        StatGrid(
-                          stats: [
-                            StatData(
-                              label: 'Movements',
-                              value: '${report!.movementCount}',
-                              icon: Icons.swap_vert_rounded,
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        const SectionHeader(
-                          title: 'Movement History',
-                          subtitle: 'Quantity changes from transfers and refills',
-                        ),
-                        const SizedBox(height: 8),
-                        ...report.items.map(
-                          (item) => Card(
-                            margin: const EdgeInsets.only(bottom: 10),
-                            child: ListTile(
-                              isThreeLine: true,
-                              title: Text(item.productName),
-                              subtitle: Text(
-                                '${item.modelNumber}\n'
-                                '${item.locationName} • ${item.reason}\n'
-                                '${item.createdAt}',
-                              ),
-                              trailing: StatusBadge(
-                                label: item.quantityChange > 0
-                                    ? '+${item.quantityChange}'
-                                    : '${item.quantityChange}',
-                                color: item.quantityChange > 0
-                                    ? AppPalette.success
-                                    : AppPalette.danger,
-                                icon: item.quantityChange > 0
-                                    ? Icons.arrow_upward_rounded
-                                    : Icons.arrow_downward_rounded,
-                              ),
-                            ),
+                        ..._locations.map(
+                          (location) => DropdownMenuItem<int?>(
+                            value: location.id,
+                            child: Text(location.name),
                           ),
                         ),
                       ],
+                      onChanged: (value) async {
+                        setState(() {
+                          _selectedLocationId = value;
+                        });
+
+                        await _loadData();
+                      },
                     ),
-                  ),
+                    const SizedBox(height: 16),
+                    StatGrid(
+                      stats: [
+                        StatData(
+                          label: 'Movements',
+                          value: '${report!.movementCount}',
+                          icon: Icons.swap_vert_rounded,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    const SectionHeader(
+                      title: 'Movement History',
+                      subtitle: 'Quantity changes from transfers and refills',
+                    ),
+                    const SizedBox(height: 8),
+                    ...report.items.map(
+                      (item) => Card(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        child: ListTile(
+                          isThreeLine: true,
+                          title: Text(item.productName),
+                          subtitle: Text(
+                            '${item.modelNumber}\n'
+                            '${item.locationName} • ${item.reason}\n'
+                            '${item.createdAt}',
+                          ),
+                          trailing: StatusBadge(
+                            label: item.quantityChange > 0
+                                ? '+${item.quantityChange}'
+                                : '${item.quantityChange}',
+                            color: item.quantityChange > 0
+                                ? AppPalette.success
+                                : AppPalette.danger,
+                            icon: item.quantityChange > 0
+                                ? Icons.arrow_upward_rounded
+                                : Icons.arrow_downward_rounded,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
+              ),
+            ),
     );
   }
 }

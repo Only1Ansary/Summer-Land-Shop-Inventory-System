@@ -10,6 +10,9 @@ class PurchaseInvoice {
   final double totalPaid;
   final double debt;
   final double supplierTotalDebt;
+  final double itemsTotal;
+  final double feesTotal;
+  final List<PurchaseInvoiceFee> fees;
   final List<PurchaseInvoiceItem> items;
   final List<PurchaseReturn> returns;
 
@@ -25,7 +28,14 @@ class PurchaseInvoice {
     required this.supplierTotalDebt,
     required this.items,
     required this.returns,
+    this.itemsTotal = 0,
+    this.feesTotal = 0,
+    this.fees = const [],
   });
+
+  /// The part of [totalCost] the supplier can still be owed: the goods after
+  /// discount. Extra fees are part of the cost but are never owed.
+  double get payableTotal => totalCost - feesTotal;
 
   factory PurchaseInvoice.fromJson(Map<String, dynamic> json) {
     return PurchaseInvoice(
@@ -41,12 +51,37 @@ class PurchaseInvoice {
           ((json['invoiceDebt'] ?? json['debt']) as num? ?? 0).toDouble(),
       supplierTotalDebt:
           (json['supplierTotalDebt'] as num? ?? 0).toDouble(),
+      itemsTotal: (json['itemsTotal'] as num? ?? 0).toDouble(),
+      feesTotal: (json['feesTotal'] as num? ?? 0).toDouble(),
+      fees: (json['fees'] as List? ?? [])
+          .map((fee) => PurchaseInvoiceFee.fromJson(fee))
+          .toList(),
       items: (json['items'] as List? ?? [])
           .map((item) => PurchaseInvoiceItem.fromJson(item))
           .toList(),
       returns: (json['returns'] as List? ?? [])
           .map((ret) => PurchaseReturn.fromJson(ret))
           .toList(),
+    );
+  }
+}
+
+class PurchaseInvoiceFee {
+  final int id;
+  final String description;
+  final double amount;
+
+  PurchaseInvoiceFee({
+    required this.id,
+    required this.description,
+    required this.amount,
+  });
+
+  factory PurchaseInvoiceFee.fromJson(Map<String, dynamic> json) {
+    return PurchaseInvoiceFee(
+      id: json['id'] ?? 0,
+      description: json['description'] ?? '',
+      amount: (json['amount'] as num? ?? 0).toDouble(),
     );
   }
 }

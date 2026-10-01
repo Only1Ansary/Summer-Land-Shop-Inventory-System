@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../models/category.dart';
@@ -40,6 +42,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
   final TextEditingController _searchController =
       TextEditingController();
 
+  Timer? _searchDebounce;
+
   List<Product> _products = [];
   List<Category> _categories = [];
   List<SizeModel> _sizes = [];
@@ -50,6 +54,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
   int? _selectedColourId;
 
   bool _isLoading = false;
+  bool _isSearching = false;
   String? _error;
 
   bool _showFilters = false;
@@ -69,6 +74,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -111,18 +117,24 @@ class _ProductsScreenState extends State<ProductsScreen> {
   }
 
   Future<void> _search() async {
+    _searchDebounce?.cancel();
+
+    if (!mounted) return;
+
     final query = _searchController.text.trim();
 
-    if (query.isEmpty &&
-        _selectedCategoryId == null &&
-        _selectedSizeId == null &&
-        _selectedColourId == null) {
-      _loadData();
+    final hasFilters = query.isNotEmpty ||
+        _selectedCategoryId != null ||
+        _selectedSizeId != null ||
+        _selectedColourId != null;
+
+    if (!hasFilters) {
+      await _loadData();
       return;
     }
 
     setState(() {
-      _isLoading = true;
+      _isSearching = true;
       _error = null;
     });
 
@@ -148,13 +160,48 @@ class _ProductsScreenState extends State<ProductsScreen> {
     } finally {
       if (mounted) {
         setState(() {
-          _isLoading = false;
+          _isSearching = false;
         });
       }
     }
   }
 
+  void _onQueryChanged(String _) {
+    setState(() {});
+
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(
+      const Duration(milliseconds: 350),
+      _search,
+    );
+  }
+
+  void _setCategoryFilter(int? value) {
+    setState(() {
+      _selectedCategoryId = value;
+    });
+
+    _search();
+  }
+
+  void _setSizeFilter(int? value) {
+    setState(() {
+      _selectedSizeId = value;
+    });
+
+    _search();
+  }
+
+  void _setColourFilter(int? value) {
+    setState(() {
+      _selectedColourId = value;
+    });
+
+    _search();
+  }
+
   void _clearFilters() {
+    _searchDebounce?.cancel();
     _searchController.clear();
 
     setState(() {
@@ -163,7 +210,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
       _selectedColourId = null;
     });
 
-    _loadData();
+    _search();
   }
 
   Future<void> _openProductForm({
@@ -260,6 +307,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   Expanded(
                     child: TextField(
                       controller: _searchController,
+                      textInputAction: TextInputAction.search,
+                      onChanged: _onQueryChanged,
                       onSubmitted: (_) => _search(),
                       decoration: InputDecoration(
                         labelText: 'Search',
@@ -268,23 +317,19 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         suffixIcon: _searchController.text.isNotEmpty
                             ? IconButton(
                                 tooltip: 'Clear',
-                                onPressed: () {
-                                  _searchController.clear();
-                                },
+                                onPressed: _clearFilters,
                                 icon: const Icon(Icons.clear),
                               )
                             : null,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  FilledButton.icon(
-                    onPressed: _search,
-                    icon: const Icon(Icons.search_rounded),
-                    label: const Text('Search'),
-                  ),
                 ],
               ),
+              if (_isSearching) ...[
+                const SizedBox(height: 10),
+                const LinearProgressIndicator(minHeight: 2),
+              ],
               const SizedBox(height: 8),
               Row(
                 children: [
@@ -332,11 +377,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
           ),
         ),
       ],
-      onChanged: (value) {
-        setState(() {
-          _selectedCategoryId = value;
-        });
-      },
+      onChanged: _setCategoryFilter,
     );
 
     final sizeDropdown = DropdownButtonFormField<int?>(
@@ -355,11 +396,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
           ),
         ),
       ],
-      onChanged: (value) {
-        setState(() {
-          _selectedSizeId = value;
-        });
-      },
+      onChanged: _setSizeFilter,
     );
 
     final colourDropdown = DropdownButtonFormField<int?>(
@@ -378,11 +415,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
           ),
         ),
       ],
-      onChanged: (value) {
-        setState(() {
-          _selectedColourId = value;
-        });
-      },
+      onChanged: _setColourFilter,
     );
 
     return LayoutBuilder(

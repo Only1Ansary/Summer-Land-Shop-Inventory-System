@@ -246,10 +246,6 @@ class _AddInventoryScreenState
             const SizedBox(height: 8),
 
             _buildLocations(),
-
-            const SizedBox(height: 20),
-
-            _buildAddStockForm(),
           ],
         ),
       ),
@@ -413,79 +409,4 @@ class _AddInventoryScreenState
     );
   }
 
-  Widget _buildAddStockForm() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SectionHeader(title: 'Add Stock'),
-            const SizedBox(height: 8),
-
-            DropdownButtonFormField<int>(
-              key: ValueKey('location-$_selectedLocationId'),
-              initialValue: _selectedLocationId,
-              decoration: const InputDecoration(
-                labelText: 'Location',
-                prefixIcon: Icon(Icons.location_on_outlined),
-              ),
-              items: _locations.map(
-                (location) {
-                  return DropdownMenuItem<int>(
-                    value: location.id,
-                    child: Text(
-                      location.name,
-                    ),
-                  );
-                },
-              ).toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedLocationId =
-                      value;
-                });
-              },
-            ),
-
-            const SizedBox(height: 16),
-
-            TextField(
-              controller: _quantityController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Quantity',
-                prefixIcon: Icon(Icons.pin_outlined),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: _isAdding
-                    ? null
-                    : _addInventory,
-                icon: _isAdding
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                        ),
-                      )
-                    : const Icon(
-                        Icons.add_box_outlined,
-                      ),
-                label: const Text(
-                  'Add Stock',
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

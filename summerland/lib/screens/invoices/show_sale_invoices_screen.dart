@@ -14,14 +14,11 @@ class ShowSaleInvoicesScreen extends StatefulWidget {
   const ShowSaleInvoicesScreen({super.key});
 
   @override
-  State<ShowSaleInvoicesScreen> createState() =>
-      _ShowSaleInvoicesScreenState();
+  State<ShowSaleInvoicesScreen> createState() => _ShowSaleInvoicesScreenState();
 }
 
-class _ShowSaleInvoicesScreenState
-    extends State<ShowSaleInvoicesScreen> {
-  final InvoiceService _invoiceService =
-      InvoiceService(ApiService());
+class _ShowSaleInvoicesScreenState extends State<ShowSaleInvoicesScreen> {
+  final InvoiceService _invoiceService = InvoiceService(ApiService());
 
   List<Invoice> _invoices = [];
 
@@ -35,9 +32,8 @@ class _ShowSaleInvoicesScreenState
   @override
   void initState() {
     super.initState();
-    final today = DateTime.now();
-    _from = today;
-    _to = today;
+    _from = defaultFilterFromDate();
+    _to = defaultFilterToDate();
     _loadInvoices();
   }
 
@@ -48,10 +44,7 @@ class _ShowSaleInvoicesScreenState
     });
 
     try {
-      final invoices = await _invoiceService.getInvoices(
-        from: _from,
-        to: _to,
-      );
+      final invoices = await _invoiceService.getInvoices(from: _from, to: _to);
 
       if (!mounted) return;
 
@@ -76,9 +69,7 @@ class _ShowSaleInvoicesScreenState
   Future<void> _pickDate(bool isFrom) async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: isFrom
-          ? (_from ?? DateTime.now())
-          : (_to ?? DateTime.now()),
+      initialDate: isFrom ? (_from ?? DateTime.now()) : (_to ?? DateTime.now()),
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
     );
@@ -98,11 +89,9 @@ class _ShowSaleInvoicesScreenState
   }
 
   void _resetDates() {
-    final today = DateTime.now();
-
     setState(() {
-      _from = today;
-      _to = today;
+      _from = defaultFilterFromDate();
+      _to = defaultFilterToDate();
       _edited = false;
     });
 
@@ -114,10 +103,7 @@ class _ShowSaleInvoicesScreenState
   }
 
   Future<void> _openSearch() async {
-    await pushScreen<void>(
-      context,
-      (_) => const SearchSaleInvoicesScreen(),
-    );
+    await pushScreen<void>(context, (_) => const SearchSaleInvoicesScreen());
 
     if (mounted) {
       _loadInvoices();
@@ -125,10 +111,7 @@ class _ShowSaleInvoicesScreenState
   }
 
   Future<void> _newSale() async {
-    await pushScreen<void>(
-      context,
-      (_) => const CreateInvoiceScreen(),
-    );
+    await pushScreen<void>(context, (_) => const CreateInvoiceScreen());
 
     if (mounted) {
       _loadInvoices();
@@ -167,11 +150,8 @@ class _ShowSaleInvoicesScreenState
       body: _isLoading
           ? const LoadingState()
           : _error != null
-              ? ErrorState(
-                  message: _error!,
-                  onRetry: _loadInvoices,
-                )
-              : _buildList(),
+          ? ErrorState(message: _error!, onRetry: _loadInvoices)
+          : _buildList(),
     );
   }
 

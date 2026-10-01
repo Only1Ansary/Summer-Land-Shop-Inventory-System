@@ -395,6 +395,33 @@ class _ShowPurchaseInvoiceScreenState
               );
             }),
           ],
+          if (invoice.fees.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            const SectionHeader(
+              title: 'Extra Fees',
+              subtitle: 'Shipping and other charges, not owed to the supplier',
+            ),
+            const SizedBox(height: 4),
+            ...invoice.fees.map(
+              (fee) => Card(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: ListTile(
+                  leading: Icon(
+                    Icons.local_shipping_outlined,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  title: Text(fee.description),
+                  trailing: Text(
+                    money(fee.amount),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: amountColor(context, fee.amount),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.all(16),

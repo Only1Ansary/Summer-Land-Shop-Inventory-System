@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 
 import '../../models/colour.dart';
+import '../../models/location.dart';
 import '../../models/product.dart';
 import '../../models/product_variant.dart';
 import '../../models/size_model.dart';
 
 import '../../services/api_service.dart';
+import '../../services/colour_service.dart';
+import '../../services/inventory_service.dart';
+import '../../services/location_service.dart';
 import '../../services/product_variant_service.dart';
+import '../../services/size_service.dart';
 
 import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
@@ -43,21 +48,55 @@ class _ProductVariantFormScreenState
   final _thresholdController =
       TextEditingController();
 
+  final _stockQuantityController =
+      TextEditingController();
+
   final ProductVariantService _variantService =
       ProductVariantService(ApiService());
+
+  final SizeService _sizeService =
+      SizeService(ApiService());
+
+  final ColourService _colourService =
+      ColourService(ApiService());
+
+  final InventoryService _inventoryService =
+      InventoryService(ApiService());
+
+  final LocationService _locationService =
+      LocationService(ApiService());
+
+  late List<SizeModel> _sizes;
+
+  late List<Colour> _colours;
+
+  List<Location> _locations = [];
 
   int? _selectedSizeId;
   int? _selectedColourId;
 
+  int? _selectedLocationId;
+
   int _barcodeType = 1;
 
   bool _isSaving = false;
+
+  bool _isCreatingOption = false;
+
+  bool _isAddingStock = false;
+
+  late int _currentStock = 0;
 
   bool get isEditing => widget.variant != null;
 
   @override
   void initState() {
     super.initState();
+
+    _sizes = List.of(widget.sizes);
+    _colours = List.of(widget.colours);
+
+    _loadLocations();
 
     if (isEditing) {
       final variant = widget.variant!;
@@ -75,6 +114,8 @@ class _ProductVariantFormScreenState
           variant.lowStockThreshold.toString();
 
       _barcodeType = variant.barcodeType;
+
+      _currentStock = variant.totalQuantity;
     } else {
       _priceController.text =
           _formatPrice(widget.product.sellingPrice);
@@ -97,8 +138,238 @@ class _ProductVariantFormScreenState
     _barcodeController.dispose();
     _priceController.dispose();
     _thresholdController.dispose();
+    _stockQuantityController.dispose();
 
     super.dispose();
+  }
+
+  Future<void> _loadLocations() async {
+    try {
+      final locations = await _locationService.getLocations();
+
+      if (!mounted) return;
+
+      setState(() {
+        _locations = locations;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      _showError(e.toString());
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
+  Future<void> _addSize() async {
+    if (_isCreatingOption) return;
+
+    final name = await showAppNameDialog(
+      context,
+      title: 'Add Size',
+      label: 'Size Name',
+      confirmLabel: 'Add',
+    );
+
+    if (name == null || name.trim().isEmpty) {
+      return;
+    }
+
+    final trimmed = name.trim();
+
+    final existing = _sizes.where(
+      (size) =>
+          size.name.trim().toLowerCase() ==
+          trimmed.toLowerCase(),
+    );
+
+    if (existing.isNotEmpty) {
+      _showError('$trimmed already exists in sizes.');
+      return;
+    }
+
+    setState(() {
+      _isCreatingOption = true;
+    });
+
+    try {
+      final size = await _sizeService.createSize(trimmed);
+
+      if (!mounted) return;
+
+      setState(() {
+        _sizes = [..._sizes, size];
+        _selectedSizeId = size.id;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      _showError(e.toString());
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isCreatingOption = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _addColour() async {
+    if (_isCreatingOption) return;
+
+    final name = await showAppNameDialog(
+      context,
+      title: 'Add Colour',
+      label: 'Colour Name',
+      confirmLabel: 'Add',
+    );
+
+    if (name == null || name.trim().isEmpty) {
+      return;
+    }
+
+    final trimmed = name.trim();
+
+    final existing = _colours.where(
+      (colour) =>
+          colour.name.trim().toLowerCase() ==
+          trimmed.toLowerCase(),
+    );
+
+    if (existing.isNotEmpty) {
+      _showError('$trimmed already exists in colours.');
+      return;
+    }
+
+    setState(() {
+      _isCreatingOption = true;
+    });
+
+    try {
+      final colour = await _colourService.createColour(trimmed);
+
+      if (!mounted) return;
+
+      setState(() {
+        _colours = [..._colours, colour];
+        _selectedColourId = colour.id;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      _showError(e.toString());
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isCreatingOption = false;
+        });
+      }
+    }
+  }
+
+  int? _stockQuantity() {
+    final quantity = int.tryParse(
+      _stockQuantityController.text.trim(),
+    );
+
+    if (quantity == null || quantity <= 0) {
+      return null;
+    }
+
+    return quantity;
+  }
+
+  /// Validates the stock fields. Returns the quantity to add, or null when
+  /// the entry is invalid (message already shown).
+  int? _validatedStockQuantity() {
+    final quantity = _stockQuantity();
+
+    if (quantity == null) {
+      _showError('Enter a stock quantity greater than zero.');
+      return null;
+    }
+
+    if (quantity > 100000) {
+      _showError('Quantity cannot exceed 100,000.');
+      return null;
+    }
+
+    if (_selectedLocationId == null) {
+      _showError('Please select a location.');
+      return null;
+    }
+
+    return quantity;
+  }
+
+  Future<void> _refreshStock() async {
+    if (!isEditing) return;
+
+    try {
+      final variant = await _variantService.getVariant(
+        widget.variant!.id,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _currentStock = variant.totalQuantity;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      debugPrint('Failed to refresh stock: $e');
+    }
+  }
+
+  Future<void> _addStockToExistingVariant() async {
+    if (_isAddingStock) return;
+
+    final quantity = _validatedStockQuantity();
+
+    if (quantity == null) return;
+
+    setState(() {
+      _isAddingStock = true;
+    });
+
+    try {
+      await _inventoryService.addInventory(
+        productVariantId: widget.variant!.id,
+        locationId: _selectedLocationId!,
+        quantity: quantity,
+      );
+
+      if (!mounted) return;
+
+      _stockQuantityController.clear();
+
+      await _refreshStock();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Stock added. Total is now $_currentStock.',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      _showError(e.toString());
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isAddingStock = false;
+        });
+      }
+    }
   }
 
   Future<void> _save() async {
@@ -122,6 +393,20 @@ class _ProductVariantFormScreenState
       return;
     }
 
+    final initialStock = _stockQuantity();
+
+    if (initialStock != null) {
+      if (_selectedLocationId == null) {
+        _showError('Select a location for the initial stock.');
+        return;
+      }
+
+      if (initialStock > 100000) {
+        _showError('Quantity cannot exceed 100,000.');
+        return;
+      }
+    }
+
     setState(() {
       _isSaving = true;
     });
@@ -137,7 +422,7 @@ class _ProductVariantFormScreenState
           lowStockThreshold: threshold,
         );
       } else {
-        await _variantService.createVariant(
+        final createdVariant = await _variantService.createVariant(
           productId: widget.product.id,
           sizeId: _selectedSizeId,
           colourId: _selectedColourId,
@@ -149,6 +434,16 @@ class _ProductVariantFormScreenState
           price: price,
           lowStockThreshold: threshold,
         );
+
+        final initialStock = _stockQuantity();
+
+        if (initialStock != null) {
+          await _inventoryService.addInventory(
+            productVariantId: createdVariant.id,
+            locationId: _selectedLocationId!,
+            quantity: initialStock,
+          );
+        }
       }
 
       if (!mounted) return;
@@ -169,6 +464,124 @@ class _ProductVariantFormScreenState
         });
       }
     }
+  }
+
+  Widget _buildStockSection() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SectionHeader(
+              title:
+                  isEditing ? 'Add Stock' : 'Initial Stock',
+              subtitle: isEditing
+                  ? 'Top up this variant at a location.'
+                  : 'Optional. Leave empty to add stock later.',
+            ),
+            const SizedBox(height: 12),
+            if (isEditing)
+              InfoTile(
+                label: 'Current Stock',
+                value:
+                    '$_currentStock',
+                valueStyle: amountStyle(
+                  context,
+                  _currentStock.toDouble(),
+                ),
+              ),
+            if (_locations.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: Text(
+                  'No locations available.',
+                ),
+              )
+            else ...[
+              DropdownButtonFormField<int>(
+                key: ValueKey(
+                  'location-$_selectedLocationId',
+                ),
+                initialValue: _selectedLocationId,
+                decoration: const InputDecoration(
+                  labelText: 'Location',
+                  prefixIcon: Icon(Icons.location_on_outlined),
+                ),
+                items: _locations
+                    .map(
+                      (location) => DropdownMenuItem<int>(
+                        value: location.id,
+                        child: Text(location.name),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedLocationId = value;
+                  });
+                },
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _stockQuantityController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Quantity',
+                  prefixIcon: Icon(Icons.pin_outlined),
+                ),
+              ),
+              if (isEditing) ...[
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.tonalIcon(
+                    onPressed: _isAddingStock
+                        ? null
+                        : _addStockToExistingVariant,
+                    icon: _isAddingStock
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Icon(Icons.add_box_outlined),
+                    label: const Text('Add Stock'),
+                  ),
+                ),
+              ],
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAddButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onPressed,
+  }) {
+    return Tooltip(
+      message: label,
+      child: IconButton.filledTonal(
+        onPressed: _isCreatingOption ? null : onPressed,
+        icon: _isCreatingOption
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                ),
+              )
+            : Icon(icon),
+        style: IconButton.styleFrom(
+          minimumSize: const Size(48, 48),
+        ),
+      ),
+    );
   }
 
   @override
@@ -226,60 +639,86 @@ class _ProductVariantFormScreenState
 
               const SizedBox(height: 20),
 
-              DropdownButtonFormField<int?>(
-                key: ValueKey('size-$_selectedSizeId'),
-                initialValue: _selectedSizeId,
-                decoration: const InputDecoration(
-                  labelText: 'Size',
-                  prefixIcon: Icon(Icons.straighten_outlined),
-                ),
-                items: [
-                  const DropdownMenuItem<int?>(
-                    value: null,
-                    child: Text('No Size'),
-                  ),
-                  ...widget.sizes.map(
-                    (size) =>
-                        DropdownMenuItem<int?>(
-                          value: size.id,
-                          child: Text(size.name),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<int?>(
+                      key: ValueKey('size-$_selectedSizeId'),
+                      initialValue: _selectedSizeId,
+                      decoration: const InputDecoration(
+                        labelText: 'Size',
+                        prefixIcon: Icon(Icons.straighten_outlined),
+                      ),
+                      items: [
+                        const DropdownMenuItem<int?>(
+                          value: null,
+                          child: Text('No Size'),
                         ),
+                        ..._sizes.map(
+                          (size) =>
+                              DropdownMenuItem<int?>(
+                                value: size.id,
+                                child: Text(size.name),
+                              ),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedSizeId = value;
+                        });
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  _buildAddButton(
+                    icon: Icons.straighten_outlined,
+                    label: 'Add size',
+                    onPressed: _addSize,
                   ),
                 ],
-                onChanged: (value) {
-                  setState(() {
-                    _selectedSizeId = value;
-                  });
-                },
               ),
 
               const SizedBox(height: 16),
 
-              DropdownButtonFormField<int?>(
-                key: ValueKey('colour-$_selectedColourId'),
-                initialValue: _selectedColourId,
-                decoration: const InputDecoration(
-                  labelText: 'Colour',
-                  prefixIcon: Icon(Icons.palette_outlined),
-                ),
-                items: [
-                  const DropdownMenuItem<int?>(
-                    value: null,
-                    child: Text('No Colour'),
-                  ),
-                  ...widget.colours.map(
-                    (colour) =>
-                        DropdownMenuItem<int?>(
-                          value: colour.id,
-                          child: Text(colour.name),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<int?>(
+                      key: ValueKey('colour-$_selectedColourId'),
+                      initialValue: _selectedColourId,
+                      decoration: const InputDecoration(
+                        labelText: 'Colour',
+                        prefixIcon: Icon(Icons.palette_outlined),
+                      ),
+                      items: [
+                        const DropdownMenuItem<int?>(
+                          value: null,
+                          child: Text('No Colour'),
                         ),
+                        ..._colours.map(
+                          (colour) =>
+                              DropdownMenuItem<int?>(
+                                value: colour.id,
+                                child: Text(colour.name),
+                              ),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedColourId = value;
+                        });
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  _buildAddButton(
+                    icon: Icons.palette_outlined,
+                    label: 'Add colour',
+                    onPressed: _addColour,
                   ),
                 ],
-                onChanged: (value) {
-                  setState(() {
-                    _selectedColourId = value;
-                  });
-                },
               ),
 
               const SizedBox(height: 16),
@@ -438,6 +877,10 @@ class _ProductVariantFormScreenState
                   return null;
                 },
               ),
+
+              const SizedBox(height: 20),
+
+              _buildStockSection(),
 
               const SizedBox(height: 28),
 

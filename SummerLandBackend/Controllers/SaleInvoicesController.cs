@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SummerLandBackend.Data;
 using SummerLandBackend.DTOs.SaleInvoices;
 using SummerLandBackend.Models;
+using SummerLandBackend.Services;
 
 namespace SummerLandBackend.Controllers;
 
@@ -268,19 +269,12 @@ public class SaleInvoicesController : ControllerBase
 
         if (from.HasValue)
         {
-            var fromDate = ToUtc(from.Value);
-            query = query.Where(i => i.CreatedAt >= fromDate);
+            query = query.Where(i => i.CreatedAt >= QueryDateRange.Start(from));
         }
 
         if (to.HasValue)
         {
-            var toDate = ToUtc(to.Value);
-
-            // A bare date (00:00:00) as "to" means the whole day.
-            if (to.Value.TimeOfDay == TimeSpan.Zero)
-                toDate = toDate.Date.AddDays(1).AddTicks(-1);
-
-            query = query.Where(i => i.CreatedAt <= toDate);
+            query = query.Where(i => i.CreatedAt <= QueryDateRange.End(to));
         }
 
         var invoices = await query
@@ -374,13 +368,4 @@ public class SaleInvoicesController : ControllerBase
 
         return Ok(response);
     }
-
-    // Unspecified is treated as UTC (your CreatedAt values are stored with
-    // DateTime.UtcNow), instead of silently using the server's local timezone.
-    private static DateTime ToUtc(DateTime value) => value.Kind switch
-    {
-        DateTimeKind.Utc => value,
-        DateTimeKind.Local => value.ToUniversalTime(),
-        _ => DateTime.SpecifyKind(value, DateTimeKind.Utc)
-    };
 }

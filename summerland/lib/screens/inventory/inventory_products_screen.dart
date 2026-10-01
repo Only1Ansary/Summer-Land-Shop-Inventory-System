@@ -1,9 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../models/category.dart';
+import '../../models/colour.dart';
 import '../../models/product.dart';
+import '../../models/size_model.dart';
 import '../../services/api_service.dart';
+import '../../services/colour_service.dart';
 import '../../services/product_service.dart';
+import '../../services/size_service.dart';
 import '../../ui/app_widgets.dart';
 import 'inventory_variants_screen.dart';
 
@@ -22,27 +28,45 @@ class _InventoryProductsScreenState extends State<InventoryProductsScreen> {
 
   late final ProductService _productService;
 
+  late final SizeService _sizeService;
+
+  late final ColourService _colourService;
+
   final TextEditingController _searchController = TextEditingController();
 
+  Timer? _searchDebounce;
+
   List<Product> _products = [];
+  List<SizeModel> _sizes = [];
+  List<Colour> _colours = [];
 
   int? _selectedSizeId;
   int? _selectedColourId;
 
   bool _isLoading = true;
+  bool _isSearching = false;
   String? _errorMessage;
+
+  bool get _hasActiveFilters {
+    return _selectedSizeId != null ||
+        _selectedColourId != null ||
+        _searchController.text.trim().isNotEmpty;
+  }
 
   @override
   void initState() {
     super.initState();
 
     _productService = ProductService(_apiService);
+    _sizeService = SizeService(_apiService);
+    _colourService = ColourService(_apiService);
 
     _loadData();
   }
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -54,62 +78,113 @@ class _InventoryProductsScreenState extends State<InventoryProductsScreen> {
     });
 
     try {
-      await Future.wait([_loadProducts()]);
+      final results = await Future.wait([
+        _sizeService.getSizes(),
+        _colourService.getColours(),
+        _productService.searchProducts(
+          query: _searchController.text,
+          categoryId: widget.category.id,
+          sizeId: _selectedSizeId,
+          colourId: _selectedColourId,
+        ),
+      ]);
 
       if (!mounted) return;
 
       setState(() {
-        _isLoading = false;
+        _sizes = results[0] as List<SizeModel>;
+        _colours = results[1] as List<Colour>;
+        _products = results[2] as List<Product>;
       });
     } catch (e) {
       if (!mounted) return;
 
       setState(() {
-        _isLoading = false;
         _errorMessage = e.toString();
       });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
-  }
-
-  Future<List<Product>> _loadProducts() async {
-    final products = await _productService.searchProducts(
-      query: _searchController.text,
-      categoryId: widget.category.id,
-      sizeId: _selectedSizeId,
-      colourId: _selectedColourId,
-    );
-
-    if (mounted) {
-      setState(() {
-        _products = products;
-      });
-    }
-
-    return products;
   }
 
   Future<void> _search() async {
-    try {
-      setState(() {
-        _isLoading = true;
-        _errorMessage = null;
-      });
+    _searchDebounce?.cancel();
 
-      await _loadProducts();
+    if (!mounted) return;
+
+    setState(() {
+      _isSearching = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final products = await _productService.searchProducts(
+        query: _searchController.text,
+        categoryId: widget.category.id,
+        sizeId: _selectedSizeId,
+        colourId: _selectedColourId,
+      );
 
       if (!mounted) return;
 
       setState(() {
-        _isLoading = false;
+        _products = products;
       });
     } catch (e) {
       if (!mounted) return;
 
       setState(() {
-        _isLoading = false;
         _errorMessage = e.toString();
       });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSearching = false;
+        });
+      }
     }
+  }
+
+  void _onQueryChanged(String _) {
+    setState(() {});
+
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(
+      const Duration(milliseconds: 350),
+      _search,
+    );
+  }
+
+  void _setSizeFilter(int? value) {
+    setState(() {
+      _selectedSizeId = value;
+    });
+
+    _search();
+  }
+
+  void _setColourFilter(int? value) {
+    setState(() {
+      _selectedColourId = value;
+    });
+
+    _search();
+  }
+
+  void _clearFilters() {
+    _searchDebounce?.cancel();
+    _searchController.clear();
+
+    setState(() {
+      _selectedSizeId = null;
+      _selectedColourId = null;
+    });
+
+    _search();
   }
 
   void _openProduct(Product product) {
@@ -154,28 +229,115 @@ class _InventoryProductsScreenState extends State<InventoryProductsScreen> {
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 900),
-          child: TextField(
-            controller: _searchController,
-            textInputAction: TextInputAction.search,
-            onSubmitted: (_) => _search(),
-            decoration: InputDecoration(
-              labelText: 'Search',
-              hintText: 'Model, name or barcode',
-              prefixIcon: const Icon(Icons.search),
-              suffixIcon: _searchController.text.isNotEmpty
-                  ? IconButton(
-                      tooltip: 'Clear',
-                      icon: const Icon(Icons.clear),
-                      onPressed: () {
-                        _searchController.clear();
-                        _search();
-                      },
-                    )
-                  : null,
-            ),
+          child: Column(
+            children: [
+              TextField(
+                controller: _searchController,
+                textInputAction: TextInputAction.search,
+                onChanged: _onQueryChanged,
+                onSubmitted: (_) => _search(),
+                decoration: InputDecoration(
+                  labelText: 'Search',
+                  hintText: 'Model, name or barcode',
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          tooltip: 'Clear',
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _searchController.clear();
+                            _search();
+                          },
+                        )
+                      : null,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _buildFilterRow(),
+              if (_isSearching) ...[
+                const SizedBox(height: 12),
+                const LinearProgressIndicator(minHeight: 2),
+              ],
+            ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildFilterRow() {
+    final sizeDropdown = DropdownButtonFormField<int?>(
+      key: ValueKey('size-$_selectedSizeId'),
+      initialValue: _selectedSizeId,
+      decoration: const InputDecoration(labelText: 'Size'),
+      items: [
+        const DropdownMenuItem<int?>(
+          value: null,
+          child: Text('All sizes'),
+        ),
+        ..._sizes.map(
+          (size) => DropdownMenuItem<int?>(
+            value: size.id,
+            child: Text(size.name),
+          ),
+        ),
+      ],
+      onChanged: _setSizeFilter,
+    );
+
+    final colourDropdown = DropdownButtonFormField<int?>(
+      key: ValueKey('colour-$_selectedColourId'),
+      initialValue: _selectedColourId,
+      decoration: const InputDecoration(labelText: 'Colour'),
+      items: [
+        const DropdownMenuItem<int?>(
+          value: null,
+          child: Text('All colours'),
+        ),
+        ..._colours.map(
+          (colour) => DropdownMenuItem<int?>(
+            value: colour.id,
+            child: Text(colour.name),
+          ),
+        ),
+      ],
+      onChanged: _setColourFilter,
+    );
+
+    final clearButton = TextButton(
+      onPressed: _clearFilters,
+      child: const Text('Clear filters'),
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth >= 560) {
+          return Row(
+            children: [
+              Expanded(child: sizeDropdown),
+              const SizedBox(width: 10),
+              Expanded(child: colourDropdown),
+              if (_hasActiveFilters) ...[
+                const SizedBox(width: 6),
+                clearButton,
+              ],
+            ],
+          );
+        }
+
+        return Column(
+          children: [
+            sizeDropdown,
+            const SizedBox(height: 10),
+            colourDropdown,
+            if (_hasActiveFilters)
+              Align(
+                alignment: Alignment.centerRight,
+                child: clearButton,
+              ),
+          ],
+        );
+      },
     );
   }
 

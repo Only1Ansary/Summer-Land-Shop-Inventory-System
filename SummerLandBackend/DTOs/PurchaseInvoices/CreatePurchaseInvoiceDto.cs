@@ -12,5 +12,11 @@
 
         public List<CreatePurchaseInvoiceItemDto> Items { get; set; }
             = new();
+
+        /// <summary>
+        /// Extra costs such as shipping or customs. Added to TotalCost but
+        /// excluded from the supplier debt.
+        /// </summary>
+        public List<CreatePurchaseInvoiceFeeDto> Fees { get; set; } = new();
     }
 }
