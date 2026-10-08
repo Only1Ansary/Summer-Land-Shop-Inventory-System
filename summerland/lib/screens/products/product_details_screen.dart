@@ -13,6 +13,7 @@ import '../../services/product_variant_service.dart';
 import '../../services/size_service.dart';
 import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
+import '../../ui/barcode_view.dart';
 
 import 'product_form_screen.dart';
 import 'product_variant_form_screen.dart';
@@ -269,6 +270,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                   ? 'N/A'
                   : widget.product.barcode,
             ),
+            BarcodeView(widget.product.barcode, showText: false),
             InfoTile(
               label: 'Purchase Price',
               value: money(widget.product.purchasePrice),
@@ -361,6 +363,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
               valueStyle: amountStyle(context, variant.price),
             ),
             InfoTile(label: 'Barcode', value: variant.barcode),
+            BarcodeView(variant.barcode, showText: false),
             InfoTile(label: 'Total Stock', value: '${variant.totalQuantity}'),
             InfoTile(
               label: 'Low Stock Threshold',

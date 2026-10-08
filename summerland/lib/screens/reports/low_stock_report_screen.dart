@@ -9,6 +9,7 @@ import '../../models/reports/low_stock_report.dart';
 import '../../ui/app_shell.dart';
 import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
+import '../../ui/barcode_view.dart';
 
 class LowStockReportScreen extends StatefulWidget {
   const LowStockReportScreen({super.key});
@@ -178,6 +179,18 @@ class _LowStockReportScreenState extends State<LowStockReportScreen> {
                                 ),
                                 title: const Text('Barcode'),
                                 trailing: Text(item.barcode),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  16,
+                                  0,
+                                  16,
+                                  8,
+                                ),
+                                child: BarcodeView(
+                                  item.barcode,
+                                  showText: false,
+                                ),
                               ),
                               const Divider(height: 1),
                               ...item.locations.map(

@@ -29,10 +29,8 @@ Widget _app(GlobalKey<NavigatorState> navigatorKey) {
         ),
       ),
     ),
-    builder: (context, child) => BackspaceBackShortcuts(
-      navigatorKey: navigatorKey,
-      child: child!,
-    ),
+    builder: (context, child) =>
+        BackspaceBackShortcuts(navigatorKey: navigatorKey, child: child!),
   );
 }
 
@@ -43,8 +41,9 @@ Future<void> _pressBackspace(WidgetTester tester) async {
 }
 
 void main() {
-  testWidgets('Backspace pops back to the previous screen',
-      (WidgetTester tester) async {
+  testWidgets('Backspace pops back to the previous screen', (
+    WidgetTester tester,
+  ) async {
     final navigatorKey = GlobalKey<NavigatorState>();
 
     await tester.pumpWidget(_app(navigatorKey));
@@ -61,8 +60,9 @@ void main() {
     expect(find.text('Go'), findsOneWidget);
   });
 
-  testWidgets('Backspace while editing text does not navigate',
-      (WidgetTester tester) async {
+  testWidgets('Backspace while editing text does not navigate', (
+    WidgetTester tester,
+  ) async {
     final navigatorKey = GlobalKey<NavigatorState>();
 
     await tester.pumpWidget(_app(navigatorKey));
@@ -99,8 +99,9 @@ void main() {
     expect(find.text('Go'), findsOneWidget);
   });
 
-  testWidgets('Backspace at the root does not exit',
-      (WidgetTester tester) async {
+  testWidgets('Backspace at the root does not exit', (
+    WidgetTester tester,
+  ) async {
     final navigatorKey = GlobalKey<NavigatorState>();
 
     await tester.pumpWidget(_app(navigatorKey));

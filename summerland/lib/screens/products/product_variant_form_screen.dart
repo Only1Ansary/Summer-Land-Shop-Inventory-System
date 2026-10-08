@@ -15,6 +15,7 @@ import '../../services/size_service.dart';
 
 import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
+import '../../ui/barcode_view.dart';
 
 class ProductVariantFormScreen extends StatefulWidget {
   final Product product;
@@ -697,6 +698,7 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
                 TextFormField(
                   controller: _barcodeController,
                   enabled: isEditing || _barcodeType == 2,
+                  onChanged: (_) => setState(() {}),
                   decoration: InputDecoration(
                     labelText: isEditing ? 'Barcode' : 'Manufacturer Barcode',
                     prefixIcon: const Icon(Icons.barcode_reader),
@@ -718,6 +720,14 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
                     return null;
                   },
                 ),
+
+              // Live preview: the numbers typed above are drawn as a real
+              // Code 128 barcode, ready to print or scan.
+              if ((isEditing || _barcodeType == 2) &&
+                  _barcodeController.text.trim().isNotEmpty) ...[
+                const SizedBox(height: 12),
+                BarcodeView(_barcodeController.text),
+              ],
 
               if (!isEditing && _barcodeType == 1) const SizedBox(height: 16),
 

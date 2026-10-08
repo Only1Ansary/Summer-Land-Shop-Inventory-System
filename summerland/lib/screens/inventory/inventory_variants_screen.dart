@@ -12,6 +12,7 @@ import '../../services/size_service.dart';
 
 import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
+import '../../ui/barcode_view.dart';
 
 import 'add_inventory_screen.dart';
 
@@ -366,8 +367,10 @@ class _InventoryVariantsScreenState extends State<InventoryVariantsScreen> {
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (variant.barcode.isNotEmpty)
+                          if (variant.barcode.isNotEmpty) ...[
                             Text('Barcode: ${variant.barcode}'),
+                            BarcodeView(variant.barcode, showText: false),
+                          ],
                           Text.rich(
                             TextSpan(
                               children: [

@@ -56,14 +56,18 @@ void main() {
   test('validation field errors win over the generic problem title', () async {
     await serve((request, response) {
       response.statusCode = 400;
-      response.write(jsonEncode({
-        'title': 'One or more validation errors occurred.',
-        'status': 400,
-        'errors': {
-          'Quantity': ['Enter a quantity of 1 or more.'],
-          'DiscountPercent': ['Enter a discount percentage between 0 and 100.'],
-        },
-      }));
+      response.write(
+        jsonEncode({
+          'title': 'One or more validation errors occurred.',
+          'status': 400,
+          'errors': {
+            'Quantity': ['Enter a quantity of 1 or more.'],
+            'DiscountPercent': [
+              'Enter a discount percentage between 0 and 100.',
+            ],
+          },
+        }),
+      );
     });
 
     final error = await failure(api.post('/invoices', {}));
@@ -99,14 +103,10 @@ void main() {
     expect(error.message, 'Purchase invoice not found.');
   });
 
-  test('an unhelpful problem title falls back to friendly wording',
-      () async {
+  test('an unhelpful problem title falls back to friendly wording', () async {
     await serve((request, response) {
       response.statusCode = 404;
-      response.write(jsonEncode({
-        'title': 'Not Found',
-        'status': 404,
-      }));
+      response.write(jsonEncode({'title': 'Not Found', 'status': 404}));
     });
 
     final error = await failure(api.get('/products/9'));
@@ -147,7 +147,10 @@ void main() {
       friendlyError(ApiException(statusCode: 400, message: 'Pick a size.')),
       'Pick a size.',
     );
-    expect(friendlyError(StateError('bad state')), isNot(contains('bad state')));
+    expect(
+      friendlyError(StateError('bad state')),
+      isNot(contains('bad state')),
+    );
     expect(friendlyError(StateError('bad state')), contains('Something went'));
   });
 }

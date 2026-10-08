@@ -7,6 +7,7 @@ import '../../models/reports/inventory_report.dart';
 import '../../ui/app_shell.dart';
 import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
+import '../../ui/barcode_view.dart';
 
 class InventoryReportScreen extends StatefulWidget {
   const InventoryReportScreen({super.key});
@@ -131,6 +132,10 @@ class _InventoryReportScreenState extends State<InventoryReportScreen> {
                               ),
                               title: const Text('Barcode'),
                               subtitle: Text(item.barcode),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                              child: BarcodeView(item.barcode, showText: false),
                             ),
                             ListTile(
                               leading: const Icon(

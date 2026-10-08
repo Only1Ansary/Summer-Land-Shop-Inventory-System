@@ -10,6 +10,7 @@ import '../../services/location_service.dart';
 
 import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
+import '../../ui/barcode_view.dart';
 
 class AddInventoryScreen extends StatefulWidget {
   final ProductVariant variant;
@@ -224,6 +225,7 @@ class _AddInventoryScreenState extends State<AddInventoryScreen> {
               value: widget.variant.colourName ?? 'N/A',
             ),
             InfoTile(label: 'Barcode', value: widget.variant.barcode),
+            BarcodeView(widget.variant.barcode, showText: false),
           ],
         ),
       ),
