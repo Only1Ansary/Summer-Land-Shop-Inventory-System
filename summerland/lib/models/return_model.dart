@@ -31,9 +31,7 @@ class ReturnModel {
     required this.createdAt,
   });
 
-  factory ReturnModel.fromJson(
-      Map<String, dynamic> json,
-      ) {
+  factory ReturnModel.fromJson(Map<String, dynamic> json) {
     return ReturnModel(
       id: json['id'],
       invoiceId: json['invoiceId'],

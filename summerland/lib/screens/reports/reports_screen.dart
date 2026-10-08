@@ -10,31 +10,11 @@ class ReportsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final reports = <(String, IconData, String)>[
-      (
-        'Sales Report',
-        Icons.point_of_sale_rounded,
-        'report-sales',
-      ),
-      (
-        'Inventory Report',
-        Icons.inventory_2_rounded,
-        'report-inventory',
-      ),
-      (
-        'Low Stock Report',
-        Icons.warning_amber_rounded,
-        'report-low-stock',
-      ),
-      (
-        'Stock Movements',
-        Icons.swap_vert_rounded,
-        'report-movements',
-      ),
-      (
-        'Best Selling',
-        Icons.trending_up_rounded,
-        'report-best-selling',
-      ),
+      ('Sales Report', Icons.point_of_sale_rounded, 'report-sales'),
+      ('Inventory Report', Icons.inventory_2_rounded, 'report-inventory'),
+      ('Low Stock Report', Icons.warning_amber_rounded, 'report-low-stock'),
+      ('Stock Movements', Icons.swap_vert_rounded, 'report-movements'),
+      ('Best Selling', Icons.trending_up_rounded, 'report-best-selling'),
     ];
 
     return AppShell(
@@ -46,8 +26,7 @@ class ReportsScreen extends StatelessWidget {
             final columns = constraints.maxWidth >= 700 ? 2 : 1;
             final spacing = 12.0;
             final cardWidth =
-                (constraints.maxWidth - (spacing * (columns - 1))) /
-                    columns;
+                (constraints.maxWidth - (spacing * (columns - 1))) / columns;
 
             return ListView(
               padding: const EdgeInsets.all(16),
@@ -68,9 +47,7 @@ class ReportsScreen extends StatelessWidget {
                             width: 48,
                             height: 48,
                             decoration: BoxDecoration(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .primary
+                              color: Theme.of(context).colorScheme.primary
                                   .withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -81,19 +58,14 @@ class ReportsScreen extends StatelessWidget {
                           ),
                           title: Text(
                             report.$1,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
                           trailing: const Icon(
                             Icons.arrow_forward_ios_rounded,
                             size: 18,
                           ),
                           onTap: () {
-                            AppDestinations.open(
-                              context,
-                              report.$3,
-                            );
+                            AppDestinations.open(context, report.$3);
                           },
                         ),
                       ),

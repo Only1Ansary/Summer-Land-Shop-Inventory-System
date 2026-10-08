@@ -52,7 +52,7 @@ public class SupplierController : ControllerBase
             .FirstOrDefaultAsync(s => s.Id == id);
 
         if (supplier == null)
-            return NotFound();
+            return NotFound("Supplier not found.");
 
         return Ok(new
         {

@@ -14,10 +14,7 @@ class ReportService {
     return date.toIso8601String();
   }
 
-  Future<SalesReport> getSalesReport({
-    DateTime? from,
-    DateTime? to,
-  }) async {
+  Future<SalesReport> getSalesReport({DateTime? from, DateTime? to}) async {
     final query = <String>[];
 
     if (from != null) {
@@ -43,8 +40,12 @@ class ReportService {
     return InventoryReport.fromJson(data);
   }
 
-  Future<LowStockReport> getLowStockReport() async {
-    final data = await _apiService.get('/api/Reports/low-stock');
+  Future<LowStockReport> getLowStockReport({int? categoryId}) async {
+    final endpoint = categoryId == null
+        ? '/api/Reports/low-stock'
+        : '/api/Reports/low-stock?categoryId=$categoryId';
+
+    final data = await _apiService.get(endpoint);
 
     return LowStockReport.fromJson(data);
   }

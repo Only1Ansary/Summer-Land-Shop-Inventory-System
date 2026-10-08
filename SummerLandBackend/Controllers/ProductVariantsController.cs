@@ -84,7 +84,7 @@ public class ProductVariantsController : ControllerBase
 
         if (variant == null)
         {
-            return NotFound();
+            return NotFound("Product variant not found.");
         }
 
         return Ok(variant);
@@ -235,7 +235,7 @@ public class ProductVariantsController : ControllerBase
 
         if (variant == null)
         {
-            return NotFound();
+            return NotFound("Product variant not found.");
         }
 
         if (dto.SizeId.HasValue)
@@ -326,7 +326,7 @@ public class ProductVariantsController : ControllerBase
 
         if (locationId <= 0)
         {
-            return BadRequest("LocationId must be valid.");
+            return BadRequest("Choose a valid location.");
         }
 
         var variant = await _context.ProductVariants

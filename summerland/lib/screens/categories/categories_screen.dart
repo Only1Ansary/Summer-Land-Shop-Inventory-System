@@ -11,14 +11,11 @@ class CategoriesScreen extends StatefulWidget {
   const CategoriesScreen({super.key});
 
   @override
-  State<CategoriesScreen> createState() =>
-      _CategoriesScreenState();
+  State<CategoriesScreen> createState() => _CategoriesScreenState();
 }
 
-class _CategoriesScreenState
-    extends State<CategoriesScreen> {
-  final CategoryService _categoryService =
-      CategoryService(ApiService());
+class _CategoriesScreenState extends State<CategoriesScreen> {
+  final CategoryService _categoryService = CategoryService(ApiService());
 
   List<Category> _categories = [];
 
@@ -45,18 +42,14 @@ class _CategoriesScreenState
     }
 
     try {
-      await _categoryService.updateCategory(
-        category.id,
-        name,
-      );
+      await _categoryService.updateCategory(category.id, name);
 
       await _loadCategories();
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(friendlyError(e))));
     }
   }
 
@@ -78,9 +71,8 @@ class _CategoriesScreenState
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(friendlyError(e))));
     }
   }
 
@@ -91,8 +83,7 @@ class _CategoriesScreenState
     });
 
     try {
-      final categories =
-          await _categoryService.getCategories();
+      final categories = await _categoryService.getCategories();
 
       if (!mounted) return;
 
@@ -103,7 +94,7 @@ class _CategoriesScreenState
       if (!mounted) return;
 
       setState(() {
-        _error = e.toString();
+        _error = friendlyError(e);
       });
     } finally {
       if (mounted) {
@@ -134,10 +125,7 @@ class _CategoriesScreenState
     }
 
     if (_error != null) {
-      return ErrorState(
-        message: _error!,
-        onRetry: _loadCategories,
-      );
+      return ErrorState(message: _error!, onRetry: _loadCategories);
     }
 
     return WideContent(
@@ -159,8 +147,7 @@ class _CategoriesScreenState
                 padding: const EdgeInsets.all(16),
                 itemCount: _categories.length,
                 itemBuilder: (context, index) {
-                  final category =
-                      _categories[index];
+                  final category = _categories[index];
 
                   return Card(
                     margin: const EdgeInsets.only(bottom: 8),
@@ -169,9 +156,7 @@ class _CategoriesScreenState
                         width: 40,
                         height: 40,
                         decoration: BoxDecoration(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .primary
+                          color: Theme.of(context).colorScheme.primary
                               .withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(10),
                         ),

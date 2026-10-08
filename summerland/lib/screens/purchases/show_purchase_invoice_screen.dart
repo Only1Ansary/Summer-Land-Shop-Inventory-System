@@ -10,11 +10,7 @@ import '../../ui/app_widgets.dart';
 import 'return_purchase_items_screen.dart';
 
 class ShowPurchaseInvoiceScreen extends StatefulWidget {
-  const ShowPurchaseInvoiceScreen({
-    super.key,
-    this.invoice,
-    this.invoiceId,
-  });
+  const ShowPurchaseInvoiceScreen({super.key, this.invoice, this.invoiceId});
 
   final PurchaseInvoice? invoice;
   final int? invoiceId;
@@ -24,10 +20,10 @@ class ShowPurchaseInvoiceScreen extends StatefulWidget {
       _ShowPurchaseInvoiceScreenState();
 }
 
-class _ShowPurchaseInvoiceScreenState
-    extends State<ShowPurchaseInvoiceScreen> {
-  final PurchaseInvoiceService _purchaseInvoiceService =
-      PurchaseInvoiceService(ApiService());
+class _ShowPurchaseInvoiceScreenState extends State<ShowPurchaseInvoiceScreen> {
+  final PurchaseInvoiceService _purchaseInvoiceService = PurchaseInvoiceService(
+    ApiService(),
+  );
   final ProductService _productService = ProductService(ApiService());
 
   PurchaseInvoice? _invoice;
@@ -63,7 +59,7 @@ class _ShowPurchaseInvoiceScreenState
       if (!mounted) return;
 
       setState(() {
-        _error = e.toString();
+        _error = friendlyError(e);
         _isLoading = false;
       });
 
@@ -87,9 +83,7 @@ class _ShowPurchaseInvoiceScreenState
 
       if (!mounted) return;
 
-      final productById = {
-        for (final product in products) product.id: product,
-      };
+      final productById = {for (final product in products) product.id: product};
 
       for (final item in invoice.items) {
         final Product? product = productById[item.productId];
@@ -175,9 +169,7 @@ class _ShowPurchaseInvoiceScreenState
         content: TextField(
           controller: controller,
           autofocus: true,
-          keyboardType: const TextInputType.numberWithOptions(
-            decimal: true,
-          ),
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
           decoration: InputDecoration(
             labelText: 'Amount',
             prefixText: '\u20a6 ',
@@ -225,26 +217,21 @@ class _ShowPurchaseInvoiceScreenState
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Debt payment recorded.'),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Debt payment recorded.')));
 
       _retry();
     } catch (e) {
       if (!mounted) return;
 
-      _showMessage(e.toString());
+      _showMessage(friendlyError(e));
     }
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-      ),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   Widget _buildBody(PurchaseInvoice? invoice) {
@@ -253,16 +240,11 @@ class _ShowPurchaseInvoiceScreenState
     }
 
     if (_error != null) {
-      return ErrorState(
-        message: _error!,
-        onRetry: _retry,
-      );
+      return ErrorState(message: _error!, onRetry: _retry);
     }
 
     if (invoice == null) {
-      return const EmptyState(
-        title: 'No purchase invoice',
-      );
+      return const EmptyState(title: 'No purchase invoice');
     }
 
     final date = invoice.date ?? invoice.createdAt;
@@ -285,14 +267,8 @@ class _ShowPurchaseInvoiceScreenState
                     ),
                   ),
                   const Divider(height: 24),
-                  InfoTile(
-                    label: 'Supplier',
-                    value: invoice.supplierName,
-                  ),
-                  InfoTile(
-                    label: 'Date',
-                    value: '$date',
-                  ),
+                  InfoTile(label: 'Supplier', value: invoice.supplierName),
+                  InfoTile(label: 'Date', value: '$date'),
                 ],
               ),
             ),
@@ -304,7 +280,8 @@ class _ShowPurchaseInvoiceScreenState
           ),
           const SizedBox(height: 8),
           ...invoice.items.map((item) {
-            final displayName = item.productName ?? 'Product #${item.productId}';
+            final displayName =
+                item.productName ?? 'Product #${item.productId}';
             final model = item.modelNumber;
 
             return Card(
@@ -314,13 +291,8 @@ class _ShowPurchaseInvoiceScreenState
                 subtitle: Text.rich(
                   TextSpan(
                     children: [
-                      TextSpan(
-                        text:
-                            '${model == null ? '' : '$model\n'}Qty: ',
-                      ),
-                      TextSpan(
-                        text: '${item.quantity}',
-                      ),
+                      TextSpan(text: '${model == null ? '' : '$model\n'}Qty: '),
+                      TextSpan(text: '${item.quantity}'),
                       const TextSpan(text: ' × '),
                       TextSpan(
                         text: money(item.unitPurchasePrice),
@@ -364,16 +336,11 @@ class _ShowPurchaseInvoiceScreenState
                   subtitle: Text.rich(
                     TextSpan(
                       children: [
-                        TextSpan(
-                          text: '${ret.quantity} × ',
-                        ),
+                        TextSpan(text: '${ret.quantity} × '),
                         TextSpan(
                           text: money(ret.unitPurchasePrice),
                           style: TextStyle(
-                            color: amountColor(
-                              context,
-                              ret.unitPurchasePrice,
-                            ),
+                            color: amountColor(context, ret.unitPurchasePrice),
                           ),
                         ),
                         if (ret.reason.isNotEmpty)
@@ -382,8 +349,7 @@ class _ShowPurchaseInvoiceScreenState
                       ],
                     ),
                   ),
-                  isThreeLine:
-                      ret.reason.isNotEmpty || date != null,
+                  isThreeLine: ret.reason.isNotEmpty || date != null,
                   trailing: Text(
                     money(ret.totalPrice),
                     style: TextStyle(
@@ -431,14 +397,8 @@ class _ShowPurchaseInvoiceScreenState
             ),
             child: Column(
               children: [
-                InfoTile(
-                  label: 'Total Cost',
-                  value: money(invoice.totalCost),
-                ),
-                InfoTile(
-                  label: 'Total Paid',
-                  value: money(invoice.totalPaid),
-                ),
+                InfoTile(label: 'Total Cost', value: money(invoice.totalCost)),
+                InfoTile(label: 'Total Paid', value: money(invoice.totalPaid)),
                 InfoTile(
                   label: 'Debt',
                   value: moneyNegative(invoice.debt),

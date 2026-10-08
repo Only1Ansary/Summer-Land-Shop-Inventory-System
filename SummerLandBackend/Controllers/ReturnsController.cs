@@ -90,18 +90,21 @@ public class ReturnsController : ControllerBase
             // Add returned quantity back to stock
             inventory.Quantity += dto.Quantity;
 
-            var totalAmount =
-                invoiceItem.UnitPrice * dto.Quantity;
+            // A return is refunded at the price the customer actually paid
+            // for that unit (unit price minus any per-item discount).
+            var unitPrice =
+                invoiceItem.UnitPrice - invoiceItem.DiscountAmount;
+
+            var totalAmount = unitPrice * dto.Quantity;
 
             invoiceItem.Quantity -= dto.Quantity;
             invoiceItem.TotalPrice -= totalAmount;
 
             invoice.TotalAmount -= totalAmount;
 
-            // A return is always valued at the real (pre-discount) unit
-            // price, so returning everything on a discounted invoice would
-            // leave the total at -DiscountAmount. The total the customer
-            // actually pays can never go below zero.
+            // An invoice-level discount can be larger than what is being
+            // returned, so the total the customer actually pays can never
+            // go below zero.
             if (invoice.TotalAmount < 0)
             {
                 invoice.TotalAmount = 0;
@@ -118,7 +121,7 @@ public class ReturnsController : ControllerBase
                 ProductVariantId = dto.ProductVariantId,
                 LocationId = dto.StockLocationId,
                 Quantity = dto.Quantity,
-                UnitPrice = invoiceItem.UnitPrice,
+                UnitPrice = unitPrice,
                 TotalAmount = totalAmount,
                 Reason = dto.Reason,
                 CreatedAt = DateTime.UtcNow
@@ -204,7 +207,7 @@ public class ReturnsController : ControllerBase
 
         if (returnRecord == null)
         {
-            return NotFound();
+            return NotFound("Return record not found.");
         }
 
         var response = new ReturnResponseDto

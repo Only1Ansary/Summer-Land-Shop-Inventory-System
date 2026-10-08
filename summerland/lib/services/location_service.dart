@@ -7,35 +7,19 @@ class LocationService {
   LocationService(this._apiService);
 
   Future<List<Location>> getLocations() async {
-    final data =
-    await _apiService.get('/api/Locations');
+    final data = await _apiService.get('/api/Locations');
 
-    return (data as List)
-        .map((json) => Location.fromJson(json))
-        .toList();
+    return (data as List).map((json) => Location.fromJson(json)).toList();
   }
 
   Future<Location> createLocation(String name) async {
-    final data = await _apiService.post(
-      '/api/Locations',
-      {
-        'name': name,
-      },
-    );
+    final data = await _apiService.post('/api/Locations', {'name': name});
 
     return Location.fromJson(data);
   }
 
-  Future<Location> updateLocation(
-      int id,
-      String name,
-      ) async {
-    final data = await _apiService.put(
-      '/api/Locations/$id',
-      {
-        'name': name,
-      },
-    );
+  Future<Location> updateLocation(int id, String name) async {
+    final data = await _apiService.put('/api/Locations/$id', {'name': name});
 
     return Location.fromJson(data);
   }

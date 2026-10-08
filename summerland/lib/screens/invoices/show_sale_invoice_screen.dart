@@ -7,24 +7,17 @@ import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
 
 class ShowSaleInvoiceScreen extends StatefulWidget {
-  const ShowSaleInvoiceScreen({
-    super.key,
-    this.invoice,
-    this.invoiceId,
-  });
+  const ShowSaleInvoiceScreen({super.key, this.invoice, this.invoiceId});
 
   final Invoice? invoice;
   final int? invoiceId;
 
   @override
-  State<ShowSaleInvoiceScreen> createState() =>
-      _ShowSaleInvoiceScreenState();
+  State<ShowSaleInvoiceScreen> createState() => _ShowSaleInvoiceScreenState();
 }
 
-class _ShowSaleInvoiceScreenState
-    extends State<ShowSaleInvoiceScreen> {
-  final InvoiceService _invoiceService =
-      InvoiceService(ApiService());
+class _ShowSaleInvoiceScreenState extends State<ShowSaleInvoiceScreen> {
+  final InvoiceService _invoiceService = InvoiceService(ApiService());
 
   Invoice? _invoice;
   bool _isLoading = false;
@@ -49,9 +42,7 @@ class _ShowSaleInvoiceScreenState
     });
 
     try {
-      final invoice = await _invoiceService.getInvoice(
-        widget.invoiceId!,
-      );
+      final invoice = await _invoiceService.getInvoice(widget.invoiceId!);
 
       if (!mounted) return;
 
@@ -62,7 +53,7 @@ class _ShowSaleInvoiceScreenState
       if (!mounted) return;
 
       setState(() {
-        _error = e.toString();
+        _error = friendlyError(e);
       });
     } finally {
       if (mounted) {
@@ -80,13 +71,26 @@ class _ShowSaleInvoiceScreenState
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          invoice == null
-              ? 'Sale Invoice'
-              : 'Sale Invoice #${invoice.id}',
+          invoice == null ? 'Sale Invoice' : 'Sale Invoice #${invoice.id}',
         ),
       ),
       body: _buildBody(invoice),
     );
+  }
+
+  double _itemDiscountTotal(Invoice invoice) {
+    return invoice.items.fold<double>(
+      0,
+      (total, item) => total + item.discountAmount * item.quantity,
+    );
+  }
+
+  // The items total before any discount: everything still payable on the
+  // invoice plus every discount that is still carried by its lines.
+  double _subtotal(Invoice invoice) {
+    return invoice.totalAmount +
+        invoice.discountAmount +
+        _itemDiscountTotal(invoice);
   }
 
   Widget _buildBody(Invoice? invoice) {
@@ -95,17 +99,14 @@ class _ShowSaleInvoiceScreenState
     }
 
     if (_error != null) {
-      return ErrorState(
-        message: _error!,
-        onRetry: _load,
-      );
+      return ErrorState(message: _error!, onRetry: _load);
     }
 
     if (invoice == null) {
-      return const EmptyState(
-        title: 'No sale invoice',
-      );
+      return const EmptyState(title: 'No sale invoice');
     }
+
+    final theme = Theme.of(context);
 
     return WideContent(
       child: ListView(
@@ -125,14 +126,8 @@ class _ShowSaleInvoiceScreenState
                     ),
                   ),
                   const Divider(height: 24),
-                  InfoTile(
-                    label: 'Date',
-                    value: '${invoice.createdAt}',
-                  ),
-                  InfoTile(
-                    label: 'Location',
-                    value: invoice.locationName,
-                  ),
+                  InfoTile(label: 'Date', value: '${invoice.createdAt}'),
+                  InfoTile(label: 'Location', value: invoice.locationName),
                 ],
               ),
             ),
@@ -150,8 +145,7 @@ class _ShowSaleInvoiceScreenState
                 child: EmptyState(
                   icon: Icons.assignment_return_outlined,
                   title: 'Fully returned',
-                  message:
-                      'Every item on this invoice was returned.',
+                  message: 'Every item on this invoice was returned.',
                 ),
               ),
             )
@@ -159,9 +153,13 @@ class _ShowSaleInvoiceScreenState
             ...invoice.items.map((item) {
               final variant = [
                 if (item.sizeName != null) 'Size: ${item.sizeName}',
-                if (item.colourName != null)
-                  'Colour: ${item.colourName}',
+                if (item.colourName != null) 'Colour: ${item.colourName}',
               ].join(', ');
+
+              final discountLabel = item.discountPercent == null
+                  ? '-${money(item.discountAmount)}/unit'
+                  : '-${money(item.discountAmount)}/unit '
+                        '(${percentLabel(item.discountPercent!)})';
 
               return Card(
                 margin: const EdgeInsets.only(bottom: 8),
@@ -175,28 +173,74 @@ class _ShowSaleInvoiceScreenState
                               '${item.modelNumber}${variant.isEmpty ? '' : ' · $variant'}\n'
                               'Qty: ',
                         ),
-                        TextSpan(
-                          text: '${item.quantity}',
-                        ),
+                        TextSpan(text: '${item.quantity}'),
                         const TextSpan(text: ' × '),
-                        TextSpan(
-                          text: money(item.unitPrice),
-                          style: TextStyle(
-                            color: amountColor(context, item.unitPrice),
-                            fontWeight: FontWeight.w600,
+                        if (!item.hasDiscount)
+                          TextSpan(
+                            text: money(item.unitPrice),
+                            style: TextStyle(
+                              color: amountColor(context, item.unitPrice),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          )
+                        else ...[
+                          TextSpan(
+                            text: money(item.unitPrice),
+                            style: TextStyle(
+                              decoration: TextDecoration.lineThrough,
+                              color: theme.colorScheme.outline,
+                            ),
                           ),
-                        ),
+                          TextSpan(
+                            text: ' → ${money(item.unitPriceAfterDiscount)}',
+                            style: TextStyle(
+                              color: amountColor(
+                                context,
+                                item.unitPriceAfterDiscount,
+                              ),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          TextSpan(
+                            text: '\nDiscount: $discountLabel',
+                            style: TextStyle(
+                              color: amountColor(context, -item.discountAmount),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
                   isThreeLine: true,
-                  trailing: Text(
-                    money(item.totalPrice),
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: amountColor(context, item.totalPrice),
-                    ),
-                  ),
+                  trailing: item.hasDiscount
+                      ? Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              money(item.totalBeforeDiscount),
+                              style: TextStyle(
+                                fontSize: 12,
+                                decoration: TextDecoration.lineThrough,
+                                color: theme.colorScheme.outline,
+                              ),
+                            ),
+                            Text(
+                              money(item.totalPrice),
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: amountColor(context, item.totalPrice),
+                              ),
+                            ),
+                          ],
+                        )
+                      : Text(
+                          money(item.totalPrice),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: amountColor(context, item.totalPrice),
+                          ),
+                        ),
                 ),
               );
             }),
@@ -209,16 +253,24 @@ class _ShowSaleInvoiceScreenState
             ),
             child: Column(
               children: [
-                InfoTile(
-                  label: 'Subtotal',
-                  value: money(invoice.totalAmount + invoice.discountAmount),
-                ),
+                InfoTile(label: 'Subtotal', value: money(_subtotal(invoice))),
+                if (_itemDiscountTotal(invoice) > 0)
+                  InfoTile(
+                    label: 'Item discounts',
+                    value: moneyNegative(_itemDiscountTotal(invoice)),
+                    valueStyle: amountStyle(
+                      context,
+                      -_itemDiscountTotal(invoice),
+                    ),
+                  ),
                 if (invoice.discountAmount > 0)
                   InfoTile(
                     label: 'Discount',
-                    value: moneyNegative(invoice.discountAmount),
-                    valueStyle:
-                        amountStyle(context, -invoice.discountAmount),
+                    value: invoice.discountPercent == null
+                        ? moneyNegative(invoice.discountAmount)
+                        : '${moneyNegative(invoice.discountAmount)} '
+                              '(${percentLabel(invoice.discountPercent!)})',
+                    valueStyle: amountStyle(context, -invoice.discountAmount),
                   ),
                 InfoTile(
                   label: 'Total Amount',

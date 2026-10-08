@@ -64,7 +64,7 @@ public class ProductsController : ControllerBase
 
         if (product == null)
         {
-            return NotFound();
+            return NotFound("Product not found.");
         }
 
         return Ok(product);
@@ -167,7 +167,7 @@ public class ProductsController : ControllerBase
 
         if (product == null)
         {
-            return NotFound();
+            return NotFound("Product not found.");
         }
 
         var categoryExists = await _context.Categories

@@ -6,10 +6,7 @@ class InvoiceService {
 
   InvoiceService(this._apiService);
 
-  Future<List<Invoice>> getInvoices({
-    DateTime? from,
-    DateTime? to,
-  }) async {
+  Future<List<Invoice>> getInvoices({DateTime? from, DateTime? to}) async {
     final query = <String>[];
 
     if (from != null) {
@@ -26,32 +23,27 @@ class InvoiceService {
 
     final data = await _apiService.get(endpoint);
 
-    return (data as List)
-        .map((json) => Invoice.fromJson(json))
-        .toList();
+    return (data as List).map((json) => Invoice.fromJson(json)).toList();
   }
 
   Future<Invoice> createInvoice({
     required int locationId,
     required List<Map<String, dynamic>> items,
     double discountAmount = 0.0,
+    double discountPercent = 0.0,
   }) async {
-    final data = await _apiService.post(
-      '/api/SaleInvoices',
-      {
-        'locationId': locationId,
-        'items': items,
-        'discountAmount': discountAmount,
-      },
-    );
+    final data = await _apiService.post('/api/SaleInvoices', {
+      'locationId': locationId,
+      'items': items,
+      'discountAmount': discountAmount,
+      'discountPercent': discountPercent,
+    });
 
     return Invoice.fromJson(data);
   }
 
   Future<Invoice> getInvoice(int id) async {
-    final data = await _apiService.get(
-      '/api/SaleInvoices/$id',
-    );
+    final data = await _apiService.get('/api/SaleInvoices/$id');
 
     return Invoice.fromJson(data);
   }

@@ -67,6 +67,22 @@ public class SaleInvoicesController : ControllerBase
                         $"Product variant {item.ProductVariantId} was not found.");
                 }
 
+                if (item.DiscountAmount > 0 && item.DiscountPercent > 0)
+                {
+                    return BadRequest(
+                        "Give an item discount as either an amount or a " +
+                        "percentage, not both.");
+                }
+
+                // Normalise: a percent discount becomes a per-unit amount.
+                if (item.DiscountPercent > 0)
+                {
+                    item.DiscountAmount = Math.Round(
+                        variant.Price * item.DiscountPercent / 100m,
+                        2,
+                        MidpointRounding.AwayFromZero);
+                }
+
                 var stockLocation = await _context.Locations
                     .FirstOrDefaultAsync(l =>
                         l.Id == item.StockLocationId);
@@ -122,12 +138,20 @@ public class SaleInvoicesController : ControllerBase
                     });
             }
 
-            // 2. Group same variants into ONE InvoiceItem
+            // 2. Group same variants with the SAME discount into ONE
+            //    InvoiceItem; rows with different discounts stay separate.
             var groupedItems = dto.Items
-                .GroupBy(x => x.ProductVariantId)
+                .GroupBy(x => new
+                {
+                    x.ProductVariantId,
+                    x.DiscountAmount,
+                    x.DiscountPercent
+                })
                 .Select(g => new
                 {
-                    ProductVariantId = g.Key,
+                    g.Key.ProductVariantId,
+                    g.Key.DiscountAmount,
+                    g.Key.DiscountPercent,
                     Quantity = g.Sum(x => x.Quantity)
                 })
                 .ToList();
@@ -145,8 +169,16 @@ public class SaleInvoicesController : ControllerBase
                         "ProductVariant not found.");
                 }
 
+                if (groupedItem.DiscountAmount > variant.Price)
+                {
+                    return BadRequest(
+                        $"Item discount cannot exceed the unit price of " +
+                        $"{variant.Price}.");
+                }
+
                 var totalPrice =
-                    variant.Price * groupedItem.Quantity;
+                    (variant.Price - groupedItem.DiscountAmount) *
+                    groupedItem.Quantity;
 
                 var invoiceItem = new SaleInvoiceItem
                 {
@@ -162,7 +194,15 @@ public class SaleInvoicesController : ControllerBase
                         variant.Price,
 
                     TotalPrice =
-                        totalPrice
+                        totalPrice,
+
+                    DiscountAmount =
+                        groupedItem.DiscountAmount,
+
+                    DiscountPercent =
+                        groupedItem.DiscountPercent > 0
+                            ? groupedItem.DiscountPercent
+                            : null
                 };
 
                 _context.InvoiceItems.Add(invoiceItem);
@@ -175,15 +215,39 @@ public class SaleInvoicesController : ControllerBase
                 return BadRequest("Discount amount cannot be negative.");
             }
 
-            if (dto.DiscountAmount > invoice.TotalAmount)
+            if (dto.DiscountAmount > 0 && dto.DiscountPercent > 0)
+            {
+                return BadRequest(
+                    "Give the invoice discount as either an amount or a " +
+                    "percentage, not both.");
+            }
+
+            var invoiceDiscount = dto.DiscountAmount;
+
+            // A percent discount is taken on the items total after the
+            // per-item discounts.
+            if (dto.DiscountPercent > 0)
+            {
+                invoiceDiscount = Math.Round(
+                    invoice.TotalAmount * dto.DiscountPercent / 100m,
+                    2,
+                    MidpointRounding.AwayFromZero);
+            }
+
+            if (invoiceDiscount > invoice.TotalAmount)
             {
                 return BadRequest(
                     $"Discount cannot exceed the invoice total of " +
                     $"{invoice.TotalAmount}.");
             }
 
-            invoice.DiscountAmount = dto.DiscountAmount;
-            invoice.TotalAmount -= dto.DiscountAmount;
+            invoice.DiscountAmount = invoiceDiscount;
+
+            invoice.DiscountPercent = dto.DiscountPercent > 0
+                ? dto.DiscountPercent
+                : null;
+
+            invoice.TotalAmount -= invoiceDiscount;
 
             await _context.SaveChangesAsync();
 
@@ -210,6 +274,7 @@ public class SaleInvoicesController : ControllerBase
                 LocationName = createdInvoice.Location.Name,
                 TotalAmount = createdInvoice.TotalAmount,
                 DiscountAmount = createdInvoice.DiscountAmount,
+                DiscountPercent = createdInvoice.DiscountPercent,
 
                 Items = createdInvoice.Items.Select(ii =>
                     new InvoiceItemResponseDto
@@ -225,6 +290,18 @@ public class SaleInvoicesController : ControllerBase
 
                         TotalPrice =
                             ii.TotalPrice,
+
+                        TotalBeforeDiscount =
+                            ii.UnitPrice * ii.Quantity,
+
+                        UnitPriceAfterDiscount =
+                            ii.UnitPrice - ii.DiscountAmount,
+
+                        DiscountAmount =
+                            ii.DiscountAmount,
+
+                        DiscountPercent =
+                            ii.DiscountPercent,
 
                         ModelNumber =
                             ii.ProductVariant.Product.ModelNumber,
@@ -290,6 +367,7 @@ public class SaleInvoicesController : ControllerBase
                 LocationName = i.Location.Name,
                 TotalAmount = i.TotalAmount,
                 DiscountAmount = i.DiscountAmount,
+                DiscountPercent = i.DiscountPercent,
 
                 Items = i.Items.Select(ii =>
                     new InvoiceItemResponseDto
@@ -305,6 +383,18 @@ public class SaleInvoicesController : ControllerBase
 
                         TotalPrice =
                             ii.TotalPrice,
+
+                        TotalBeforeDiscount =
+                            ii.UnitPrice * ii.Quantity,
+
+                        UnitPriceAfterDiscount =
+                            ii.UnitPrice - ii.DiscountAmount,
+
+                        DiscountAmount =
+                            ii.DiscountAmount,
+
+                        DiscountPercent =
+                            ii.DiscountPercent,
 
                         ModelNumber =
                             ii.ProductVariant.Product.ModelNumber,
@@ -341,7 +431,7 @@ public class SaleInvoicesController : ControllerBase
 
         if (invoice == null)
         {
-            return NotFound();
+            return NotFound("Invoice not found.");
         }
 
         var response = new InvoiceResponseDto
@@ -352,6 +442,7 @@ public class SaleInvoicesController : ControllerBase
             LocationName = invoice.Location.Name,
             TotalAmount = invoice.TotalAmount,
             DiscountAmount = invoice.DiscountAmount,
+            DiscountPercent = invoice.DiscountPercent,
 
             Items = invoice.Items.Select(item => new InvoiceItemResponseDto
             {
@@ -362,7 +453,12 @@ public class SaleInvoicesController : ControllerBase
                 ColourName = item.ProductVariant.Colour?.Name,
                 Quantity = item.Quantity,
                 UnitPrice = item.UnitPrice,
-                TotalPrice = item.TotalPrice
+                TotalPrice = item.TotalPrice,
+                TotalBeforeDiscount = item.UnitPrice * item.Quantity,
+                UnitPriceAfterDiscount =
+                    item.UnitPrice - item.DiscountAmount,
+                DiscountAmount = item.DiscountAmount,
+                DiscountPercent = item.DiscountPercent
             }).ToList()
         };
 

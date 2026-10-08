@@ -11,14 +11,11 @@ class LocationsScreen extends StatefulWidget {
   const LocationsScreen({super.key});
 
   @override
-  State<LocationsScreen> createState() =>
-      _LocationsScreenState();
+  State<LocationsScreen> createState() => _LocationsScreenState();
 }
 
-class _LocationsScreenState
-    extends State<LocationsScreen> {
-  final LocationService _service =
-      LocationService(ApiService());
+class _LocationsScreenState extends State<LocationsScreen> {
+  final LocationService _service = LocationService(ApiService());
 
   List<Location> _locations = [];
 
@@ -46,9 +43,8 @@ class _LocationsScreenState
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(friendlyError(e))));
     } finally {
       if (mounted) {
         setState(() {
@@ -76,9 +72,8 @@ class _LocationsScreenState
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(friendlyError(e))));
     }
   }
 
@@ -96,18 +91,14 @@ class _LocationsScreenState
     }
 
     try {
-      await _service.updateLocation(
-        location.id,
-        name,
-      );
+      await _service.updateLocation(location.id, name);
 
       await _loadLocations();
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(friendlyError(e))));
     }
   }
 
@@ -158,9 +149,7 @@ class _LocationsScreenState
                         width: 40,
                         height: 40,
                         decoration: BoxDecoration(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .primary
+                          color: Theme.of(context).colorScheme.primary
                               .withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(10),
                         ),

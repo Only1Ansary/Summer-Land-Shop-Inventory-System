@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using SummerLandBackend.Data;
 using SummerLandBackend.DTOs.Reports;
+using SummerLandBackend.Models;
 using SummerLandBackend.Services;
 
 namespace SummerLandBackend.Controllers;
@@ -204,15 +205,24 @@ public class ReportsController : ControllerBase
     }
 
     [HttpGet("low-stock")]
-    public async Task<ActionResult<LowStockReportDto>> GetLowStockReport()
+    public async Task<ActionResult<LowStockReportDto>> GetLowStockReport(
+        [FromQuery] int? categoryId)
     {
-        var variants = await _context.ProductVariants
+        IQueryable<ProductVariant> query = _context.ProductVariants
             .Include(v => v.Product)
+                .ThenInclude(p => p.Category)
             .Include(v => v.Size)
             .Include(v => v.Colour)
             .Include(v => v.Inventory)
-                .ThenInclude(i => i.Location)
-            .ToListAsync();
+                .ThenInclude(i => i.Location);
+
+        if (categoryId.HasValue)
+        {
+            query = query.Where(v =>
+                v.Product.CategoryId == categoryId.Value);
+        }
+
+        var variants = await query.ToListAsync();
 
         var lowStockItems = variants
             .Select(v =>
@@ -225,6 +235,9 @@ public class ReportsController : ControllerBase
 
                     ModelNumber = v.Product.ModelNumber,
                     ProductName = v.Product.Name,
+
+                    CategoryId = v.Product.CategoryId,
+                    CategoryName = v.Product.Category.Name,
 
                     SizeName = v.Size?.Name,
                     ColourName = v.Colour?.Name,

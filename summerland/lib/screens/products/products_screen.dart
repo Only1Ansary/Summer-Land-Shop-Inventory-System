@@ -27,20 +27,15 @@ class ProductsScreen extends StatefulWidget {
 }
 
 class _ProductsScreenState extends State<ProductsScreen> {
-  final ProductService _productService =
-      ProductService(ApiService());
+  final ProductService _productService = ProductService(ApiService());
 
-  final CategoryService _categoryService =
-      CategoryService(ApiService());
+  final CategoryService _categoryService = CategoryService(ApiService());
 
-  final SizeService _sizeService =
-      SizeService(ApiService());
+  final SizeService _sizeService = SizeService(ApiService());
 
-  final ColourService _colourService =
-      ColourService(ApiService());
+  final ColourService _colourService = ColourService(ApiService());
 
-  final TextEditingController _searchController =
-      TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
 
   Timer? _searchDebounce;
 
@@ -105,7 +100,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
       if (!mounted) return;
 
       setState(() {
-        _error = e.toString();
+        _error = friendlyError(e);
       });
     } finally {
       if (mounted) {
@@ -123,7 +118,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
     final query = _searchController.text.trim();
 
-    final hasFilters = query.isNotEmpty ||
+    final hasFilters =
+        query.isNotEmpty ||
         _selectedCategoryId != null ||
         _selectedSizeId != null ||
         _selectedColourId != null;
@@ -155,7 +151,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
       if (!mounted) return;
 
       setState(() {
-        _error = e.toString();
+        _error = friendlyError(e);
       });
     } finally {
       if (mounted) {
@@ -170,10 +166,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
     setState(() {});
 
     _searchDebounce?.cancel();
-    _searchDebounce = Timer(
-      const Duration(milliseconds: 350),
-      _search,
-    );
+    _searchDebounce = Timer(const Duration(milliseconds: 350), _search);
   }
 
   void _setCategoryFilter(int? value) {
@@ -213,15 +206,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
     _search();
   }
 
-  Future<void> _openProductForm({
-    Product? product,
-  }) async {
+  Future<void> _openProductForm({Product? product}) async {
     final result = await pushScreen(
       context,
-      (_) => ProductFormScreen(
-        product: product,
-        categories: _categories,
-      ),
+      (_) => ProductFormScreen(product: product, categories: _categories),
     );
 
     if (result == true) {
@@ -257,20 +245,15 @@ class _ProductsScreenState extends State<ProductsScreen> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Product deleted successfully.'),
-        ),
+        const SnackBar(content: Text('Product deleted successfully.')),
       );
 
       _loadData();
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString()),
-        ),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(friendlyError(e))));
     }
   }
 
@@ -339,9 +322,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         _showFilters = !_showFilters;
                       });
                     },
-                    icon: Icon(
-                      _showFilters ? Icons.expand_less : Icons.tune,
-                    ),
+                    icon: Icon(_showFilters ? Icons.expand_less : Icons.tune),
                     label: Text(_showFilters ? 'Hide Filters' : 'Filters'),
                   ),
                   const Spacer(),
@@ -366,10 +347,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
       initialValue: _selectedCategoryId,
       decoration: const InputDecoration(labelText: 'Category'),
       items: [
-        const DropdownMenuItem<int?>(
-          value: null,
-          child: Text('All'),
-        ),
+        const DropdownMenuItem<int?>(value: null, child: Text('All')),
         ..._categories.map(
           (category) => DropdownMenuItem<int?>(
             value: category.id,
@@ -385,15 +363,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
       initialValue: _selectedSizeId,
       decoration: const InputDecoration(labelText: 'Size'),
       items: [
-        const DropdownMenuItem<int?>(
-          value: null,
-          child: Text('All'),
-        ),
+        const DropdownMenuItem<int?>(value: null, child: Text('All')),
         ..._sizes.map(
-          (size) => DropdownMenuItem<int?>(
-            value: size.id,
-            child: Text(size.name),
-          ),
+          (size) =>
+              DropdownMenuItem<int?>(value: size.id, child: Text(size.name)),
         ),
       ],
       onChanged: _setSizeFilter,
@@ -404,10 +377,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
       initialValue: _selectedColourId,
       decoration: const InputDecoration(labelText: 'Colour'),
       items: [
-        const DropdownMenuItem<int?>(
-          value: null,
-          child: Text('All'),
-        ),
+        const DropdownMenuItem<int?>(value: null, child: Text('All')),
         ..._colours.map(
           (colour) => DropdownMenuItem<int?>(
             value: colour.id,
@@ -451,10 +421,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
     }
 
     if (_error != null) {
-      return ErrorState(
-        message: _error!,
-        onRetry: _loadData,
-      );
+      return ErrorState(message: _error!, onRetry: _loadData);
     }
 
     return WideContent(
@@ -468,8 +435,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   EmptyState(
                     icon: Icons.inventory_2_outlined,
                     title: 'No products found',
-                    message:
-                        'Try adjusting your search or add a new product.',
+                    message: 'Try adjusting your search or add a new product.',
                   ),
                 ],
               )
@@ -486,9 +452,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         width: 40,
                         height: 40,
                         decoration: BoxDecoration(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .primary
+                          color: Theme.of(context).colorScheme.primary
                               .withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(10),
                         ),
@@ -512,9 +476,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                           if (value == 'details') {
                             _openDetails(product);
                           } else if (value == 'edit') {
-                            _openProductForm(
-                              product: product,
-                            );
+                            _openProductForm(product: product);
                           } else if (value == 'delete') {
                             _deleteProduct(product);
                           }
@@ -524,14 +486,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
                             value: 'details',
                             child: Text('Details'),
                           ),
-                          PopupMenuItem(
-                            value: 'edit',
-                            child: Text('Edit'),
-                          ),
-                          PopupMenuItem(
-                            value: 'delete',
-                            child: Text('Delete'),
-                          ),
+                          PopupMenuItem(value: 'edit', child: Text('Edit')),
+                          PopupMenuItem(value: 'delete', child: Text('Delete')),
                         ],
                       ),
                     ),

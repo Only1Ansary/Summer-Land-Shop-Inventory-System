@@ -13,13 +13,11 @@ class ShowSuppliersScreen extends StatefulWidget {
   const ShowSuppliersScreen({super.key});
 
   @override
-  State<ShowSuppliersScreen> createState() =>
-      _ShowSuppliersScreenState();
+  State<ShowSuppliersScreen> createState() => _ShowSuppliersScreenState();
 }
 
 class _ShowSuppliersScreenState extends State<ShowSuppliersScreen> {
-  final SupplierService _supplierService =
-      SupplierService(ApiService());
+  final SupplierService _supplierService = SupplierService(ApiService());
 
   List<Supplier> _suppliers = [];
   final Set<int> _expanded = {};
@@ -51,7 +49,7 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen> {
       if (!mounted) return;
 
       setState(() {
-        _error = e.toString();
+        _error = friendlyError(e);
       });
     } finally {
       if (mounted) {
@@ -106,9 +104,8 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen> {
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(friendlyError(e))));
     }
   }
 
@@ -148,26 +145,20 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen> {
     }
 
     try {
-      await _supplierService.payDebt(
-        supplierId: supplier.id,
-        amount: amount,
-      );
+      await _supplierService.payDebt(supplierId: supplier.id, amount: amount);
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Debt payment recorded.'),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Debt payment recorded.')));
 
       _loadSuppliers();
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(friendlyError(e))));
     }
   }
 
@@ -210,10 +201,7 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen> {
     }
 
     if (_error != null) {
-      return ErrorState(
-        message: _error!,
-        onRetry: _loadSuppliers,
-      );
+      return ErrorState(message: _error!, onRetry: _loadSuppliers);
     }
 
     return WideContent(
@@ -238,8 +226,7 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen> {
                 itemCount: _suppliers.length,
                 itemBuilder: (context, index) {
                   final supplier = _suppliers[index];
-                  final expanded =
-                      _expanded.contains(supplier.id);
+                  final expanded = _expanded.contains(supplier.id);
 
                   return Card(
                     margin: const EdgeInsets.only(bottom: 8),
@@ -250,9 +237,7 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen> {
                             width: 40,
                             height: 40,
                             decoration: BoxDecoration(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .primary
+                              color: Theme.of(context).colorScheme.primary
                                   .withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(10),
                             ),
@@ -270,10 +255,7 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen> {
                                   text: moneyNegative(supplier.debt),
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    color: amountColor(
-                                      context,
-                                      -supplier.debt,
-                                    ),
+                                    color: amountColor(context, -supplier.debt),
                                   ),
                                 ),
                                 TextSpan(
@@ -292,29 +274,25 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen> {
                                   visualDensity: VisualDensity.compact,
                                   icon: const Icon(Icons.payments_outlined),
                                   tooltip: 'Pay debt',
-                                  onPressed: () =>
-                                      _paySupplierDebt(supplier),
+                                  onPressed: () => _paySupplierDebt(supplier),
                                 ),
                               IconButton(
                                 visualDensity: VisualDensity.compact,
                                 icon: const Icon(Icons.history),
                                 tooltip: 'Payment history',
-                                onPressed: () =>
-                                    _showPaymentHistory(supplier),
+                                onPressed: () => _showPaymentHistory(supplier),
                               ),
                               IconButton(
                                 visualDensity: VisualDensity.compact,
                                 icon: const Icon(Icons.edit_outlined),
                                 tooltip: 'Edit',
-                                onPressed: () =>
-                                    _editSupplier(supplier),
+                                onPressed: () => _editSupplier(supplier),
                               ),
                               IconButton(
                                 visualDensity: VisualDensity.compact,
                                 icon: const Icon(Icons.delete_outline),
                                 tooltip: 'Delete',
-                                onPressed: () =>
-                                    _deleteSupplier(supplier),
+                                onPressed: () => _deleteSupplier(supplier),
                               ),
                               AnimatedRotation(
                                 turns: expanded ? 0.5 : 0,
@@ -410,8 +388,9 @@ class _PaymentHistorySheetState extends State<_PaymentHistorySheet> {
     });
 
     try {
-      final payments =
-          await widget.supplierService.getSupplierPayments(widget.supplier.id);
+      final payments = await widget.supplierService.getSupplierPayments(
+        widget.supplier.id,
+      );
 
       if (!mounted) return;
 
@@ -422,7 +401,7 @@ class _PaymentHistorySheetState extends State<_PaymentHistorySheet> {
       if (!mounted) return;
 
       setState(() {
-        _error = e.toString();
+        _error = friendlyError(e);
       });
     }
   }
@@ -485,70 +464,58 @@ class _PaymentHistorySheetState extends State<_PaymentHistorySheet> {
             const Divider(height: 1),
             Expanded(
               child: _error != null
-                  ? ErrorState(
-                      message: _error!,
-                      onRetry: _load,
-                    )
+                  ? ErrorState(message: _error!, onRetry: _load)
                   : payments == null
-                      ? const LoadingState()
-                      : payments.isEmpty
-                          ? const EmptyState(
-                              icon: Icons.history,
-                              title: 'No payments recorded yet',
-                              message:
-                                  'Payments appear here when you pay a '
-                                  'purchase invoice or supplier debt.',
-                            )
-                          : ListView.builder(
-                              controller: scrollController,
-                              padding: const EdgeInsets.fromLTRB(
-                                  16, 8, 16, 16),
-                              itemCount: payments.length + 1,
-                              itemBuilder: (context, index) {
-                                if (index == 0) {
-                                  return Padding(
-                                    padding:
-                                        const EdgeInsets.only(bottom: 8),
-                                    child: Text(
-                                      'Total paid: ${money(totalPaid!)}',
-                                      style: theme.textTheme.titleSmall!
-                                          .copyWith(
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  );
-                                }
-
-                                final payment = payments[index - 1];
-
-                                return ListTile(
-                                  dense: true,
-                                  leading: const Icon(
-                                    Icons.payments_outlined,
-                                    size: 20,
-                                  ),
-                                  title: Text(
-                                    money(payment.amount),
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  subtitle: Text(
-                                    _formatDateTime(payment.paidAt),
-                                  ),
-                                  trailing: payment.purchaseInvoiceId == null
-                                      ? null
-                                      : Text(
-                                          'Invoice #${payment.purchaseInvoiceId}',
-                                          style: theme.textTheme.bodySmall
-                                              ?.copyWith(
-                                            color: theme.colorScheme
-                                                .onSurfaceVariant,
-                                          ),
-                                        ),
-                                );
-                              },
+                  ? const LoadingState()
+                  : payments.isEmpty
+                  ? const EmptyState(
+                      icon: Icons.history,
+                      title: 'No payments recorded yet',
+                      message:
+                          'Payments appear here when you pay a '
+                          'purchase invoice or supplier debt.',
+                    )
+                  : ListView.builder(
+                      controller: scrollController,
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                      itemCount: payments.length + 1,
+                      itemBuilder: (context, index) {
+                        if (index == 0) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Text(
+                              'Total paid: ${money(totalPaid!)}',
+                              style: theme.textTheme.titleSmall!.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
+                          );
+                        }
+
+                        final payment = payments[index - 1];
+
+                        return ListTile(
+                          dense: true,
+                          leading: const Icon(
+                            Icons.payments_outlined,
+                            size: 20,
+                          ),
+                          title: Text(
+                            money(payment.amount),
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Text(_formatDateTime(payment.paidAt)),
+                          trailing: payment.purchaseInvoiceId == null
+                              ? null
+                              : Text(
+                                  'Invoice #${payment.purchaseInvoiceId}',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                        );
+                      },
+                    ),
             ),
           ],
         );

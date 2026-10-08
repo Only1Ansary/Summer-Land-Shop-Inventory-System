@@ -31,8 +31,7 @@ Color amountColor(BuildContext context, num value) {
 }
 
 /// Convenience for building a themed text style with the sign-based colour.
-TextStyle? amountStyle(BuildContext context, num value,
-    {TextStyle? base}) {
+TextStyle? amountStyle(BuildContext context, num value, {TextStyle? base}) {
   final theme = Theme.of(context);
   return (base ?? theme.textTheme.bodyMedium)?.copyWith(
     color: amountColor(context, value),
@@ -49,9 +48,7 @@ class AppTheme {
   static const double contentMaxWidth = 900;
 
   static ThemeData light() {
-    final ColorScheme scheme = ColorScheme.fromSeed(
-      seedColor: AppPalette.seed,
-    );
+    final ColorScheme scheme = ColorScheme.fromSeed(seedColor: AppPalette.seed);
 
     return ThemeData(
       colorScheme: scheme,
@@ -162,18 +159,14 @@ class AppTheme {
         foregroundColor: scheme.onPrimary,
         elevation: 1,
         highlightElevation: 3,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
 
       chipTheme: ChipThemeData(
         backgroundColor: scheme.surfaceContainerHighest,
         selectedColor: scheme.secondaryContainer,
         side: BorderSide.none,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         labelStyle: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w600,
@@ -192,17 +185,13 @@ class AppTheme {
         behavior: SnackBarBehavior.floating,
         backgroundColor: scheme.inverseSurface,
         contentTextStyle: TextStyle(color: scheme.onInverseSurface),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
 
       dialogTheme: DialogThemeData(
         backgroundColor: scheme.surface,
         surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         titleTextStyle: TextStyle(
           fontSize: 20,
           fontWeight: FontWeight.w600,
@@ -219,9 +208,7 @@ class AppTheme {
       ),
 
       listTileTheme: ListTileThemeData(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         iconColor: scheme.onSurfaceVariant,
         textColor: scheme.onSurface,
         titleTextStyle: TextStyle(
@@ -251,14 +238,10 @@ class AppTheme {
       ),
 
       popupMenuTheme: PopupMenuThemeData(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
 
-      progressIndicatorTheme: ProgressIndicatorThemeData(
-        color: scheme.primary,
-      ),
+      progressIndicatorTheme: ProgressIndicatorThemeData(color: scheme.primary),
     );
   }
 }

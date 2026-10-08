@@ -74,7 +74,9 @@ public class PurchaseInvoicesController : ControllerBase
             .AnyAsync(l => l.Id == DefaultLocationId);
 
         if (!locationExists)
-            return BadRequest("Location with ID 1 does not exist.");
+            return BadRequest(
+                $"The default location (ID {DefaultLocationId}) does not exist. "
+                + "Please add a location first.");
 
         var categoryIds = dto.Items
             .Select(i => i.CategoryId)
@@ -418,7 +420,7 @@ public class PurchaseInvoicesController : ControllerBase
                 .ThenInclude(r => r.Product)
             .FirstOrDefaultAsync(i => i.Id == id);
         if (invoice == null)
-            return NotFound();
+            return NotFound("Purchase invoice not found.");
         return Ok(new
         {
             invoice.Id,

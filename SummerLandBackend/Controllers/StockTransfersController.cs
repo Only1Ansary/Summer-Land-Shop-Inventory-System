@@ -197,7 +197,7 @@ public class StockTransfersController : ControllerBase
 
         if (transfer == null)
         {
-            return NotFound();
+            return NotFound("Stock transfer not found.");
         }
 
         var response = new StockTransferResponseDto

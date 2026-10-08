@@ -17,8 +17,7 @@ class InventoryScreen extends StatefulWidget {
 }
 
 class _InventoryScreenState extends State<InventoryScreen> {
-  final CategoryService _categoryService =
-      CategoryService(ApiService());
+  final CategoryService _categoryService = CategoryService(ApiService());
 
   List<Category> _categories = [];
 
@@ -51,18 +50,13 @@ class _InventoryScreenState extends State<InventoryScreen> {
 
       setState(() {
         _isLoading = false;
-        _errorMessage = e.toString();
+        _errorMessage = friendlyError(e);
       });
     }
   }
 
   void _openCategory(Category category) {
-    pushScreen(
-      context,
-      (_) => InventoryProductsScreen(
-        category: category,
-      ),
-    );
+    pushScreen(context, (_) => InventoryProductsScreen(category: category));
   }
 
   @override
@@ -82,10 +76,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
     }
 
     if (_errorMessage != null) {
-      return ErrorState(
-        message: _errorMessage!,
-        onRetry: _loadCategories,
-      );
+      return ErrorState(message: _errorMessage!, onRetry: _loadCategories);
     }
 
     if (_categories.isEmpty) {
@@ -113,8 +104,8 @@ class _InventoryScreenState extends State<InventoryScreen> {
                 final int columns = width >= 980
                     ? 3
                     : width >= 640
-                        ? 2
-                        : 1;
+                    ? 2
+                    : 1;
 
                 return GridView.builder(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -140,8 +131,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                                 width: 44,
                                 height: 44,
                                 decoration: BoxDecoration(
-                                  color:
-                                      theme.colorScheme.primary.withValues(
+                                  color: theme.colorScheme.primary.withValues(
                                     alpha: 0.1,
                                   ),
                                   borderRadius: BorderRadius.circular(12),

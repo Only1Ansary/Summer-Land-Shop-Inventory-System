@@ -243,10 +243,7 @@ class AppDestinations {
   };
 
   static AppNavigationItem byId(String id) {
-    return items.firstWhere(
-      (item) => item.id == id,
-      orElse: () => items.first,
-    );
+    return items.firstWhere((item) => item.id == id, orElse: () => items.first);
   }
 
   /// Swaps the current top-level route for the destination screen.
@@ -278,8 +275,7 @@ class AppDestinations {
   static Widget _saleInvoices() => const ShowSaleInvoicesScreen();
   static Widget _returns() => const ReturnsScreen();
   static Widget _addPurchase() => const CreatePurchaseInvoiceScreen();
-  static Widget _purchaseInvoices() =>
-      const ShowPurchaseInvoicesScreen();
+  static Widget _purchaseInvoices() => const ShowPurchaseInvoicesScreen();
   static Widget _suppliers() => const ShowSuppliersScreen();
   static Widget _reports() => const ReportsScreen();
   static Widget _salesReport() => const SalesReportScreen();

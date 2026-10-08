@@ -14,17 +14,14 @@ class PurchaseInvoiceService {
     required List<Map<String, dynamic>> items,
     List<Map<String, dynamic>> fees = const [],
   }) async {
-    final data = await _apiService.post(
-      '/api/PurchaseInvoices',
-      {
-        'supplierName': supplierName,
-        'date': date.toIso8601String(),
-        'totalPaid': totalPaid,
-        'discount': discount,
-        'items': items,
-        'fees': fees,
-      },
-    );
+    final data = await _apiService.post('/api/PurchaseInvoices', {
+      'supplierName': supplierName,
+      'date': date.toIso8601String(),
+      'totalPaid': totalPaid,
+      'discount': discount,
+      'items': items,
+      'fees': fees,
+    });
 
     return PurchaseInvoice.fromJson(data);
   }
@@ -65,23 +62,16 @@ class PurchaseInvoiceService {
     required String? reason,
     required List<Map<String, dynamic>> items,
   }) async {
-    await _apiService.post(
-      '/api/PurchaseReturns',
-      {
-        'purchaseInvoiceId': invoiceId,
-        'reason': reason,
-        'items': items,
-      },
-    );
+    await _apiService.post('/api/PurchaseReturns', {
+      'purchaseInvoiceId': invoiceId,
+      'reason': reason,
+      'items': items,
+    });
   }
 
-  Future<void> payDebt({
-    required int invoiceId,
-    required double amount,
-  }) async {
-    await _apiService.post(
-      '/api/PurchaseInvoices/$invoiceId/pay',
-      {'amount': amount},
-    );
+  Future<void> payDebt({required int invoiceId, required double amount}) async {
+    await _apiService.post('/api/PurchaseInvoices/$invoiceId/pay', {
+      'amount': amount,
+    });
   }
 }

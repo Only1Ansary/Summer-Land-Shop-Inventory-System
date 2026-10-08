@@ -100,7 +100,7 @@ class _InventoryProductsScreenState extends State<InventoryProductsScreen> {
       if (!mounted) return;
 
       setState(() {
-        _errorMessage = e.toString();
+        _errorMessage = friendlyError(e);
       });
     } finally {
       if (mounted) {
@@ -138,7 +138,7 @@ class _InventoryProductsScreenState extends State<InventoryProductsScreen> {
       if (!mounted) return;
 
       setState(() {
-        _errorMessage = e.toString();
+        _errorMessage = friendlyError(e);
       });
     } finally {
       if (mounted) {
@@ -153,10 +153,7 @@ class _InventoryProductsScreenState extends State<InventoryProductsScreen> {
     setState(() {});
 
     _searchDebounce?.cancel();
-    _searchDebounce = Timer(
-      const Duration(milliseconds: 350),
-      _search,
-    );
+    _searchDebounce = Timer(const Duration(milliseconds: 350), _search);
   }
 
   void _setSizeFilter(int? value) {
@@ -188,10 +185,7 @@ class _InventoryProductsScreenState extends State<InventoryProductsScreen> {
   }
 
   void _openProduct(Product product) {
-    pushScreen(
-      context,
-      (_) => InventoryVariantsScreen(product: product),
-    );
+    pushScreen(context, (_) => InventoryVariantsScreen(product: product));
   }
 
   @override
@@ -208,10 +202,7 @@ class _InventoryProductsScreenState extends State<InventoryProductsScreen> {
     }
 
     if (_errorMessage != null) {
-      return ErrorState(
-        message: _errorMessage!,
-        onRetry: _loadData,
-      );
+      return ErrorState(message: _errorMessage!, onRetry: _loadData);
     }
 
     return Column(
@@ -271,15 +262,10 @@ class _InventoryProductsScreenState extends State<InventoryProductsScreen> {
       initialValue: _selectedSizeId,
       decoration: const InputDecoration(labelText: 'Size'),
       items: [
-        const DropdownMenuItem<int?>(
-          value: null,
-          child: Text('All sizes'),
-        ),
+        const DropdownMenuItem<int?>(value: null, child: Text('All sizes')),
         ..._sizes.map(
-          (size) => DropdownMenuItem<int?>(
-            value: size.id,
-            child: Text(size.name),
-          ),
+          (size) =>
+              DropdownMenuItem<int?>(value: size.id, child: Text(size.name)),
         ),
       ],
       onChanged: _setSizeFilter,
@@ -290,10 +276,7 @@ class _InventoryProductsScreenState extends State<InventoryProductsScreen> {
       initialValue: _selectedColourId,
       decoration: const InputDecoration(labelText: 'Colour'),
       items: [
-        const DropdownMenuItem<int?>(
-          value: null,
-          child: Text('All colours'),
-        ),
+        const DropdownMenuItem<int?>(value: null, child: Text('All colours')),
         ..._colours.map(
           (colour) => DropdownMenuItem<int?>(
             value: colour.id,
@@ -317,10 +300,7 @@ class _InventoryProductsScreenState extends State<InventoryProductsScreen> {
               Expanded(child: sizeDropdown),
               const SizedBox(width: 10),
               Expanded(child: colourDropdown),
-              if (_hasActiveFilters) ...[
-                const SizedBox(width: 6),
-                clearButton,
-              ],
+              if (_hasActiveFilters) ...[const SizedBox(width: 6), clearButton],
             ],
           );
         }
@@ -331,10 +311,7 @@ class _InventoryProductsScreenState extends State<InventoryProductsScreen> {
             const SizedBox(height: 10),
             colourDropdown,
             if (_hasActiveFilters)
-              Align(
-                alignment: Alignment.centerRight,
-                child: clearButton,
-              ),
+              Align(alignment: Alignment.centerRight, child: clearButton),
           ],
         );
       },
@@ -374,9 +351,7 @@ class _InventoryProductsScreenState extends State<InventoryProductsScreen> {
                         width: 40,
                         height: 40,
                         decoration: BoxDecoration(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .primary
+                          color: Theme.of(context).colorScheme.primary
                               .withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(10),
                         ),

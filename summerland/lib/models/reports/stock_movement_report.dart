@@ -50,9 +50,7 @@ class StockMovementReportItem {
     required this.createdAt,
   });
 
-  factory StockMovementReportItem.fromJson(
-      Map<String, dynamic> json,
-      ) {
+  factory StockMovementReportItem.fromJson(Map<String, dynamic> json) {
     return StockMovementReportItem(
       id: json['id'],
       productVariantId: json['productVariantId'],

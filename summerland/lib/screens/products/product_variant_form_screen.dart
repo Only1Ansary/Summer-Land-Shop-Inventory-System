@@ -35,36 +35,28 @@ class ProductVariantFormScreen extends StatefulWidget {
       _ProductVariantFormScreenState();
 }
 
-class _ProductVariantFormScreenState
-    extends State<ProductVariantFormScreen> {
+class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  final _barcodeController =
-      TextEditingController();
+  final _barcodeController = TextEditingController();
 
-  final _priceController =
-      TextEditingController();
+  final _priceController = TextEditingController();
 
-  final _thresholdController =
-      TextEditingController();
+  final _thresholdController = TextEditingController();
 
-  final _stockQuantityController =
-      TextEditingController();
+  final _stockQuantityController = TextEditingController();
 
-  final ProductVariantService _variantService =
-      ProductVariantService(ApiService());
+  final ProductVariantService _variantService = ProductVariantService(
+    ApiService(),
+  );
 
-  final SizeService _sizeService =
-      SizeService(ApiService());
+  final SizeService _sizeService = SizeService(ApiService());
 
-  final ColourService _colourService =
-      ColourService(ApiService());
+  final ColourService _colourService = ColourService(ApiService());
 
-  final InventoryService _inventoryService =
-      InventoryService(ApiService());
+  final InventoryService _inventoryService = InventoryService(ApiService());
 
-  final LocationService _locationService =
-      LocationService(ApiService());
+  final LocationService _locationService = LocationService(ApiService());
 
   late List<SizeModel> _sizes;
 
@@ -104,21 +96,17 @@ class _ProductVariantFormScreenState
       _selectedSizeId = variant.sizeId;
       _selectedColourId = variant.colourId;
 
-      _barcodeController.text =
-          variant.barcode;
+      _barcodeController.text = variant.barcode;
 
-      _priceController.text =
-          variant.price.toString();
+      _priceController.text = variant.price.toString();
 
-      _thresholdController.text =
-          variant.lowStockThreshold.toString();
+      _thresholdController.text = variant.lowStockThreshold.toString();
 
       _barcodeType = variant.barcodeType;
 
       _currentStock = variant.totalQuantity;
     } else {
-      _priceController.text =
-          _formatPrice(widget.product.sellingPrice);
+      _priceController.text = _formatPrice(widget.product.sellingPrice);
       _thresholdController.text = '0';
     }
   }
@@ -155,14 +143,13 @@ class _ProductVariantFormScreenState
     } catch (e) {
       if (!mounted) return;
 
-      _showError(e.toString());
+      _showError(friendlyError(e));
     }
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _addSize() async {
@@ -182,9 +169,7 @@ class _ProductVariantFormScreenState
     final trimmed = name.trim();
 
     final existing = _sizes.where(
-      (size) =>
-          size.name.trim().toLowerCase() ==
-          trimmed.toLowerCase(),
+      (size) => size.name.trim().toLowerCase() == trimmed.toLowerCase(),
     );
 
     if (existing.isNotEmpty) {
@@ -208,7 +193,7 @@ class _ProductVariantFormScreenState
     } catch (e) {
       if (!mounted) return;
 
-      _showError(e.toString());
+      _showError(friendlyError(e));
     } finally {
       if (mounted) {
         setState(() {
@@ -235,9 +220,7 @@ class _ProductVariantFormScreenState
     final trimmed = name.trim();
 
     final existing = _colours.where(
-      (colour) =>
-          colour.name.trim().toLowerCase() ==
-          trimmed.toLowerCase(),
+      (colour) => colour.name.trim().toLowerCase() == trimmed.toLowerCase(),
     );
 
     if (existing.isNotEmpty) {
@@ -261,7 +244,7 @@ class _ProductVariantFormScreenState
     } catch (e) {
       if (!mounted) return;
 
-      _showError(e.toString());
+      _showError(friendlyError(e));
     } finally {
       if (mounted) {
         setState(() {
@@ -272,9 +255,7 @@ class _ProductVariantFormScreenState
   }
 
   int? _stockQuantity() {
-    final quantity = int.tryParse(
-      _stockQuantityController.text.trim(),
-    );
+    final quantity = int.tryParse(_stockQuantityController.text.trim());
 
     if (quantity == null || quantity <= 0) {
       return null;
@@ -310,9 +291,7 @@ class _ProductVariantFormScreenState
     if (!isEditing) return;
 
     try {
-      final variant = await _variantService.getVariant(
-        widget.variant!.id,
-      );
+      final variant = await _variantService.getVariant(widget.variant!.id);
 
       if (!mounted) return;
 
@@ -353,16 +332,12 @@ class _ProductVariantFormScreenState
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Stock added. Total is now $_currentStock.',
-          ),
-        ),
+        SnackBar(content: Text('Stock added. Total is now $_currentStock.')),
       );
     } catch (e) {
       if (!mounted) return;
 
-      _showError(e.toString());
+      _showError(friendlyError(e));
     } finally {
       if (mounted) {
         setState(() {
@@ -377,13 +352,9 @@ class _ProductVariantFormScreenState
       return;
     }
 
-    final price = double.tryParse(
-      _priceController.text.trim(),
-    );
+    final price = double.tryParse(_priceController.text.trim());
 
-    final threshold = int.tryParse(
-      _thresholdController.text.trim(),
-    );
+    final threshold = int.tryParse(_thresholdController.text.trim());
 
     if (price == null || price < 0) {
       return;
@@ -427,10 +398,9 @@ class _ProductVariantFormScreenState
           sizeId: _selectedSizeId,
           colourId: _selectedColourId,
           barcodeType: _barcodeType,
-          barcode:
-              _barcodeController.text.trim().isEmpty
-                  ? null
-                  : _barcodeController.text.trim(),
+          barcode: _barcodeController.text.trim().isEmpty
+              ? null
+              : _barcodeController.text.trim(),
           price: price,
           lowStockThreshold: threshold,
         );
@@ -452,11 +422,8 @@ class _ProductVariantFormScreenState
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString()),
-        ),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(friendlyError(e))));
     } finally {
       if (mounted) {
         setState(() {
@@ -474,8 +441,7 @@ class _ProductVariantFormScreenState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SectionHeader(
-              title:
-                  isEditing ? 'Add Stock' : 'Initial Stock',
+              title: isEditing ? 'Add Stock' : 'Initial Stock',
               subtitle: isEditing
                   ? 'Top up this variant at a location.'
                   : 'Optional. Leave empty to add stock later.',
@@ -484,25 +450,17 @@ class _ProductVariantFormScreenState
             if (isEditing)
               InfoTile(
                 label: 'Current Stock',
-                value:
-                    '$_currentStock',
-                valueStyle: amountStyle(
-                  context,
-                  _currentStock.toDouble(),
-                ),
+                value: '$_currentStock',
+                valueStyle: amountStyle(context, _currentStock.toDouble()),
               ),
             if (_locations.isEmpty)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 8),
-                child: Text(
-                  'No locations available.',
-                ),
+                child: Text('No locations available.'),
               )
             else ...[
               DropdownButtonFormField<int>(
-                key: ValueKey(
-                  'location-$_selectedLocationId',
-                ),
+                key: ValueKey('location-$_selectedLocationId'),
                 initialValue: _selectedLocationId,
                 decoration: const InputDecoration(
                   labelText: 'Location',
@@ -543,9 +501,7 @@ class _ProductVariantFormScreenState
                         ? const SizedBox(
                             width: 18,
                             height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                            ),
+                            child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.add_box_outlined),
                     label: const Text('Add Stock'),
@@ -572,14 +528,10 @@ class _ProductVariantFormScreenState
             ? const SizedBox(
                 width: 18,
                 height: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                ),
+                child: CircularProgressIndicator(strokeWidth: 2),
               )
             : Icon(icon),
-        style: IconButton.styleFrom(
-          minimumSize: const Size(48, 48),
-        ),
+        style: IconButton.styleFrom(minimumSize: const Size(48, 48)),
       ),
     );
   }
@@ -587,13 +539,7 @@ class _ProductVariantFormScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          isEditing
-              ? 'Edit Variant'
-              : 'Add Variant',
-        ),
-      ),
+      appBar: AppBar(title: Text(isEditing ? 'Edit Variant' : 'Add Variant')),
       body: ResponsiveFormPage(
         child: Form(
           key: _formKey,
@@ -617,20 +563,19 @@ class _ProductVariantFormScreenState
                       Text(
                         'Model: ${widget.product.modelNumber}',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color:
-                                  Theme.of(context).colorScheme.onSurfaceVariant,
-                            ),
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'Selling Price: ${money(widget.product.sellingPrice)}',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: amountColor(
-                                context,
-                                widget.product.sellingPrice,
-                              ),
-                              fontWeight: FontWeight.w600,
-                            ),
+                          color: amountColor(
+                            context,
+                            widget.product.sellingPrice,
+                          ),
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ],
                   ),
@@ -656,11 +601,10 @@ class _ProductVariantFormScreenState
                           child: Text('No Size'),
                         ),
                         ..._sizes.map(
-                          (size) =>
-                              DropdownMenuItem<int?>(
-                                value: size.id,
-                                child: Text(size.name),
-                              ),
+                          (size) => DropdownMenuItem<int?>(
+                            value: size.id,
+                            child: Text(size.name),
+                          ),
                         ),
                       ],
                       onChanged: (value) {
@@ -698,11 +642,10 @@ class _ProductVariantFormScreenState
                           child: Text('No Colour'),
                         ),
                         ..._colours.map(
-                          (colour) =>
-                              DropdownMenuItem<int?>(
-                                value: colour.id,
-                                child: Text(colour.name),
-                              ),
+                          (colour) => DropdownMenuItem<int?>(
+                            value: colour.id,
+                            child: Text(colour.name),
+                          ),
                         ),
                       ],
                       onChanged: (value) {
@@ -732,18 +675,8 @@ class _ProductVariantFormScreenState
                     prefixIcon: Icon(Icons.qr_code_2_outlined),
                   ),
                   items: const [
-                    DropdownMenuItem(
-                      value: 1,
-                      child: Text(
-                        'Internal',
-                      ),
-                    ),
-                    DropdownMenuItem(
-                      value: 2,
-                      child: Text(
-                        'Manufacturer',
-                      ),
-                    ),
+                    DropdownMenuItem(value: 1, child: Text('Internal')),
+                    DropdownMenuItem(value: 2, child: Text('Manufacturer')),
                   ],
                   onChanged: (value) {
                     if (value == null) return;
@@ -758,33 +691,27 @@ class _ProductVariantFormScreenState
                   },
                 ),
 
-              if (!isEditing)
-                const SizedBox(height: 16),
+              if (!isEditing) const SizedBox(height: 16),
 
-              if (isEditing ||
-                  _barcodeType == 2)
+              if (isEditing || _barcodeType == 2)
                 TextFormField(
                   controller: _barcodeController,
                   enabled: isEditing || _barcodeType == 2,
                   decoration: InputDecoration(
                     labelText: isEditing ? 'Barcode' : 'Manufacturer Barcode',
                     prefixIcon: const Icon(Icons.barcode_reader),
-                    helperText:
-                        !isEditing && _barcodeType == 2
-                            ? 'Enter the manufacturer barcode.'
-                            : null,
+                    helperText: !isEditing && _barcodeType == 2
+                        ? 'Enter the manufacturer barcode.'
+                        : null,
                   ),
                   validator: (value) {
                     if (!isEditing &&
                         _barcodeType == 2 &&
-                        (value == null ||
-                            value.trim().isEmpty)) {
+                        (value == null || value.trim().isEmpty)) {
                       return 'Manufacturer barcode is required.';
                     }
 
-                    if (isEditing &&
-                        (value == null ||
-                            value.trim().isEmpty)) {
+                    if (isEditing && (value == null || value.trim().isEmpty)) {
                       return 'Barcode is required.';
                     }
 
@@ -792,12 +719,9 @@ class _ProductVariantFormScreenState
                   },
                 ),
 
-              if (!isEditing &&
-                  _barcodeType == 1)
-                const SizedBox(height: 16),
+              if (!isEditing && _barcodeType == 1) const SizedBox(height: 16),
 
-              if (!isEditing &&
-                  _barcodeType == 1)
+              if (!isEditing && _barcodeType == 1)
                 Card(
                   child: Padding(
                     padding: const EdgeInsets.all(12),
@@ -823,21 +747,16 @@ class _ProductVariantFormScreenState
 
               TextFormField(
                 controller: _priceController,
-                keyboardType:
-                    const TextInputType.numberWithOptions(
+                keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
                 decoration: const InputDecoration(
                   labelText: 'Price',
                   prefixIcon: Icon(Icons.payments_outlined),
-                  helperText:
-                      'Defaults to the product selling price.',
+                  helperText: 'Defaults to the product selling price.',
                 ),
                 validator: (value) {
-                  final price =
-                      double.tryParse(
-                        value?.trim() ?? '',
-                      );
+                  final price = double.tryParse(value?.trim() ?? '');
 
                   if (price == null) {
                     return 'Enter a valid price.';
@@ -861,10 +780,7 @@ class _ProductVariantFormScreenState
                   prefixIcon: Icon(Icons.low_priority_outlined),
                 ),
                 validator: (value) {
-                  final threshold =
-                      int.tryParse(
-                        value?.trim() ?? '',
-                      );
+                  final threshold = int.tryParse(value?.trim() ?? '');
 
                   if (threshold == null) {
                     return 'Enter a valid threshold.';
@@ -892,16 +808,10 @@ class _ProductVariantFormScreenState
                       ? const SizedBox(
                           width: 18,
                           height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                          ),
+                          child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.save_outlined),
-                  label: Text(
-                    isEditing
-                        ? 'Save'
-                        : 'Add Variant',
-                  ),
+                  label: Text(isEditing ? 'Save' : 'Add Variant'),
                 ),
               ),
             ],

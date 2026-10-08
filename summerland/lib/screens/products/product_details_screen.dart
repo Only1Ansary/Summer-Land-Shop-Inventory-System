@@ -30,23 +30,19 @@ class ProductDetailsScreen extends StatefulWidget {
   });
 
   @override
-  State<ProductDetailsScreen> createState() =>
-      _ProductDetailsScreenState();
+  State<ProductDetailsScreen> createState() => _ProductDetailsScreenState();
 }
 
-class _ProductDetailsScreenState
-    extends State<ProductDetailsScreen> {
-  final ProductVariantService _variantService =
-      ProductVariantService(ApiService());
+class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
+  final ProductVariantService _variantService = ProductVariantService(
+    ApiService(),
+  );
 
-  final ProductService _productService =
-      ProductService(ApiService());
+  final ProductService _productService = ProductService(ApiService());
 
-  final SizeService _sizeService =
-      SizeService(ApiService());
+  final SizeService _sizeService = SizeService(ApiService());
 
-  final ColourService _colourService =
-      ColourService(ApiService());
+  final ColourService _colourService = ColourService(ApiService());
 
   List<ProductVariant> _variants = [];
 
@@ -83,9 +79,7 @@ class _ProductDetailsScreenState
     } catch (e) {
       if (!mounted) return;
 
-      debugPrint(
-        'Failed to refresh sizes and colours: $e',
-      );
+      debugPrint('Failed to refresh sizes and colours: $e');
     }
   }
 
@@ -98,24 +92,20 @@ class _ProductDetailsScreenState
     try {
       await _loadLookups();
 
-      final variants =
-          await _variantService.getVariants();
+      final variants = await _variantService.getVariants();
 
       if (!mounted) return;
 
       setState(() {
         _variants = variants
-            .where(
-              (variant) =>
-                  variant.productId == widget.product.id,
-            )
+            .where((variant) => variant.productId == widget.product.id)
             .toList();
       });
     } catch (e) {
       if (!mounted) return;
 
       setState(() {
-        _error = e.toString();
+        _error = friendlyError(e);
       });
     } finally {
       if (mounted) {
@@ -127,24 +117,19 @@ class _ProductDetailsScreenState
   }
 
   Future<void> _editProduct() async {
-    final categories =
-        await _loadCategories();
+    final categories = await _loadCategories();
 
     if (!mounted) return;
 
     if (categories == null) return;
 
-    final updatedProduct = await _productService
-        .getProduct(widget.product.id);
+    final updatedProduct = await _productService.getProduct(widget.product.id);
 
     if (!mounted) return;
 
     final result = await pushScreen(
       context,
-      (_) => ProductFormScreen(
-        product: updatedProduct,
-        categories: categories,
-      ),
+      (_) => ProductFormScreen(product: updatedProduct, categories: categories),
     );
 
     if (result == true) {
@@ -154,20 +139,14 @@ class _ProductDetailsScreenState
 
   Future<dynamic> _loadCategories() async {
     try {
-      final service = CategoryService(
-        ApiService(),
-      );
+      final service = CategoryService(ApiService());
 
       return await service.getCategories();
     } catch (e) {
       if (!mounted) return null;
 
       ScaffoldMessenger.of(context)
-          .showSnackBar(
-        SnackBar(
-          content: Text(e.toString()),
-        ),
-      );
+          .showSnackBar(SnackBar(content: Text(friendlyError(e))));
 
       return null;
     }
@@ -188,9 +167,7 @@ class _ProductDetailsScreenState
     }
   }
 
-  Future<void> _editVariant(
-      ProductVariant variant,
-      ) async {
+  Future<void> _editVariant(ProductVariant variant) async {
     final result = await pushScreen(
       context,
       (_) => ProductVariantFormScreen(
@@ -206,9 +183,7 @@ class _ProductDetailsScreenState
     }
   }
 
-  Future<void> _deleteVariant(
-      ProductVariant variant,
-      ) async {
+  Future<void> _deleteVariant(ProductVariant variant) async {
     final confirmed = await showAppConfirmDialog(
       context,
       title: 'Delete Variant',
@@ -218,29 +193,20 @@ class _ProductDetailsScreenState
     if (!confirmed) return;
 
     try {
-      await _variantService.deleteVariant(
-        variant.id,
-      );
+      await _variantService.deleteVariant(variant.id);
 
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Variant deleted successfully.',
-          ),
-        ),
+        const SnackBar(content: Text('Variant deleted successfully.')),
       );
 
       _loadVariants();
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString()),
-        ),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(friendlyError(e))));
     }
   }
 
@@ -292,20 +258,11 @@ class _ProductDetailsScreenState
           children: [
             Text(
               widget.product.name,
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const Divider(height: 24),
-            InfoTile(
-              label: 'Model',
-              value: widget.product.modelNumber,
-            ),
-            InfoTile(
-              label: 'Category',
-              value: widget.product.categoryName,
-            ),
+            InfoTile(label: 'Model', value: widget.product.modelNumber),
+            InfoTile(label: 'Category', value: widget.product.categoryName),
             InfoTile(
               label: 'Barcode',
               value: widget.product.barcode.isEmpty
@@ -319,8 +276,7 @@ class _ProductDetailsScreenState
             ),
             InfoTile(
               label: 'Profit Margin',
-              value:
-                  '${_formatPercent(widget.product.profitMargin)}%',
+              value: '${_formatPercent(widget.product.profitMargin)}%',
             ),
             InfoTile(
               label: 'Selling Price',
@@ -347,10 +303,7 @@ class _ProductDetailsScreenState
     }
 
     if (_error != null) {
-      return ErrorState(
-        message: _error!,
-        onRetry: _loadVariants,
-      );
+      return ErrorState(message: _error!, onRetry: _loadVariants);
     }
 
     if (_variants.isEmpty) {
@@ -362,8 +315,7 @@ class _ProductDetailsScreenState
               EmptyState(
                 icon: Icons.category_outlined,
                 title: 'No variants yet',
-                message:
-                    'Add a variant to track stock and pricing for this product.',
+                message: 'Add a variant to track stock and pricing for this product.',
               ),
             ],
           ),
@@ -372,19 +324,13 @@ class _ProductDetailsScreenState
     }
 
     return Column(
-      children: _variants.map(
-        (variant) {
-          return _buildVariantCard(
-            variant,
-          );
-        },
-      ).toList(),
+      children: _variants.map((variant) {
+        return _buildVariantCard(variant);
+      }).toList(),
     );
   }
 
-  Widget _buildVariantCard(
-      ProductVariant variant,
-      ) {
+  Widget _buildVariantCard(ProductVariant variant) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
@@ -407,27 +353,15 @@ class _ProductDetailsScreenState
               ],
             ),
             const Divider(height: 20),
-            InfoTile(
-              label: 'Size',
-              value: variant.sizeName ?? 'N/A',
-            ),
-            InfoTile(
-              label: 'Colour',
-              value: variant.colourName ?? 'N/A',
-            ),
+            InfoTile(label: 'Size', value: variant.sizeName ?? 'N/A'),
+            InfoTile(label: 'Colour', value: variant.colourName ?? 'N/A'),
             InfoTile(
               label: 'Price',
               value: money(variant.price),
               valueStyle: amountStyle(context, variant.price),
             ),
-            InfoTile(
-              label: 'Barcode',
-              value: variant.barcode,
-            ),
-            InfoTile(
-              label: 'Total Stock',
-              value: '${variant.totalQuantity}',
-            ),
+            InfoTile(label: 'Barcode', value: variant.barcode),
+            InfoTile(label: 'Total Stock', value: '${variant.totalQuantity}'),
             InfoTile(
               label: 'Low Stock Threshold',
               value: '${variant.lowStockThreshold}',

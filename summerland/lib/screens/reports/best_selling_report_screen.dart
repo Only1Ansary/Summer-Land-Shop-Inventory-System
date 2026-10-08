@@ -78,7 +78,7 @@ class _BestSellingReportScreenState extends State<BestSellingReportScreen> {
       });
     } catch (e) {
       setState(() {
-        _error = e.toString();
+        _error = friendlyError(e);
         _loading = false;
       });
     }

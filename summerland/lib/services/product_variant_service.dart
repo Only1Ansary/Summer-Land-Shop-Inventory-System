@@ -7,21 +7,13 @@ class ProductVariantService {
   ProductVariantService(this._apiService);
 
   Future<List<ProductVariant>> getVariants() async {
-    final data = await _apiService.get(
-      '/api/ProductVariants',
-    );
+    final data = await _apiService.get('/api/ProductVariants');
 
-    return (data as List)
-        .map(
-          (json) => ProductVariant.fromJson(json),
-    )
-        .toList();
+    return (data as List).map((json) => ProductVariant.fromJson(json)).toList();
   }
 
   Future<ProductVariant> getVariant(int id) async {
-    final data = await _apiService.get(
-      '/api/ProductVariants/$id',
-    );
+    final data = await _apiService.get('/api/ProductVariants/$id');
 
     return ProductVariant.fromJson(data);
   }
@@ -49,10 +41,7 @@ class ProductVariantService {
       body['barcode'] = barcode;
     }
 
-    final data = await _apiService.post(
-      '/api/ProductVariants',
-      body,
-    );
+    final data = await _apiService.post('/api/ProductVariants', body);
 
     return ProductVariant.fromJson(data);
   }
@@ -65,21 +54,16 @@ class ProductVariantService {
     required double price,
     required int lowStockThreshold,
   }) async {
-    await _apiService.put(
-      '/api/ProductVariants/$id',
-      {
-        'sizeId': sizeId,
-        'colourId': colourId,
-        'barcode': barcode,
-        'price': price,
-        'lowStockThreshold': lowStockThreshold,
-      },
-    );
+    await _apiService.put('/api/ProductVariants/$id', {
+      'sizeId': sizeId,
+      'colourId': colourId,
+      'barcode': barcode,
+      'price': price,
+      'lowStockThreshold': lowStockThreshold,
+    });
   }
 
   Future<void> deleteVariant(int id) async {
-    await _apiService.delete(
-      '/api/ProductVariants/$id',
-    );
+    await _apiService.delete('/api/ProductVariants/$id');
   }
 }

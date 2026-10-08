@@ -1204,6 +1204,16 @@
         "tags": [
           "Reports"
         ],
+        "parameters": [
+          {
+            "name": "categoryId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -2330,6 +2340,12 @@
           "discountAmount": {
             "type": "number",
             "format": "double"
+          },
+          "discountPercent": {
+            "maximum": 100,
+            "minimum": 0,
+            "type": "number",
+            "format": "double"
           }
         },
         "additionalProperties": false
@@ -2354,6 +2370,18 @@
             "minimum": 1,
             "type": "integer",
             "format": "int32"
+          },
+          "discountAmount": {
+            "maximum": 1.7976931348623157E+308,
+            "minimum": 0,
+            "type": "number",
+            "format": "double"
+          },
+          "discountPercent": {
+            "maximum": 100,
+            "minimum": 0,
+            "type": "number",
+            "format": "double"
           }
         },
         "additionalProperties": false
@@ -2843,6 +2871,23 @@
           "totalPrice": {
             "type": "number",
             "format": "double"
+          },
+          "totalBeforeDiscount": {
+            "type": "number",
+            "format": "double"
+          },
+          "unitPriceAfterDiscount": {
+            "type": "number",
+            "format": "double"
+          },
+          "discountAmount": {
+            "type": "number",
+            "format": "double"
+          },
+          "discountPercent": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -2873,6 +2918,11 @@
           "discountAmount": {
             "type": "number",
             "format": "double"
+          },
+          "discountPercent": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
           },
           "items": {
             "type": "array",
@@ -2917,6 +2967,14 @@
             "nullable": true
           },
           "productName": {
+            "type": "string",
+            "nullable": true
+          },
+          "categoryId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "categoryName": {
             "type": "string",
             "nullable": true
           },
@@ -3626,6 +3684,11 @@
             "type": "number",
             "format": "double"
           },
+          "discountPercent": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
           "items": {
             "type": "array",
             "items": {
@@ -3668,6 +3731,15 @@
           "totalPrice": {
             "type": "number",
             "format": "double"
+          },
+          "discountAmount": {
+            "type": "number",
+            "format": "double"
+          },
+          "discountPercent": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
           }
         },
         "additionalProperties": false

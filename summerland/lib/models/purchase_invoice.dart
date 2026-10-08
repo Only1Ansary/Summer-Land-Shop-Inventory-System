@@ -47,10 +47,8 @@ class PurchaseInvoice {
       createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
       totalCost: (json['totalCost'] as num? ?? 0).toDouble(),
       totalPaid: (json['totalPaid'] as num? ?? 0).toDouble(),
-      debt:
-          ((json['invoiceDebt'] ?? json['debt']) as num? ?? 0).toDouble(),
-      supplierTotalDebt:
-          (json['supplierTotalDebt'] as num? ?? 0).toDouble(),
+      debt: ((json['invoiceDebt'] ?? json['debt']) as num? ?? 0).toDouble(),
+      supplierTotalDebt: (json['supplierTotalDebt'] as num? ?? 0).toDouble(),
       itemsTotal: (json['itemsTotal'] as num? ?? 0).toDouble(),
       feesTotal: (json['feesTotal'] as num? ?? 0).toDouble(),
       fees: (json['fees'] as List? ?? [])
@@ -112,12 +110,10 @@ class PurchaseReturn {
       id: json['id'],
       productId: json['productId'],
       productName: json['productName'] ?? '',
-      unitPurchasePrice:
-          (json['unitPurchasePrice'] as num? ?? 0).toDouble(),
+      unitPurchasePrice: (json['unitPurchasePrice'] as num? ?? 0).toDouble(),
       quantity: json['quantity'] ?? 0,
       reason: json['reason'] ?? '',
-      createdAt:
-          DateTime.tryParse(json['createdAt']?.toString() ?? ''),
+      createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? ''),
     );
   }
 }

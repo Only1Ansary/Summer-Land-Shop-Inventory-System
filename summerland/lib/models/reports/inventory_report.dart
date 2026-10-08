@@ -17,8 +17,7 @@ class InventoryReport {
     return InventoryReport(
       totalVariants: json['totalVariants'],
       totalQuantity: json['totalQuantity'],
-      totalInventoryValue:
-      (json['totalInventoryValue'] as num).toDouble(),
+      totalInventoryValue: (json['totalInventoryValue'] as num).toDouble(),
       lowStockVariants: json['lowStockVariants'],
       items: (json['items'] as List)
           .map((item) => InventoryReportItem.fromJson(item))

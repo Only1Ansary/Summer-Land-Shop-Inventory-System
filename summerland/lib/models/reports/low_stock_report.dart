@@ -2,10 +2,7 @@ class LowStockReport {
   final int count;
   final List<LowStockItem> items;
 
-  LowStockReport({
-    required this.count,
-    required this.items,
-  });
+  LowStockReport({required this.count, required this.items});
 
   factory LowStockReport.fromJson(Map<String, dynamic> json) {
     return LowStockReport(
@@ -21,6 +18,8 @@ class LowStockItem {
   final int productVariantId;
   final String modelNumber;
   final String productName;
+  final int categoryId;
+  final String categoryName;
   final String? sizeName;
   final String? colourName;
   final String barcode;
@@ -33,6 +32,8 @@ class LowStockItem {
     required this.productVariantId,
     required this.modelNumber,
     required this.productName,
+    required this.categoryId,
+    required this.categoryName,
     this.sizeName,
     this.colourName,
     required this.barcode,
@@ -47,6 +48,8 @@ class LowStockItem {
       productVariantId: json['productVariantId'],
       modelNumber: json['modelNumber'],
       productName: json['productName'],
+      categoryId: json['categoryId'] ?? 0,
+      categoryName: json['categoryName'] ?? '',
       sizeName: json['sizeName'],
       colourName: json['colourName'],
       barcode: json['barcode'],

@@ -130,8 +130,8 @@ class _HomeDashboard extends StatelessWidget {
         final int columns = constraints.maxWidth >= 1000
             ? 4
             : constraints.maxWidth >= 620
-                ? 3
-                : 2;
+            ? 3
+            : 2;
 
         return ListView(
           padding: const EdgeInsets.all(16),
@@ -188,9 +188,7 @@ class _HomeDashboard extends StatelessWidget {
               mainAxisSpacing: 12,
               crossAxisSpacing: 12,
               childAspectRatio: columns >= 3 ? 1.25 : 1.0,
-              children: [
-                for (final tile in _tiles) _HomeTileCard(tile: tile),
-              ],
+              children: [for (final tile in _tiles) _HomeTileCard(tile: tile)],
             ),
           ],
         );

@@ -17,10 +17,10 @@ class ReturnPurchaseItemsScreen extends StatefulWidget {
       _ReturnPurchaseItemsScreenState();
 }
 
-class _ReturnPurchaseItemsScreenState
-    extends State<ReturnPurchaseItemsScreen> {
-  final PurchaseInvoiceService _purchaseInvoiceService =
-      PurchaseInvoiceService(ApiService());
+class _ReturnPurchaseItemsScreenState extends State<ReturnPurchaseItemsScreen> {
+  final PurchaseInvoiceService _purchaseInvoiceService = PurchaseInvoiceService(
+    ApiService(),
+  );
 
   final Map<int, int> _quantities = {};
   final TextEditingController _reasonController = TextEditingController();
@@ -106,16 +106,13 @@ class _ReturnPurchaseItemsScreenState
         _isSubmitting = false;
       });
 
-      _showError(e.toString());
+      _showError(friendlyError(e));
     }
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-      ),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -123,9 +120,7 @@ class _ReturnPurchaseItemsScreenState
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Return Items'),
-      ),
+      appBar: AppBar(title: const Text('Return Items')),
       body: Column(
         children: [
           Expanded(
@@ -160,8 +155,8 @@ class _ReturnPurchaseItemsScreenState
                 const SizedBox(height: 8),
                 ..._invoice.items.map((item) {
                   final qty = _returnQuantityFor(item);
-                  final displayName = item.productName ??
-                      'Product #${item.productId}';
+                  final displayName =
+                      item.productName ?? 'Product #${item.productId}';
                   final model = item.modelNumber;
 
                   return Card(
@@ -176,13 +171,10 @@ class _ReturnPurchaseItemsScreenState
                                   '${model == null ? '' : '$model\n'}'
                                   'Purchased: ',
                             ),
-                            TextSpan(
-                              text: '${item.quantity}',
-                            ),
+                            TextSpan(text: '${item.quantity}'),
                             const TextSpan(text: ' × '),
                             TextSpan(
-                              text:
-                                  money(item.unitPurchasePrice),
+                              text: money(item.unitPurchasePrice),
                               style: TextStyle(
                                 color: amountColor(
                                   context,
@@ -239,9 +231,7 @@ class _ReturnPurchaseItemsScreenState
               decoration: BoxDecoration(
                 color: theme.colorScheme.surface,
                 border: Border(
-                  top: BorderSide(
-                    color: theme.colorScheme.outlineVariant,
-                  ),
+                  top: BorderSide(color: theme.colorScheme.outlineVariant),
                 ),
               ),
               child: Column(
@@ -275,8 +265,7 @@ class _ReturnPurchaseItemsScreenState
                           ? const SizedBox(
                               height: 18,
                               width: 18,
-                              child:
-                                  CircularProgressIndicator(strokeWidth: 2),
+                              child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Icon(Icons.assignment_return_outlined),
                       label: const Text('Create Return'),

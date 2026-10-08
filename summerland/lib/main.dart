@@ -29,10 +29,8 @@ class SummerlandApp extends StatelessWidget {
       theme: AppTheme.light(),
       navigatorKey: key,
       home: const HomeScreen(),
-      builder: (context, child) => BackspaceBackShortcuts(
-        navigatorKey: key,
-        child: child!,
-      ),
+      builder: (context, child) =>
+          BackspaceBackShortcuts(navigatorKey: key, child: child!),
     );
   }
 }
@@ -54,8 +52,7 @@ class BackspaceBackShortcuts extends StatefulWidget {
   final Widget child;
 
   @override
-  State<BackspaceBackShortcuts> createState() =>
-      _BackspaceBackShortcutsState();
+  State<BackspaceBackShortcuts> createState() => _BackspaceBackShortcutsState();
 }
 
 class _BackspaceBackShortcutsState extends State<BackspaceBackShortcuts> {

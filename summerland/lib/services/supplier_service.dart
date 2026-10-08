@@ -17,12 +17,7 @@ class SupplierService {
   }
 
   Future<Supplier> createSupplier(String name) async {
-    final data = await _apiService.post(
-      _base,
-      {
-        'supplierName': name,
-      },
-    );
+    final data = await _apiService.post(_base, {'supplierName': name});
 
     return Supplier.fromJson(data as Map<String, dynamic>);
   }
@@ -32,13 +27,10 @@ class SupplierService {
     required String supplierName,
     required double debt,
   }) async {
-    final data = await _apiService.put(
-      '$_base/$id',
-      {
-        'supplierName': supplierName,
-        'debt': debt,
-      },
-    );
+    final data = await _apiService.put('$_base/$id', {
+      'supplierName': supplierName,
+      'debt': debt,
+    });
 
     return Supplier.fromJson(data as Map<String, dynamic>);
   }
@@ -51,10 +43,7 @@ class SupplierService {
     required int supplierId,
     required double amount,
   }) async {
-    await _apiService.post(
-      '$_base/$supplierId/pay',
-      {'amount': amount},
-    );
+    await _apiService.post('$_base/$supplierId/pay', {'amount': amount});
   }
 
   Future<List<SupplierPayment>> getSupplierPayments(int supplierId) async {

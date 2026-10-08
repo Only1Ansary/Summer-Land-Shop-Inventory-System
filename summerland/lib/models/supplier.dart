@@ -18,14 +18,11 @@ class Supplier {
       id: json['id'],
       supplierName: json['supplierName'] ?? json['name'] ?? '',
       debt: (json['debt'] as num? ?? 0).toDouble(),
-      purchaseInvoices:
-          ((json['purchaseInvoices'] as List?) ?? const [])
-              .map(
-                (e) => PurchaseInvoiceSummary.fromJson(
-                  e as Map<String, dynamic>,
-                ),
-              )
-              .toList(),
+      purchaseInvoices: ((json['purchaseInvoices'] as List?) ?? const [])
+          .map(
+            (e) => PurchaseInvoiceSummary.fromJson(e as Map<String, dynamic>),
+          )
+          .toList(),
     );
   }
 }

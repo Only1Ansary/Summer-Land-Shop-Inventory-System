@@ -16,8 +16,7 @@ class ReturnsScreen extends StatefulWidget {
   const ReturnsScreen({super.key});
 
   @override
-  State<ReturnsScreen> createState() =>
-      _ReturnsScreenState();
+  State<ReturnsScreen> createState() => _ReturnsScreenState();
 }
 
 class _ReturnsScreenState extends State<ReturnsScreen> {
@@ -27,8 +26,7 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
   late final LocationService _locationService;
   late final ReturnService _returnService;
 
-  final TextEditingController _invoiceIdController =
-      TextEditingController();
+  final TextEditingController _invoiceIdController = TextEditingController();
 
   Invoice? _invoice;
   List<Location> _locations = [];
@@ -55,8 +53,7 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
 
   Future<void> _loadLocations() async {
     try {
-      final locations =
-          await _locationService.getLocations();
+      final locations = await _locationService.getLocations();
 
       if (!mounted) return;
 
@@ -71,14 +68,12 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
         _isLoadingLocations = false;
       });
 
-      _showError(e.toString());
+      _showError(friendlyError(e));
     }
   }
 
   Future<void> _loadInvoice() async {
-    final invoiceId = int.tryParse(
-      _invoiceIdController.text.trim(),
-    );
+    final invoiceId = int.tryParse(_invoiceIdController.text.trim());
 
     if (invoiceId == null || invoiceId <= 0) {
       _showError('Please enter a valid invoice ID.');
@@ -91,8 +86,7 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
     });
 
     try {
-      final invoice =
-          await _invoiceService.getInvoice(invoiceId);
+      final invoice = await _invoiceService.getInvoice(invoiceId);
 
       if (!mounted) return;
 
@@ -107,13 +101,11 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
         _isLoadingInvoice = false;
       });
 
-      _showError(e.toString());
+      _showError(friendlyError(e));
     }
   }
 
-  Future<void> _showReturnDialog(
-    InvoiceItem item,
-  ) async {
+  Future<void> _showReturnDialog(InvoiceItem item) async {
     if (_locations.isEmpty) {
       _showError('No stock locations available.');
       return;
@@ -121,18 +113,13 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
 
     final result = await showDialog<_ReturnData>(
       context: context,
-      builder: (context) => _ReturnItemDialog(
-        item: item,
-        locations: _locations,
-      ),
+      builder: (context) =>
+          _ReturnItemDialog(item: item, locations: _locations),
     );
 
     if (result == null) return;
 
-    await _createReturn(
-      item: item,
-      data: result,
-    );
+    await _createReturn(item: item, data: result);
   }
 
   Future<void> _createReturn({
@@ -140,8 +127,7 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
     required _ReturnData data,
   }) async {
     try {
-      final returnRecord =
-          await _returnService.createReturn(
+      final returnRecord = await _returnService.createReturn(
         invoiceId: _invoice!.id,
         productVariantId: item.productVariantId,
         quantity: data.quantity,
@@ -177,14 +163,31 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                InfoTile(
-                  label: 'Quantity',
-                  value: '${returnRecord.quantity}',
-                ),
-                InfoTile(
-                  label: 'Location',
-                  value: returnRecord.locationName,
-                ),
+                InfoTile(label: 'Quantity', value: '${returnRecord.quantity}'),
+                if (item.hasDiscount) ...[
+                  InfoTile(
+                    label: 'Unit before discount',
+                    value: money(item.unitPrice),
+                    valueStyle: TextStyle(
+                      decoration: TextDecoration.lineThrough,
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
+                  ),
+                  InfoTile(
+                    label: 'Unit after discount',
+                    value: money(returnRecord.unitPrice),
+                    valueStyle: amountStyle(context, returnRecord.unitPrice),
+                  ),
+                  InfoTile(
+                    label: 'Total before discount',
+                    value: money(item.unitPrice * returnRecord.quantity),
+                    valueStyle: TextStyle(
+                      decoration: TextDecoration.lineThrough,
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
+                  ),
+                ],
+                InfoTile(label: 'Location', value: returnRecord.locationName),
                 InfoTile(
                   label: 'Total',
                   value: money(returnRecord.totalAmount),
@@ -208,16 +211,13 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
     } catch (e) {
       if (!mounted) return;
 
-      _showError(e.toString());
+      _showError(friendlyError(e));
     }
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-      ),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   Widget _buildHeader() {
@@ -276,9 +276,7 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
                     ),
                   )
                 else
-                  Expanded(
-                    child: _buildInvoice(),
-                  ),
+                  Expanded(child: _buildInvoice()),
               ],
             ),
     );
@@ -309,10 +307,7 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
                     label: 'Cashier Location',
                     value: invoice.locationName,
                   ),
-                  InfoTile(
-                    label: 'Date',
-                    value: '${invoice.createdAt}',
-                  ),
+                  InfoTile(label: 'Date', value: '${invoice.createdAt}'),
                   InfoTile(
                     label: 'Invoice Total',
                     value: money(invoice.totalAmount),
@@ -344,10 +339,34 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
                     Text(item.modelNumber),
                     if (details.isNotEmpty) Text(details),
                     Text('Sold: ${item.quantity}'),
-                    Text(
-                      'Unit Price: ${money(item.unitPrice)}',
-                      style: TextStyle(color: amountColor(context, item.unitPrice)),
-                    ),
+                    if (!item.hasDiscount)
+                      Text(
+                        'Unit Price: ${money(item.unitPrice)}',
+                        style: TextStyle(
+                          color: amountColor(context, item.unitPrice),
+                        ),
+                      )
+                    else ...[
+                      Text(
+                        'Unit Price: ${money(item.unitPrice)} → '
+                        '${money(item.unitPriceAfterDiscount)}',
+                        style: TextStyle(
+                          color: amountColor(
+                            context,
+                            item.unitPriceAfterDiscount,
+                          ),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        'Discount: -${money(item.discountAmount)}/unit'
+                        '${item.discountPercent == null ? '' : ' (${percentLabel(item.discountPercent!)})'}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: amountColor(context, -item.discountAmount),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
                 isThreeLine: true,
@@ -378,17 +397,13 @@ class _ReturnData {
 }
 
 class _ReturnItemDialog extends StatefulWidget {
-  const _ReturnItemDialog({
-    required this.item,
-    required this.locations,
-  });
+  const _ReturnItemDialog({required this.item, required this.locations});
 
   final InvoiceItem item;
   final List<Location> locations;
 
   @override
-  State<_ReturnItemDialog> createState() =>
-      _ReturnItemDialogState();
+  State<_ReturnItemDialog> createState() => _ReturnItemDialogState();
 }
 
 class _ReturnItemDialogState extends State<_ReturnItemDialog> {
@@ -418,26 +433,16 @@ class _ReturnItemDialogState extends State<_ReturnItemDialog> {
 
     if (_selectedLocation == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Please choose a stock location.',
-          ),
-        ),
+        const SnackBar(content: Text('Please choose a stock location.')),
       );
       return;
     }
 
-    final quantity = int.tryParse(
-      _quantityController.text.trim(),
-    );
+    final quantity = int.tryParse(_quantityController.text.trim());
 
     if (quantity == null || quantity <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Please enter a valid quantity.',
-          ),
-        ),
+        const SnackBar(content: Text('Please enter a valid quantity.')),
       );
       return;
     }
@@ -445,9 +450,7 @@ class _ReturnItemDialogState extends State<_ReturnItemDialog> {
     if (quantity > item.quantity) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'Maximum returnable quantity: ${item.quantity}',
-          ),
+          content: Text('Maximum returnable quantity: ${item.quantity}'),
         ),
       );
       return;
@@ -475,29 +478,46 @@ class _ReturnItemDialogState extends State<_ReturnItemDialog> {
           children: [
             Text(
               item.productName,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text('Model: ${item.modelNumber}'),
-            if (item.sizeName != null)
-              Text('Size: ${item.sizeName}'),
-            if (item.colourName != null)
-              Text('Colour: ${item.colourName}'),
+            if (item.sizeName != null) Text('Size: ${item.sizeName}'),
+            if (item.colourName != null) Text('Colour: ${item.colourName}'),
             const SizedBox(height: 12),
             Text('Sold Quantity: ${item.quantity}'),
-            Text(
-              'Unit Price: '
-              '${money(item.unitPrice)}',
-              style: TextStyle(color: amountColor(context, item.unitPrice)),
-            ),
+            if (!item.hasDiscount)
+              Text(
+                'Unit Price: ${money(item.unitPrice)}',
+                style: TextStyle(color: amountColor(context, item.unitPrice)),
+              )
+            else ...[
+              Text(
+                'Unit price before discount: ${money(item.unitPrice)}',
+                style: TextStyle(
+                  decoration: TextDecoration.lineThrough,
+                  color: Theme.of(context).colorScheme.outline,
+                ),
+              ),
+              Text(
+                'Unit price after discount: '
+                '${money(item.unitPriceAfterDiscount)}',
+                style: TextStyle(
+                  color: amountColor(context, item.unitPriceAfterDiscount),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Text(
+                'Discount: -${money(item.discountAmount)}/unit'
+                '${item.discountPercent == null ? '' : ' (${percentLabel(item.discountPercent!)})'}',
+                style: TextStyle(
+                  color: amountColor(context, -item.discountAmount),
+                ),
+              ),
+            ],
             const SizedBox(height: 18),
             DropdownButtonFormField<int>(
-              key: ValueKey(
-                'location-${_selectedLocation?.id}',
-              ),
+              key: ValueKey('location-${_selectedLocation?.id}'),
               initialValue: _selectedLocation?.id,
               decoration: const InputDecoration(
                 labelText: 'Return Stock Location',
@@ -523,9 +543,7 @@ class _ReturnItemDialogState extends State<_ReturnItemDialog> {
             TextField(
               controller: _quantityController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Return Quantity',
-              ),
+              decoration: const InputDecoration(labelText: 'Return Quantity'),
             ),
             const SizedBox(height: 16),
             TextField(
@@ -544,10 +562,7 @@ class _ReturnItemDialogState extends State<_ReturnItemDialog> {
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Cancel'),
         ),
-        FilledButton(
-          onPressed: _submit,
-          child: const Text('Return'),
-        ),
+        FilledButton(onPressed: _submit, child: const Text('Return')),
       ],
     );
   }

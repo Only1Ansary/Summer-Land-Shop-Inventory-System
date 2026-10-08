@@ -13,9 +13,7 @@ class Inventory {
     required this.quantity,
   });
 
-  factory Inventory.fromJson(
-      Map<String, dynamic> json,
-      ) {
+  factory Inventory.fromJson(Map<String, dynamic> json) {
     return Inventory(
       id: json['id'],
       productVariantId: json['productVariantId'],

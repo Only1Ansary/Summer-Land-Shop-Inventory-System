@@ -14,26 +14,18 @@ import '../../ui/app_widgets.dart';
 class AddInventoryScreen extends StatefulWidget {
   final ProductVariant variant;
 
-  const AddInventoryScreen({
-    super.key,
-    required this.variant,
-  });
+  const AddInventoryScreen({super.key, required this.variant});
 
   @override
-  State<AddInventoryScreen> createState() =>
-      _AddInventoryScreenState();
+  State<AddInventoryScreen> createState() => _AddInventoryScreenState();
 }
 
-class _AddInventoryScreenState
-    extends State<AddInventoryScreen> {
-  final InventoryService _inventoryService =
-      InventoryService(ApiService());
+class _AddInventoryScreenState extends State<AddInventoryScreen> {
+  final InventoryService _inventoryService = InventoryService(ApiService());
 
-  final LocationService _locationService =
-      LocationService(ApiService());
+  final LocationService _locationService = LocationService(ApiService());
 
-  final _quantityController =
-      TextEditingController();
+  final _quantityController = TextEditingController();
 
   List<Inventory> _inventory = [];
   List<Location> _locations = [];
@@ -66,26 +58,22 @@ class _AddInventoryScreenState
 
     try {
       final results = await Future.wait([
-        _inventoryService.getVariantInventory(
-          widget.variant.id,
-        ),
+        _inventoryService.getVariantInventory(widget.variant.id),
         _locationService.getLocations(),
       ]);
 
       if (!mounted) return;
 
       setState(() {
-        _inventory =
-            results[0] as List<Inventory>;
+        _inventory = results[0] as List<Inventory>;
 
-        _locations =
-            results[1] as List<Location>;
+        _locations = results[1] as List<Location>;
       });
     } catch (e) {
       if (!mounted) return;
 
       setState(() {
-        _error = e.toString();
+        _error = friendlyError(e);
       });
     } finally {
       if (mounted) {
@@ -97,44 +85,27 @@ class _AddInventoryScreenState
   }
 
   Future<void> _addInventory() async {
-    final quantity = int.tryParse(
-      _quantityController.text.trim(),
-    );
+    final quantity = int.tryParse(_quantityController.text.trim());
 
     if (_selectedLocationId == null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Please select a location.',
-          ),
-        ),
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a location.')),
       );
 
       return;
     }
 
     if (quantity == null || quantity <= 0) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Quantity must be greater than zero.',
-          ),
-        ),
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Quantity must be greater than zero.')),
       );
 
       return;
     }
 
     if (quantity > 100000) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Quantity cannot exceed 100,000.',
-          ),
-        ),
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Quantity cannot exceed 100,000.')),
       );
 
       return;
@@ -155,13 +126,8 @@ class _AddInventoryScreenState
 
       _quantityController.clear();
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Inventory added successfully.',
-          ),
-        ),
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Inventory added successfully.')),
       );
 
       await _loadData();
@@ -169,11 +135,7 @@ class _AddInventoryScreenState
       if (!mounted) return;
 
       ScaffoldMessenger.of(context)
-          .showSnackBar(
-        SnackBar(
-          content: Text(e.toString()),
-        ),
-      );
+          .showSnackBar(SnackBar(content: Text(friendlyError(e))));
     } finally {
       if (mounted) {
         setState(() {
@@ -184,17 +146,13 @@ class _AddInventoryScreenState
   }
 
   int get _totalQuantity {
-    return _inventory.fold(
-      0,
-      (sum, item) => sum + item.quantity,
-    );
+    return _inventory.fold(0, (sum, item) => sum + item.quantity);
   }
 
   int _getLocationQuantity(int locationId) {
-    final inventoryItem =
-        _inventory.where(
-          (item) => item.locationId == locationId,
-        );
+    final inventoryItem = _inventory.where(
+      (item) => item.locationId == locationId,
+    );
 
     if (inventoryItem.isEmpty) {
       return 0;
@@ -206,9 +164,7 @@ class _AddInventoryScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Inventory'),
-      ),
+      appBar: AppBar(title: const Text('Inventory')),
       body: _buildBody(),
     );
   }
@@ -219,10 +175,7 @@ class _AddInventoryScreenState
     }
 
     if (_error != null) {
-      return ErrorState(
-        message: _error!,
-        onRetry: _loadData,
-      );
+      return ErrorState(message: _error!, onRetry: _loadData);
     }
 
     return RefreshIndicator(
@@ -261,28 +214,16 @@ class _AddInventoryScreenState
           children: [
             Text(
               widget.variant.productName,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const Divider(height: 22),
-            InfoTile(
-              label: 'Model',
-              value: widget.variant.modelNumber,
-            ),
-            InfoTile(
-              label: 'Size',
-              value: widget.variant.sizeName ?? 'N/A',
-            ),
+            InfoTile(label: 'Model', value: widget.variant.modelNumber),
+            InfoTile(label: 'Size', value: widget.variant.sizeName ?? 'N/A'),
             InfoTile(
               label: 'Colour',
               value: widget.variant.colourName ?? 'N/A',
             ),
-            InfoTile(
-              label: 'Barcode',
-              value: widget.variant.barcode,
-            ),
+            InfoTile(label: 'Barcode', value: widget.variant.barcode),
           ],
         ),
       ),
@@ -290,9 +231,7 @@ class _AddInventoryScreenState
   }
 
   Widget _buildStockSummary() {
-    final bool isLowStock =
-        _totalQuantity <=
-            widget.variant.lowStockThreshold;
+    final bool isLowStock = _totalQuantity <= widget.variant.lowStockThreshold;
 
     return Card(
       child: Padding(
@@ -306,8 +245,8 @@ class _AddInventoryScreenState
                   Text(
                     'Total Stock',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -326,8 +265,8 @@ class _AddInventoryScreenState
                 Text(
                   'Threshold',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -361,52 +300,37 @@ class _AddInventoryScreenState
     }
 
     return Column(
-      children: _locations.map(
-        (location) {
-          final int quantity =
-              _getLocationQuantity(
-                location.id,
-              );
+      children: _locations.map((location) {
+        final int quantity = _getLocationQuantity(location.id);
 
-          return Card(
-            margin: const EdgeInsets.only(bottom: 8),
-            child: ListTile(
-              leading: const Icon(
-                Icons.location_on_outlined,
-              ),
-              title: Text(location.name),
-              trailing: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: quantity == 0
-                      ? Theme.of(context)
-                          .colorScheme
-                          .surfaceContainerHighest
-                      : Theme.of(context)
-                          .colorScheme
-                          .primary
+        return Card(
+          margin: const EdgeInsets.only(bottom: 8),
+          child: ListTile(
+            leading: const Icon(Icons.location_on_outlined),
+            title: Text(location.name),
+            trailing: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              decoration: BoxDecoration(
+                color: quantity == 0
+                    ? Theme.of(context).colorScheme.surfaceContainerHighest
+                    : Theme.of(context).colorScheme.primary
                           .withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  '$quantity',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: quantity == 0
-                        ? Theme.of(context).colorScheme.onSurfaceVariant
-                        : Theme.of(context).colorScheme.primary,
-                  ),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                '$quantity',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: quantity == 0
+                      ? Theme.of(context).colorScheme.onSurfaceVariant
+                      : Theme.of(context).colorScheme.primary,
                 ),
               ),
             ),
-          );
-        },
-      ).toList(),
+          ),
+        );
+      }).toList(),
     );
   }
-
 }

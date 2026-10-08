@@ -14,6 +14,10 @@ public class InvoiceResponseDto
 
     public decimal DiscountAmount { get; set; }
 
+    // Percent the invoice discount was entered as; null when it was a
+    // fixed amount.
+    public decimal? DiscountPercent { get; set; }
+
     public List<InvoiceItemResponseDto> Items { get; set; }
         = new List<InvoiceItemResponseDto>();
 }
@@ -35,4 +39,16 @@ public class InvoiceItemResponseDto
     public decimal UnitPrice { get; set; }
 
     public decimal TotalPrice { get; set; }
+
+    // Total the line would have had with no per-item discount.
+    public decimal TotalBeforeDiscount { get; set; }
+
+    // Unit price after the per-unit discount (== UnitPrice when no discount).
+    public decimal UnitPriceAfterDiscount { get; set; }
+
+    // Per-unit discount actually applied.
+    public decimal DiscountAmount { get; set; }
+
+    // Percent the discount was entered as; null when entered as an amount.
+    public decimal? DiscountPercent { get; set; }
 }

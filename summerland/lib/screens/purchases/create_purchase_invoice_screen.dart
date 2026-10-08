@@ -25,12 +25,9 @@ class _CreatePurchaseInvoiceScreenState
   late final CategoryService _categoryService;
   late final PurchaseInvoiceService _purchaseInvoiceService;
 
-  final TextEditingController _supplierNameController =
-      TextEditingController();
-  final TextEditingController _totalPaidController =
-      TextEditingController();
-  final TextEditingController _discountController =
-      TextEditingController();
+  final TextEditingController _supplierNameController = TextEditingController();
+  final TextEditingController _totalPaidController = TextEditingController();
+  final TextEditingController _discountController = TextEditingController();
 
   List<Category> _categories = [];
   final List<_PurchaseItem> _items = [];
@@ -76,7 +73,7 @@ class _CreatePurchaseInvoiceScreenState
         _isLoading = false;
       });
 
-      _showError(e.toString());
+      _showError(friendlyError(e));
     }
   }
 
@@ -87,25 +84,22 @@ class _CreatePurchaseInvoiceScreenState
     );
   }
 
-double get _discount {
+  double get _discount {
     return double.tryParse(_discountController.text.trim()) ?? 0;
-}
+  }
 
-double get _totalAfterDiscount =>
-    (_totalCost - _discount).clamp(0, double.infinity);
+  double get _totalAfterDiscount =>
+      (_totalCost - _discount).clamp(0, double.infinity);
 
-double get _feesTotal {
-    return _fees.fold(
-      0,
-      (total, fee) => total + fee.amount,
-    );
-}
+  double get _feesTotal {
+    return _fees.fold(0, (total, fee) => total + fee.amount);
+  }
 
-/// Goods after discount. Extra fees are excluded: they are a real cost but
-/// are never owed to the supplier.
-double get _payableTotal => _totalAfterDiscount;
+  /// Goods after discount. Extra fees are excluded: they are a real cost but
+  /// are never owed to the supplier.
+  double get _payableTotal => _totalAfterDiscount;
 
-double get _grandTotal => _payableTotal + _feesTotal;
+  double get _grandTotal => _payableTotal + _feesTotal;
 
   Future<void> _pickDate() async {
     final now = DateTime.now();
@@ -132,10 +126,8 @@ double get _grandTotal => _payableTotal + _feesTotal;
   Future<void> _addItem({_PurchaseItem? existing}) async {
     final item = await showDialog<_PurchaseItem>(
       context: context,
-      builder: (context) => _PurchaseItemDialog(
-        categories: _categories,
-        item: existing,
-      ),
+      builder: (context) =>
+          _PurchaseItemDialog(categories: _categories, item: existing),
     );
 
     if (item == null) return;
@@ -181,9 +173,7 @@ double get _grandTotal => _payableTotal + _feesTotal;
   bool _isEditingReplace(_PurchaseItem? existing) {
     if (existing == null) return false;
 
-    return _items.any(
-      (existingItem) => existingItem.id == existing.id,
-    );
+    return _items.any((existingItem) => existingItem.id == existing.id);
   }
 
   void _removeItem(int index) {
@@ -233,8 +223,7 @@ double get _grandTotal => _payableTotal + _feesTotal;
       return;
     }
 
-    final totalPaid =
-        double.tryParse(_totalPaidController.text.trim());
+    final totalPaid = double.tryParse(_totalPaidController.text.trim());
 
     if (totalPaid == null || totalPaid < 0) {
       _showError('Total paid must be a non-negative amount.');
@@ -242,9 +231,7 @@ double get _grandTotal => _payableTotal + _feesTotal;
     }
 
     final discountText = _discountController.text.trim();
-    final discount = discountText.isEmpty
-        ? 0.0
-        : double.tryParse(discountText);
+    final discount = discountText.isEmpty ? 0.0 : double.tryParse(discountText);
 
     if (discount == null || discount < 0) {
       _showError('Discount must be a non-negative amount.');
@@ -318,10 +305,8 @@ double get _grandTotal => _payableTotal + _feesTotal;
 
       await pushScreen(
         context,
-        (_) => ShowPurchaseInvoiceScreen(
-          invoice: invoice,
-          invoiceId: invoice.id,
-        ),
+        (_) =>
+            ShowPurchaseInvoiceScreen(invoice: invoice, invoiceId: invoice.id),
       );
 
       if (!mounted) return;
@@ -339,16 +324,13 @@ double get _grandTotal => _payableTotal + _feesTotal;
         _isCreating = false;
       });
 
-      _showError(e.toString());
+      _showError(friendlyError(e));
     }
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-      ),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   String _formatDate(DateTime date) {
@@ -376,8 +358,7 @@ double get _grandTotal => _payableTotal + _feesTotal;
               decoration: const InputDecoration(
                 labelText: 'Supplier Name',
                 prefixIcon: Icon(Icons.factory_outlined),
-                helperText:
-                    'New supplier names are registered automatically.',
+                helperText: 'New supplier names are registered automatically.',
               ),
             ),
             const SizedBox(height: 16),
@@ -394,8 +375,9 @@ double get _grandTotal => _payableTotal + _feesTotal;
                 Expanded(
                   child: TextField(
                     controller: _totalPaidController,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     decoration: const InputDecoration(
                       labelText: 'Total Paid',
                       prefixText: '\u20a6 ',
@@ -468,12 +450,11 @@ double get _grandTotal => _payableTotal + _feesTotal;
                       TextSpan(
                         children: [
                           TextSpan(
-                            text: '${item.modelNumber} • ${item.barcode}\n'
+                            text:
+                                '${item.modelNumber} • ${item.barcode}\n'
                                 'Qty: ',
                           ),
-                          TextSpan(
-                            text: '${item.quantity}',
-                          ),
+                          TextSpan(text: '${item.quantity}'),
                           const TextSpan(text: ' × '),
                           TextSpan(
                             text: money(item.purchasePrice),
@@ -519,8 +500,7 @@ double get _grandTotal => _payableTotal + _feesTotal;
           children: [
             const SectionHeader(
               title: '3. Extra Fees',
-              subtitle:
-                  'Shipping, customs, handling and other charges. Added to the total cost but not owed to the supplier.',
+              subtitle: 'Shipping, customs, handling and other charges. Added to the total cost but not owed to the supplier.',
             ),
             const SizedBox(height: 12),
             SizedBox(
@@ -536,8 +516,7 @@ double get _grandTotal => _payableTotal + _feesTotal;
               const EmptyState(
                 icon: Icons.local_shipping_outlined,
                 title: 'No extra fees',
-                message:
-                    'Add shipping or other charges if they apply to this purchase.',
+                message: 'Add shipping or other charges if they apply to this purchase.',
               )
             else
               ..._fees.asMap().entries.map((entry) {
@@ -562,9 +541,7 @@ double get _grandTotal => _payableTotal + _feesTotal;
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          const TextSpan(
-                            text: '  •  not payable to supplier',
-                          ),
+                          const TextSpan(text: '  •  not payable to supplier'),
                         ],
                       ),
                     ),
@@ -608,9 +585,7 @@ double get _grandTotal => _payableTotal + _feesTotal;
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         border: Border(
-          top: BorderSide(
-            color: theme.colorScheme.outlineVariant,
-          ),
+          top: BorderSide(color: theme.colorScheme.outlineVariant),
         ),
       ),
       child: Column(
@@ -627,9 +602,7 @@ double get _grandTotal => _payableTotal + _feesTotal;
               const Spacer(),
               Text(
                 'Total (items): ${money(totalCost)}',
-                style: TextStyle(
-                  color: amountColor(context, totalCost),
-                ),
+                style: TextStyle(color: amountColor(context, totalCost)),
               ),
             ],
           ),
@@ -641,9 +614,7 @@ double get _grandTotal => _payableTotal + _feesTotal;
                   const Spacer(),
                   Text(
                     'Discount: ${moneyNegative(discount)}',
-                    style: TextStyle(
-                      color: amountColor(context, -discount),
-                    ),
+                    style: TextStyle(color: amountColor(context, -discount)),
                   ),
                 ],
               ),
@@ -655,16 +626,12 @@ double get _grandTotal => _payableTotal + _feesTotal;
                 children: [
                   Text(
                     'Extra Fees: ${_fees.length}',
-                    style: TextStyle(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
+                    style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
                   ),
                   const Spacer(),
                   Text(
                     '+${money(fees)}',
-                    style: TextStyle(
-                      color: amountColor(context, fees),
-                    ),
+                    style: TextStyle(color: amountColor(context, fees)),
                   ),
                 ],
               ),
@@ -844,11 +811,8 @@ class _PurchaseFeeDialogState extends State<_PurchaseFeeDialog> {
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-      ),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -898,17 +862,13 @@ class _PurchaseFeeDialogState extends State<_PurchaseFeeDialog> {
 }
 
 class _PurchaseItemDialog extends StatefulWidget {
-  const _PurchaseItemDialog({
-    required this.categories,
-    this.item,
-  });
+  const _PurchaseItemDialog({required this.categories, this.item});
 
   final List<Category> categories;
   final _PurchaseItem? item;
 
   @override
-  State<_PurchaseItemDialog> createState() =>
-      _PurchaseItemDialogState();
+  State<_PurchaseItemDialog> createState() => _PurchaseItemDialogState();
 }
 
 class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
@@ -928,18 +888,17 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
     final item = widget.item;
 
     _nameController = TextEditingController(text: item?.name ?? '');
-    _modelController =
-        TextEditingController(text: item?.modelNumber ?? '');
-    _barcodeController =
-        TextEditingController(text: item?.barcode ?? '');
+    _modelController = TextEditingController(text: item?.modelNumber ?? '');
+    _barcodeController = TextEditingController(text: item?.barcode ?? '');
     _priceController = TextEditingController(
       text: item == null ? '' : item.purchasePrice.toStringAsFixed(2),
     );
     _quantityController = TextEditingController(
       text: item == null ? '1' : '${item.quantity}',
     );
-    _marginController =
-        TextEditingController(text: item?.profitMargin.toStringAsFixed(2) ?? '');
+    _marginController = TextEditingController(
+      text: item?.profitMargin.toStringAsFixed(2) ?? '',
+    );
     _selectedCategoryId = item?.categoryId;
   }
 
@@ -961,33 +920,26 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
     final modelNumber = _modelController.text.trim();
     final barcode = _barcodeController.text.trim();
 
-    if (name.isEmpty ||
-        modelNumber.isEmpty ||
-        barcode.isEmpty) {
-      _showError(
-        'Every item must have a name, model number, and barcode.',
-      );
+    if (name.isEmpty || modelNumber.isEmpty || barcode.isEmpty) {
+      _showError('Every item must have a name, model number, and barcode.');
       return;
     }
 
-    final purchasePrice =
-        double.tryParse(_priceController.text.trim());
+    final purchasePrice = double.tryParse(_priceController.text.trim());
 
     if (purchasePrice == null || purchasePrice < 0) {
       _showError('Purchase price must be a non-negative amount.');
       return;
     }
 
-    final quantity =
-        int.tryParse(_quantityController.text.trim());
+    final quantity = int.tryParse(_quantityController.text.trim());
 
     if (quantity == null || quantity <= 0) {
       _showError('Quantity must be greater than zero.');
       return;
     }
 
-    final profitMargin =
-        double.tryParse(_marginController.text.trim());
+    final profitMargin = double.tryParse(_marginController.text.trim());
 
     if (profitMargin == null || profitMargin < 0) {
       _showError('Profit margin must be a non-negative amount.');
@@ -1016,11 +968,8 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-      ),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -1035,31 +984,23 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
             TextField(
               controller: _nameController,
               textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(
-                labelText: 'Product Name',
-              ),
+              decoration: const InputDecoration(labelText: 'Product Name'),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _modelController,
-              decoration: const InputDecoration(
-                labelText: 'Model Number',
-              ),
+              decoration: const InputDecoration(labelText: 'Model Number'),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _barcodeController,
-              decoration: const InputDecoration(
-                labelText: 'Barcode',
-              ),
+              decoration: const InputDecoration(labelText: 'Barcode'),
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<int>(
               key: ValueKey('category-$_selectedCategoryId'),
               initialValue: _selectedCategoryId,
-              decoration: const InputDecoration(
-                labelText: 'Category',
-              ),
+              decoration: const InputDecoration(labelText: 'Category'),
               items: widget.categories.map((category) {
                 return DropdownMenuItem<int>(
                   value: category.id,
@@ -1092,9 +1033,7 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
                   child: TextField(
                     controller: _quantityController,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Quantity',
-                    ),
+                    decoration: const InputDecoration(labelText: 'Quantity'),
                   ),
                 ),
               ],
@@ -1105,9 +1044,7 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
-              decoration: const InputDecoration(
-                labelText: 'Profit Margin',
-              ),
+              decoration: const InputDecoration(labelText: 'Profit Margin'),
             ),
           ],
         ),

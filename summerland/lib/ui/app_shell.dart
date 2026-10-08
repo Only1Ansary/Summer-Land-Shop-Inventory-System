@@ -42,10 +42,7 @@ class AppShell extends StatelessWidget {
             Expanded(
               child: Column(
                 children: [
-                  AppBar(
-                    title: Text(title),
-                    actions: actions,
-                  ),
+                  AppBar(title: Text(title), actions: actions),
                   Expanded(child: body),
                 ],
               ),
@@ -57,10 +54,7 @@ class AppShell extends StatelessWidget {
 
     // Mobile layout: drawer + bottom navigation bar.
     return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-        actions: actions,
-      ),
+      appBar: AppBar(title: Text(title), actions: actions),
       drawer: Drawer(
         child: SafeArea(
           child: _AppNavPanel(
@@ -111,12 +105,12 @@ class _AppNavPanelState extends State<_AppNavPanel> {
     final List<AppNavigationItem> visible = query.isEmpty
         ? widget.items
         : widget.items
-            .where(
-              (item) =>
-                  item.title.toLowerCase().contains(query) ||
-                  item.group.toLowerCase().contains(query),
-            )
-            .toList();
+              .where(
+                (item) =>
+                    item.title.toLowerCase().contains(query) ||
+                    item.group.toLowerCase().contains(query),
+              )
+              .toList();
 
     final List<Widget> rows = [];
     String? previousGroup;
@@ -287,10 +281,7 @@ class _NavTile extends StatelessWidget {
 
     return ListTile(
       dense: true,
-      leading: Icon(
-        selected ? item.selectedIcon : item.icon,
-        size: 22,
-      ),
+      leading: Icon(selected ? item.selectedIcon : item.icon, size: 22),
       title: Text(
         item.title,
         style: TextStyle(
@@ -303,9 +294,7 @@ class _NavTile extends StatelessWidget {
       selectedColor: theme.colorScheme.onSecondaryContainer,
       textColor: theme.colorScheme.onSurfaceVariant,
       iconColor: theme.colorScheme.onSurfaceVariant,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       onTap: () {
         if (selected) return;
 
@@ -348,16 +337,14 @@ class _AppBottomNav extends StatelessWidget {
         final String id = AppDestinations.bottomNavIds[index];
         AppDestinations.open(navigator.context, id);
       },
-      destinations: AppDestinations.bottomNavIds
-          .map((id) {
-            final item = AppDestinations.byId(id);
-            return NavigationDestination(
-              icon: Icon(item.icon),
-              selectedIcon: Icon(item.selectedIcon),
-              label: item.title,
-            );
-          })
-          .toList(),
+      destinations: AppDestinations.bottomNavIds.map((id) {
+        final item = AppDestinations.byId(id);
+        return NavigationDestination(
+          icon: Icon(item.icon),
+          selectedIcon: Icon(item.selectedIcon),
+          label: item.title,
+        );
+      }).toList(),
     );
   }
 }

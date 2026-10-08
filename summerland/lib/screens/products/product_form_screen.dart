@@ -12,38 +12,26 @@ class ProductFormScreen extends StatefulWidget {
   final Product? product;
   final List<Category> categories;
 
-  const ProductFormScreen({
-    super.key,
-    this.product,
-    required this.categories,
-  });
+  const ProductFormScreen({super.key, this.product, required this.categories});
 
   @override
-  State<ProductFormScreen> createState() =>
-      _ProductFormScreenState();
+  State<ProductFormScreen> createState() => _ProductFormScreenState();
 }
 
-class _ProductFormScreenState
-    extends State<ProductFormScreen> {
+class _ProductFormScreenState extends State<ProductFormScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  final _modelController =
-      TextEditingController();
+  final _modelController = TextEditingController();
 
-  final _barcodeController =
-      TextEditingController();
+  final _barcodeController = TextEditingController();
 
-  final _purchasePriceController =
-      TextEditingController();
+  final _purchasePriceController = TextEditingController();
 
-  final _profitMarginController =
-      TextEditingController();
+  final _profitMarginController = TextEditingController();
 
-  final _nameController =
-      TextEditingController();
+  final _nameController = TextEditingController();
 
-  final ProductService _productService =
-      ProductService(ApiService());
+  final ProductService _productService = ProductService(ApiService());
 
   int? _selectedCategoryId;
   bool _isSaving = false;
@@ -55,27 +43,17 @@ class _ProductFormScreenState
     super.initState();
 
     if (widget.product != null) {
-      _modelController.text =
-          widget.product!.modelNumber;
+      _modelController.text = widget.product!.modelNumber;
 
-      _barcodeController.text =
-          widget.product!.barcode;
+      _barcodeController.text = widget.product!.barcode;
 
-      _purchasePriceController.text =
-          _formatInt(
-            widget.product!.purchasePrice,
-          );
+      _purchasePriceController.text = _formatInt(widget.product!.purchasePrice);
 
-      _profitMarginController.text =
-          _formatInt(
-            widget.product!.profitMargin,
-          );
+      _profitMarginController.text = _formatInt(widget.product!.profitMargin);
 
-      _nameController.text =
-          widget.product!.name;
+      _nameController.text = widget.product!.name;
 
-      _selectedCategoryId =
-          widget.product!.categoryId;
+      _selectedCategoryId = widget.product!.categoryId;
     }
   }
 
@@ -106,13 +84,10 @@ class _ProductFormScreenState
   }
 
   double _computedSellingPrice() {
-    final purchasePrice =
-        _parseInt(_purchasePriceController.text) ?? 0;
-    final profitMargin =
-        _parseInt(_profitMarginController.text) ?? 0;
+    final purchasePrice = _parseInt(_purchasePriceController.text) ?? 0;
+    final profitMargin = _parseInt(_profitMarginController.text) ?? 0;
 
-    return purchasePrice +
-        (purchasePrice * profitMargin / 100);
+    return purchasePrice + (purchasePrice * profitMargin / 100);
   }
 
   Future<void> _save() async {
@@ -122,9 +97,7 @@ class _ProductFormScreenState
 
     if (_selectedCategoryId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a category.'),
-        ),
+        const SnackBar(content: Text('Please select a category.')),
       );
       return;
     }
@@ -139,10 +112,8 @@ class _ProductFormScreenState
           id: widget.product!.id,
           modelNumber: _modelController.text.trim(),
           barcode: _barcodeController.text.trim(),
-          purchasePrice:
-              _parseInt(_purchasePriceController.text)!,
-          profitMargin:
-              _parseInt(_profitMarginController.text)!,
+          purchasePrice: _parseInt(_purchasePriceController.text)!,
+          profitMargin: _parseInt(_profitMarginController.text)!,
           name: _nameController.text.trim(),
           categoryId: _selectedCategoryId!,
         );
@@ -150,10 +121,8 @@ class _ProductFormScreenState
         await _productService.createProduct(
           modelNumber: _modelController.text.trim(),
           barcode: _barcodeController.text.trim(),
-          purchasePrice:
-              _parseInt(_purchasePriceController.text)!,
-          profitMargin:
-              _parseInt(_profitMarginController.text)!,
+          purchasePrice: _parseInt(_purchasePriceController.text)!,
+          profitMargin: _parseInt(_profitMarginController.text)!,
           name: _nameController.text.trim(),
           categoryId: _selectedCategoryId!,
         );
@@ -165,11 +134,8 @@ class _ProductFormScreenState
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString()),
-        ),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(friendlyError(e))));
     } finally {
       if (mounted) {
         setState(() {
@@ -182,13 +148,7 @@ class _ProductFormScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          isEditing
-              ? 'Edit Product'
-              : 'Add Product',
-        ),
-      ),
+      appBar: AppBar(title: Text(isEditing ? 'Edit Product' : 'Add Product')),
       body: ResponsiveFormPage(
         child: Form(
           key: _formKey,
@@ -202,8 +162,7 @@ class _ProductFormScreenState
                   prefixIcon: Icon(Icons.tag),
                 ),
                 validator: (value) {
-                  if (value == null ||
-                      value.trim().isEmpty) {
+                  if (value == null || value.trim().isEmpty) {
                     return 'Model number is required.';
                   }
 
@@ -230,8 +189,7 @@ class _ProductFormScreenState
                   prefixIcon: Icon(Icons.inventory_2_outlined),
                 ),
                 validator: (value) {
-                  if (value == null ||
-                      value.trim().isEmpty) {
+                  if (value == null || value.trim().isEmpty) {
                     return 'Product name is required.';
                   }
 
@@ -251,8 +209,7 @@ class _ProductFormScreenState
                 ),
                 onChanged: (_) => setState(() {}),
                 validator: (value) {
-                  if (value == null ||
-                      value.trim().isEmpty) {
+                  if (value == null || value.trim().isEmpty) {
                     return 'Purchase price is required.';
                   }
 
@@ -277,8 +234,7 @@ class _ProductFormScreenState
                 ),
                 onChanged: (_) => setState(() {}),
                 validator: (value) {
-                  if (value == null ||
-                      value.trim().isEmpty) {
+                  if (value == null || value.trim().isEmpty) {
                     return 'Profit margin is required.';
                   }
 
@@ -297,9 +253,7 @@ class _ProductFormScreenState
               if (_computedSellingPrice() > 0)
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: const Icon(
-                    Icons.sell_outlined,
-                  ),
+                  leading: const Icon(Icons.sell_outlined),
                   title: const Text('Selling Price'),
                   subtitle: const Text(
                     'Purchase price plus your profit margin',
@@ -323,14 +277,12 @@ class _ProductFormScreenState
                   labelText: 'Category',
                   prefixIcon: Icon(Icons.category_outlined),
                 ),
-                items: widget.categories.map(
-                  (category) {
-                    return DropdownMenuItem<int>(
-                      value: category.id,
-                      child: Text(category.name),
-                    );
-                  },
-                ).toList(),
+                items: widget.categories.map((category) {
+                  return DropdownMenuItem<int>(
+                    value: category.id,
+                    child: Text(category.name),
+                  );
+                }).toList(),
                 onChanged: (value) {
                   setState(() {
                     _selectedCategoryId = value;
@@ -353,16 +305,10 @@ class _ProductFormScreenState
                     ? const SizedBox(
                         width: 18,
                         height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                        ),
+                        child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.save_outlined),
-                label: Text(
-                  isEditing
-                      ? 'Save'
-                      : 'Add Product',
-                ),
+                label: Text(isEditing ? 'Save' : 'Add Product'),
               ),
             ],
           ),

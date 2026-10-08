@@ -346,6 +346,9 @@ namespace SummerLandBackend.Migrations
                     b.Property<decimal>("DiscountAmount")
                         .HasColumnType("TEXT");
 
+                    b.Property<decimal?>("DiscountPercent")
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("LocationId")
                         .HasColumnType("INTEGER");
 
@@ -364,6 +367,12 @@ namespace SummerLandBackend.Migrations
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("DiscountAmount")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal?>("DiscountPercent")
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("InvoiceId")
                         .HasColumnType("INTEGER");

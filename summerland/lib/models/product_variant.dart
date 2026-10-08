@@ -36,9 +36,7 @@ class ProductVariant {
     required this.isLowStock,
   });
 
-  factory ProductVariant.fromJson(
-      Map<String, dynamic> json,
-      ) {
+  factory ProductVariant.fromJson(Map<String, dynamic> json) {
     return ProductVariant(
       id: json['id'],
       productId: json['productId'],
@@ -51,12 +49,9 @@ class ProductVariant {
       barcodeType: json['barcodeType'],
       barcode: json['barcode'],
       price: (json['price'] as num).toDouble(),
-      lowStockThreshold:
-      json['lowStockThreshold'] ?? 0,
-      totalQuantity:
-      json['totalQuantity'] ?? 0,
-      isLowStock:
-      json['isLowStock'] ?? false,
+      lowStockThreshold: json['lowStockThreshold'] ?? 0,
+      totalQuantity: json['totalQuantity'] ?? 0,
+      isLowStock: json['isLowStock'] ?? false,
     );
   }
 }

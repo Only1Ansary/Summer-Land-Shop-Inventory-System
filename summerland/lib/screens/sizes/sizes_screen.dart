@@ -11,14 +11,11 @@ class SizesScreen extends StatefulWidget {
   const SizesScreen({super.key});
 
   @override
-  State<SizesScreen> createState() =>
-      _SizesScreenState();
+  State<SizesScreen> createState() => _SizesScreenState();
 }
 
-class _SizesScreenState
-    extends State<SizesScreen> {
-  final SizeService _service =
-      SizeService(ApiService());
+class _SizesScreenState extends State<SizesScreen> {
+  final SizeService _service = SizeService(ApiService());
 
   List<SizeModel> _sizes = [];
 
@@ -46,9 +43,8 @@ class _SizesScreenState
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(friendlyError(e))));
     } finally {
       if (mounted) {
         setState(() {
@@ -76,9 +72,8 @@ class _SizesScreenState
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(friendlyError(e))));
     }
   }
 
@@ -96,18 +91,14 @@ class _SizesScreenState
     }
 
     try {
-      await _service.updateSize(
-        size.id,
-        name,
-      );
+      await _service.updateSize(size.id, name);
 
       await _loadSizeModels();
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(friendlyError(e))));
     }
   }
 
@@ -158,9 +149,7 @@ class _SizesScreenState
                         width: 40,
                         height: 40,
                         decoration: BoxDecoration(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .primary
+                          color: Theme.of(context).colorScheme.primary
                               .withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(10),
                         ),

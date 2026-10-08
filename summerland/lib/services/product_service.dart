@@ -7,21 +7,13 @@ class ProductService {
   ProductService(this._apiService);
 
   Future<List<Product>> getProducts() async {
-    final data = await _apiService.get(
-      '/api/Products',
-    );
+    final data = await _apiService.get('/api/Products');
 
-    return (data as List)
-        .map(
-          (json) => Product.fromJson(json),
-    )
-        .toList();
+    return (data as List).map((json) => Product.fromJson(json)).toList();
   }
 
   Future<Product> getProduct(int id) async {
-    final data = await _apiService.get(
-      '/api/Products/$id',
-    );
+    final data = await _apiService.get('/api/Products/$id');
 
     return Product.fromJson(data);
   }
@@ -34,17 +26,14 @@ class ProductService {
     required String name,
     required int categoryId,
   }) async {
-    final data = await _apiService.post(
-      '/api/Products',
-      {
-        'modelNumber': modelNumber,
-        'barcode': barcode,
-        'purchasePrice': purchasePrice,
-        'profitMargin': profitMargin,
-        'name': name,
-        'categoryId': categoryId,
-      },
-    );
+    final data = await _apiService.post('/api/Products', {
+      'modelNumber': modelNumber,
+      'barcode': barcode,
+      'purchasePrice': purchasePrice,
+      'profitMargin': profitMargin,
+      'name': name,
+      'categoryId': categoryId,
+    });
 
     return Product.fromJson(data);
   }
@@ -58,23 +47,18 @@ class ProductService {
     required String name,
     required int categoryId,
   }) async {
-    await _apiService.put(
-      '/api/Products/$id',
-      {
-        'modelNumber': modelNumber,
-        'barcode': barcode,
-        'purchasePrice': purchasePrice,
-        'profitMargin': profitMargin,
-        'name': name,
-        'categoryId': categoryId,
-      },
-    );
+    await _apiService.put('/api/Products/$id', {
+      'modelNumber': modelNumber,
+      'barcode': barcode,
+      'purchasePrice': purchasePrice,
+      'profitMargin': profitMargin,
+      'name': name,
+      'categoryId': categoryId,
+    });
   }
 
   Future<void> deleteProduct(int id) async {
-    await _apiService.delete(
-      '/api/Products/$id',
-    );
+    await _apiService.delete('/api/Products/$id');
   }
 
   Future<List<Product>> searchProducts({
@@ -90,18 +74,15 @@ class ProductService {
     }
 
     if (categoryId != null) {
-      queryParameters['categoryId'] =
-          categoryId.toString();
+      queryParameters['categoryId'] = categoryId.toString();
     }
 
     if (sizeId != null) {
-      queryParameters['sizeId'] =
-          sizeId.toString();
+      queryParameters['sizeId'] = sizeId.toString();
     }
 
     if (colourId != null) {
-      queryParameters['colourId'] =
-          colourId.toString();
+      queryParameters['colourId'] = colourId.toString();
     }
 
     final uri = Uri(
@@ -109,14 +90,8 @@ class ProductService {
       queryParameters: queryParameters,
     );
 
-    final data = await _apiService.get(
-      uri.toString(),
-    );
+    final data = await _apiService.get(uri.toString());
 
-    return (data as List)
-        .map(
-          (json) => Product.fromJson(json),
-    )
-        .toList();
+    return (data as List).map((json) => Product.fromJson(json)).toList();
   }
 }

@@ -63,7 +63,7 @@ class _SearchPurchaseInvoicesScreenState
       if (!mounted) return;
 
       setState(() {
-        _error = e.toString();
+        _error = friendlyError(e);
       });
     } finally {
       if (mounted) {

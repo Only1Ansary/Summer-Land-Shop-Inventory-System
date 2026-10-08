@@ -9,6 +9,10 @@ String money(num value) => '${value.toStringAsFixed(2)} EGP';
 String moneyNegative(num value) =>
     value == 0 ? '0.00 EGP' : '-${value.toStringAsFixed(2)} EGP';
 
+/// Renders a discount percentage without a needless .0 (e.g. 10%).
+String percentLabel(double value) =>
+    value % 1 == 0 ? '${value.toInt()}%' : '$value%';
+
 /// Strips the time component from a date.
 DateTime dateOnly(DateTime value) =>
     DateTime(value.year, value.month, value.day);

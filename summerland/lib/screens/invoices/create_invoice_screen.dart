@@ -18,12 +18,10 @@ class CreateInvoiceScreen extends StatefulWidget {
   const CreateInvoiceScreen({super.key});
 
   @override
-  State<CreateInvoiceScreen> createState() =>
-      _CreateInvoiceScreenState();
+  State<CreateInvoiceScreen> createState() => _CreateInvoiceScreenState();
 }
 
-class _CreateInvoiceScreenState
-    extends State<CreateInvoiceScreen> {
+class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   final ApiService _apiService = ApiService();
 
   late final LocationService _locationService;
@@ -39,14 +37,16 @@ class _CreateInvoiceScreenState
 
   Location? _selectedCashierLocation;
 
-  final TextEditingController _searchController =
-      TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
 
-  final TextEditingController _discountController =
-      TextEditingController();
+  final TextEditingController _discountController = TextEditingController();
+
+  // false = invoice discount entered as money, true = as a percentage.
+  bool _discountIsPercent = false;
 
   bool _isLoading = true;
   bool _isCreating = false;
+  bool _isIncrementing = false;
 
   @override
   void initState() {
@@ -64,6 +64,11 @@ class _CreateInvoiceScreenState
   void dispose() {
     _searchController.dispose();
     _discountController.dispose();
+
+    for (final item in _cart) {
+      item.dispose();
+    }
+
     super.dispose();
   }
 
@@ -89,7 +94,7 @@ class _CreateInvoiceScreenState
         _isLoading = false;
       });
 
-      _showError(e.toString());
+      _showError(friendlyError(e));
     }
   }
 
@@ -112,32 +117,22 @@ class _CreateInvoiceScreenState
     });
   }
 
-  Future<void> _selectVariant(
-    ProductVariant variant,
-  ) async {
+  Future<void> _selectVariant(ProductVariant variant) async {
     if (_selectedCashierLocation == null) {
-      _showError(
-        'Please select the cashier location first.',
-      );
+      _showError('Please select the cashier location first.');
       return;
     }
 
     try {
-      final inventory =
-          await _inventoryService.getVariantInventory(
-        variant.id,
-      );
+      final inventory = await _inventoryService.getVariantInventory(variant.id);
 
       if (!mounted) return;
 
-      await _showVariantDialog(
-        variant,
-        inventory,
-      );
+      await _showVariantDialog(variant, inventory);
     } catch (e) {
       if (!mounted) return;
 
-      _showError(e.toString());
+      _showError(friendlyError(e));
     }
   }
 
@@ -150,9 +145,7 @@ class _CreateInvoiceScreenState
         .toList();
 
     if (availableInventory.isEmpty) {
-      _showError(
-        'This variant has no stock in any location.',
-      );
+      _showError('This variant has no stock in any location.');
       return;
     }
 
@@ -168,44 +161,23 @@ class _CreateInvoiceScreenState
 
     if (quantity == null) return;
 
-    _addToCart(
-      variant,
-      quantity.location,
-      quantity.quantity,
-    );
+    _addToCart(variant, quantity.location, quantity.quantity);
   }
 
-  int _getCartQuantity(
-    int variantId,
-    int locationId,
-  ) {
-    final itemIndex = _cart.indexWhere(
-      (item) => item.variant.id == variantId,
-    );
+  int _getCartQuantity(int variantId, int locationId) {
+    final itemIndex = _cart.indexWhere((item) => item.variant.id == variantId);
 
     if (itemIndex == -1) {
       return 0;
     }
 
-    return _cart[itemIndex]
-        .allocations
-        .where(
-          (allocation) => allocation.location.id == locationId,
-        )
-        .fold(
-          0,
-          (total, allocation) => total + allocation.quantity,
-        );
+    return _cart[itemIndex].allocations
+        .where((allocation) => allocation.location.id == locationId)
+        .fold(0, (total, allocation) => total + allocation.quantity);
   }
 
-  void _addToCart(
-    ProductVariant variant,
-    Location location,
-    int quantity,
-  ) {
-    final itemIndex = _cart.indexWhere(
-      (item) => item.variant.id == variant.id,
-    );
+  void _addToCart(ProductVariant variant, Location location, int quantity) {
+    final itemIndex = _cart.indexWhere((item) => item.variant.id == variant.id);
 
     setState(() {
       if (itemIndex == -1) {
@@ -213,10 +185,7 @@ class _CreateInvoiceScreenState
           _InvoiceCartItem(
             variant: variant,
             allocations: [
-              _StockAllocation(
-                location: location,
-                quantity: quantity,
-              ),
+              _StockAllocation(location: location, quantity: quantity),
             ],
           ),
         );
@@ -232,16 +201,12 @@ class _CreateInvoiceScreenState
 
       if (allocationIndex == -1) {
         cartItem.allocations.add(
-          _StockAllocation(
-            location: location,
-            quantity: quantity,
-          ),
+          _StockAllocation(location: location, quantity: quantity),
         );
       } else {
         cartItem.allocations[allocationIndex] = _StockAllocation(
           location: location,
-          quantity: cartItem.allocations[allocationIndex].quantity +
-              quantity,
+          quantity: cartItem.allocations[allocationIndex].quantity + quantity,
         );
       }
     });
@@ -249,10 +214,106 @@ class _CreateInvoiceScreenState
 
   void _removeCartItem(int index) {
     setState(() {
-      _cart.removeAt(index);
+      _cart.removeAt(index).dispose();
     });
   }
 
+  // Adds one unit to a cart line, taking it from the first location that
+  // still has free stock (stock on the shelf minus what is already in
+  // this cart). Locations the line already draws from are tried first.
+  Future<void> _incrementCartItem(int index) async {
+    if (_isIncrementing) return;
+
+    final item = _cart[index];
+
+    setState(() {
+      _isIncrementing = true;
+    });
+
+    try {
+      final inventory = await _inventoryService.getVariantInventory(
+        item.variant.id,
+      );
+
+      if (!mounted) return;
+
+      final fromCartLocations = <Inventory>[];
+      final fromOtherLocations = <Inventory>[];
+
+      for (final entry in inventory) {
+        final locationIndex = _locations.indexWhere(
+          (location) => location.id == entry.locationId,
+        );
+
+        if (locationIndex == -1) continue;
+
+        final alreadyInCart = item.allocations.any(
+          (allocation) => allocation.location.id == entry.locationId,
+        );
+
+        if (alreadyInCart) {
+          fromCartLocations.add(entry);
+        } else {
+          fromOtherLocations.add(entry);
+        }
+      }
+
+      for (final entry in [...fromCartLocations, ...fromOtherLocations]) {
+        final inCart = _getCartQuantity(item.variant.id, entry.locationId);
+
+        if (entry.quantity - inCart <= 0) continue;
+
+        final location = _locations.firstWhere(
+          (location) => location.id == entry.locationId,
+        );
+
+        _addToCart(item.variant, location, 1);
+        return;
+      }
+
+      _showError('No more stock available for ${item.variant.productName}.');
+    } catch (e) {
+      if (!mounted) return;
+
+      _showError(friendlyError(e));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isIncrementing = false;
+        });
+      }
+    }
+  }
+
+  // Removes one unit from a cart line, taking it from the most recently
+  // added location. The line always keeps at least one unit; the bin icon
+  // removes it entirely.
+  void _decrementCartItem(int index) {
+    final item = _cart[index];
+
+    if (item.totalQuantity <= 1) return;
+
+    setState(() {
+      for (var i = item.allocations.length - 1; i >= 0; i--) {
+        final allocation = item.allocations[i];
+
+        if (allocation.quantity <= 0) continue;
+
+        if (allocation.quantity == 1) {
+          item.allocations.removeAt(i);
+        } else {
+          item.allocations[i] = _StockAllocation(
+            location: allocation.location,
+            quantity: allocation.quantity - 1,
+          );
+        }
+
+        return;
+      }
+    });
+  }
+
+  // Price of the cart before any discount.
   double get _cartTotal {
     return _cart.fold(
       0,
@@ -260,47 +321,78 @@ class _CreateInvoiceScreenState
     );
   }
 
-  // Discount is a flat amount, clamped to the items total so the payable
-  // can never go below zero.
-  double get _discount {
-    final value = double.tryParse(_discountController.text.trim());
-
-    if (value == null || value <= 0) return 0;
-
-    return value > _cartTotal ? _cartTotal : value;
+  // Per-line discounts entered on the cart rows, as money.
+  double get _itemDiscountTotal {
+    return _cart.fold(0, (total, item) => total + item.discountTotal);
   }
 
-  double get _netTotal => _cartTotal - _discount;
+  // Items total once the per-line discounts are taken off.
+  double get _cartTotalAfterItemDiscounts => _cartTotal - _itemDiscountTotal;
+
+  // Raw invoice-discount entry; 0 when blank or not a number yet.
+  double get _discountEntry =>
+      double.tryParse(_discountController.text.trim()) ?? 0;
+
+  bool get _discountEntryInvalid => _discountIsPercent && _discountEntry > 100;
+
+  // Invoice-level discount, taken on top of the per-item discounts and
+  // clamped so the payable can never go below zero.
+  double get _discount {
+    final value = _discountEntry;
+
+    if (value <= 0) return 0;
+
+    if (_discountIsPercent) {
+      if (value > 100) return 0;
+
+      return double.parse(
+        (_cartTotalAfterItemDiscounts * value / 100).toStringAsFixed(2),
+      );
+    }
+
+    return value > _cartTotalAfterItemDiscounts
+        ? _cartTotalAfterItemDiscounts
+        : value;
+  }
+
+  double get _netTotal => _cartTotalAfterItemDiscounts - _discount;
 
   Future<void> _createInvoice() async {
     if (_selectedCashierLocation == null) {
-      _showError(
-        'Please select the cashier location.',
-      );
+      _showError('Please select the cashier location.');
       return;
     }
 
     if (_cart.isEmpty) {
-      _showError(
-        'Please add at least one item.',
-      );
+      _showError('Please add at least one item.');
       return;
     }
 
-    final discount =
-        double.tryParse(_discountController.text.trim()) ?? 0;
+    if (_discountEntryInvalid) {
+      _showError('Invoice discount percentage cannot exceed 100.');
+      return;
+    }
 
-    if (discount < 0) {
+    if (_discountEntry < 0) {
       _showError('Discount cannot be negative.');
       return;
     }
 
-    if (discount > _cartTotal) {
+    if (!_discountIsPercent && _discountEntry > _cartTotalAfterItemDiscounts) {
       _showError(
         'Discount cannot exceed the items total of '
-        '${money(_cartTotal)}.',
+        '${money(_cartTotalAfterItemDiscounts)}.',
       );
       return;
+    }
+
+    for (final cartItem in _cart) {
+      final error = cartItem.discountError;
+
+      if (error != null) {
+        _showError('${cartItem.variant.productName}: $error');
+        return;
+      }
     }
 
     setState(() {
@@ -316,6 +408,7 @@ class _CreateInvoiceScreenState
             'productVariantId': cartItem.variant.id,
             'quantity': allocation.quantity,
             'stockLocationId': allocation.location.id,
+            ...cartItem.discountPayload,
           });
         }
       }
@@ -323,7 +416,8 @@ class _CreateInvoiceScreenState
       final invoice = await _invoiceService.createInvoice(
         locationId: _selectedCashierLocation!.id,
         items: items,
-        discountAmount: discount,
+        discountAmount: _discountIsPercent ? 0 : _discount,
+        discountPercent: _discountIsPercent ? _discountEntry : 0,
       );
 
       if (!mounted) return;
@@ -331,14 +425,10 @@ class _CreateInvoiceScreenState
       setState(() {
         _isCreating = false;
         _discountController.clear();
+        _discountIsPercent = false;
       });
 
-      await pushScreen(
-        context,
-        (_) => InvoiceDetailsScreen(
-          invoice: invoice,
-        ),
-      );
+      await pushScreen(context, (_) => InvoiceDetailsScreen(invoice: invoice));
 
       if (!mounted) return;
 
@@ -352,16 +442,13 @@ class _CreateInvoiceScreenState
         _isCreating = false;
       });
 
-      _showError(e.toString());
+      _showError(friendlyError(e));
     }
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-      ),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   Widget _buildHeader() {
@@ -372,9 +459,7 @@ class _CreateInvoiceScreenState
         child: Column(
           children: [
             DropdownButtonFormField<int>(
-              key: ValueKey(
-                'cashier-location-${_selectedCashierLocation?.id}',
-              ),
+              key: ValueKey('cashier-location-${_selectedCashierLocation?.id}'),
               initialValue: _selectedCashierLocation?.id,
               decoration: const InputDecoration(
                 labelText: 'Cashier Location',
@@ -435,8 +520,8 @@ class _CreateInvoiceScreenState
             Text(
               'Search for a variant.',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -450,14 +535,12 @@ class _CreateInvoiceScreenState
         itemBuilder: (context, index) {
           final variant = _filteredVariants[index];
 
-          final inCart = _cart.any(
-            (item) => item.variant.id == variant.id,
-          );
+          final inCart = _cart.any((item) => item.variant.id == variant.id);
 
           final cartQuantity = inCart
               ? _cart
-                  .firstWhere((item) => item.variant.id == variant.id)
-                  .totalQuantity
+                    .firstWhere((item) => item.variant.id == variant.id)
+                    .totalQuantity
               : 0;
 
           return Card(
@@ -467,9 +550,7 @@ class _CreateInvoiceScreenState
                 Icons.inventory_2_outlined,
                 color: Theme.of(context).colorScheme.primary,
               ),
-              title: Text(
-                variant.productName,
-              ),
+              title: Text(variant.productName),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -500,9 +581,7 @@ class _CreateInvoiceScreenState
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSurfaceVariant,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ),
@@ -524,85 +603,139 @@ class _CreateInvoiceScreenState
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         border: Border(
-          top: BorderSide(
-            color: theme.colorScheme.outlineVariant,
-          ),
+          top: BorderSide(color: theme.colorScheme.outlineVariant),
         ),
       ),
       child: Column(
         children: [
-        Row(
-          children: [
-            Text(
-              'Items: ${_cart.length}',
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const Spacer(),
-            Text(
-              'Total: ${money(_netTotal)}',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
-                color: amountColor(context, _netTotal),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            SizedBox(
-              width: 180,
-              child: TextField(
-                controller: _discountController,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                onChanged: (_) => setState(() {}),
-                decoration: InputDecoration(
-                  labelText: 'Discount',
-                  prefixText: '\u20a6 ',
-                  isDense: true,
-                  suffixIcon: _discountController.text.isEmpty
-                      ? null
-                      : IconButton(
-                          onPressed: () {
-                            _discountController.clear();
-                            setState(() {});
-                          },
-                          icon: const Icon(Icons.clear),
-                        ),
+          Row(
+            children: [
+              Text(
+                'Items: ${_cart.length}',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _discount > 0
-                  ? Text(
-                      'Discount applied: -${money(_discount)} '
-                      '(items ${money(_cartTotal)})',
-                      style: TextStyle(
-                        color: amountColor(context, -_discount),
-                      ),
-                    )
-                  : Text(
-                      'Flat discount off the total.',
-                      style: TextStyle(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
+              const Spacer(),
+              Text(
+                'Total: ${money(_netTotal)}',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                  color: amountColor(context, _netTotal),
+                ),
+              ),
+            ],
+          ),
+          if (_itemDiscountTotal > 0)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Row(
+                children: [
+                  Text(
+                    'Items ${money(_cartTotal)}',
+                    style: TextStyle(
+                      fontSize: 13,
+                      decoration: TextDecoration.lineThrough,
+                      color: theme.colorScheme.outline,
                     ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Item discounts -${money(_itemDiscountTotal)}',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: amountColor(context, -_itemDiscountTotal),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ],
-        ),
-        const SizedBox(height: 8),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _discountController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  onChanged: (_) => setState(() {}),
+                  decoration: InputDecoration(
+                    labelText: _discountIsPercent
+                        ? 'Invoice discount %'
+                        : 'Invoice discount',
+                    prefixText: _discountIsPercent ? null : 'EGP ',
+                    isDense: true,
+                    suffixIcon: _discountController.text.isEmpty
+                        ? null
+                        : IconButton(
+                            onPressed: () {
+                              _discountController.clear();
+                              setState(() {});
+                            },
+                            icon: const Icon(Icons.clear),
+                          ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              ChoiceChip(
+                label: const Text('EGP'),
+                selected: !_discountIsPercent,
+                visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                onSelected: (_) {
+                  setState(() {
+                    _discountIsPercent = false;
+                    _discountController.clear();
+                  });
+                },
+              ),
+              const SizedBox(width: 6),
+              ChoiceChip(
+                label: const Text('%'),
+                selected: _discountIsPercent,
+                visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                onSelected: (_) {
+                  setState(() {
+                    _discountIsPercent = true;
+                    _discountController.clear();
+                  });
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            _discountEntryInvalid
+                ? 'Enter a percentage up to 100.'
+                : _discount > 0
+                ? 'Discount applied: -${money(_discount)} '
+                      '${_discountIsPercent ? '(${_discountController.text.trim()}% of '
+                                '${money(_cartTotalAfterItemDiscounts)})' : '(items '
+                                '${money(_cartTotalAfterItemDiscounts)})'}'
+                : 'Invoice discount, applied after item discounts.',
+            style: TextStyle(
+              color: _discountEntryInvalid
+                  ? theme.colorScheme.error
+                  : _discount > 0
+                  ? amountColor(context, -_discount)
+                  : theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 8),
           SizedBox(
-            height: 160,
+            height: 220,
             child: ListView.builder(
               itemCount: _cart.length,
               itemBuilder: (context, index) {
                 final item = _cart[index];
+                final gross = item.variant.price * item.totalQuantity;
+                final net = gross - item.discountTotal;
+                final discountError = item.discountError;
 
                 return ListTile(
                   dense: true,
@@ -610,9 +743,50 @@ class _CreateInvoiceScreenState
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        '${item.variant.modelNumber}'
-                        ' • Qty: ${item.totalQuantity}',
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              item.variant.modelNumber,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: item.totalQuantity > 1
+                                ? () => _decrementCartItem(index)
+                                : null,
+                            iconSize: 20,
+                            visualDensity: VisualDensity.compact,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(
+                              minWidth: 36,
+                              minHeight: 36,
+                            ),
+                            tooltip: 'Decrease quantity',
+                            icon: const Icon(Icons.remove_circle_outline),
+                          ),
+                          Text(
+                            '${item.totalQuantity}',
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: !_isIncrementing
+                                ? () => _incrementCartItem(index)
+                                : null,
+                            iconSize: 20,
+                            visualDensity: VisualDensity.compact,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(
+                              minWidth: 36,
+                              minHeight: 36,
+                            ),
+                            tooltip: 'Increase quantity',
+                            icon: const Icon(Icons.add_circle_outline),
+                          ),
+                        ],
                       ),
                       ...item.allocations.map(
                         (allocation) => Text(
@@ -621,21 +795,113 @@ class _CreateInvoiceScreenState
                           style: const TextStyle(fontSize: 12),
                         ),
                       ),
+                      if (item.discountTotal > 0)
+                        Text(
+                          '  Unit: ${money(item.variant.price)} → '
+                          '${money(item.variant.price - (item.unitDiscount ?? 0))}'
+                          '${item.discountIsPercent ? ' (-${item.discountController.text}%)' : ''}'
+                          ' · line -${money(item.discountTotal)}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                      Row(
+                        children: [
+                          SizedBox(
+                            width: 92,
+                            child: TextField(
+                              controller: item.discountController,
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
+                              onChanged: (_) => setState(() {}),
+                              style: const TextStyle(fontSize: 13),
+                              decoration: InputDecoration(
+                                isDense: true,
+                                labelText: item.discountIsPercent
+                                    ? 'Discount %'
+                                    : 'Discount/unit',
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 10,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          ChoiceChip(
+                            label: const Text('EGP'),
+                            selected: !item.discountIsPercent,
+                            visualDensity: VisualDensity.compact,
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                            onSelected: (_) {
+                              setState(() {
+                                item.discountIsPercent = false;
+                                item.discountController.clear();
+                              });
+                            },
+                          ),
+                          const SizedBox(width: 4),
+                          ChoiceChip(
+                            label: const Text('%'),
+                            selected: item.discountIsPercent,
+                            visualDensity: VisualDensity.compact,
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                            onSelected: (_) {
+                              setState(() {
+                                item.discountIsPercent = true;
+                                item.discountController.clear();
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                      if (discountError != null)
+                        Text(
+                          discountError,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: theme.colorScheme.error,
+                          ),
+                        ),
                     ],
                   ),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        money(item.variant.price * item.totalQuantity),
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          color: amountColor(
-                            context,
-                            item.variant.price * item.totalQuantity,
-                          ),
-                        ),
-                      ),
+                      item.discountTotal > 0
+                          ? Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  money(gross),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    decoration: TextDecoration.lineThrough,
+                                    color: theme.colorScheme.outline,
+                                  ),
+                                ),
+                                Text(
+                                  money(net),
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: amountColor(context, net),
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Text(
+                              money(net),
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: amountColor(context, net),
+                              ),
+                            ),
                       IconButton(
                         onPressed: () => _removeCartItem(index),
                         icon: const Icon(Icons.delete_outline),
@@ -678,7 +944,8 @@ class _CreateInvoiceScreenState
                 _buildHeader(),
                 const Divider(height: 1),
                 Expanded(
-                  child: _filteredVariants.isEmpty &&
+                  child:
+                      _filteredVariants.isEmpty &&
                           _searchController.text.trim().isEmpty
                       ? _buildVariantResults()
                       : _buildVariantResults(),
@@ -695,10 +962,12 @@ class _InvoiceCartItem {
 
   final List<_StockAllocation> allocations;
 
-  _InvoiceCartItem({
-    required this.variant,
-    required this.allocations,
-  });
+  final TextEditingController discountController = TextEditingController();
+
+  // false = discount entered as money per unit, true = as a percentage.
+  bool discountIsPercent = false;
+
+  _InvoiceCartItem({required this.variant, required this.allocations});
 
   int get totalQuantity {
     return allocations.fold(
@@ -706,26 +975,73 @@ class _InvoiceCartItem {
       (total, allocation) => total + allocation.quantity,
     );
   }
+
+  double? get entryValue => double.tryParse(discountController.text.trim());
+
+  bool get hasEntry => discountController.text.trim().isNotEmpty;
+
+  // Per-unit discount as money. Null when the entry is not valid.
+  double? get unitDiscount {
+    if (!hasEntry) return 0;
+
+    final value = entryValue;
+
+    if (value == null || value < 0) return null;
+
+    if (discountIsPercent) {
+      if (value > 100) return null;
+
+      return double.parse((variant.price * value / 100).toStringAsFixed(2));
+    }
+
+    return value > variant.price ? null : value;
+  }
+
+  double get discountTotal => (unitDiscount ?? 0) * totalQuantity;
+
+  String? get discountError {
+    if (!hasEntry) return null;
+
+    final value = entryValue;
+
+    if (value == null || value < 0) {
+      return 'Enter 0 or more.';
+    }
+
+    if (discountIsPercent && value > 100) {
+      return 'Enter a percentage up to 100.';
+    }
+
+    if (!discountIsPercent && value > variant.price) {
+      return 'Max ${money(variant.price)} per unit.';
+    }
+
+    return null;
+  }
+
+  // Exactly one of the two discount fields is sent; the API rejects
+  // entries that set both.
+  Map<String, dynamic> get discountPayload => discountIsPercent
+      ? {'discountAmount': 0, 'discountPercent': entryValue ?? 0}
+      : {'discountAmount': unitDiscount ?? 0, 'discountPercent': 0};
+
+  void dispose() {
+    discountController.dispose();
+  }
 }
 
 class _StockAllocation {
   final Location location;
   final int quantity;
 
-  _StockAllocation({
-    required this.location,
-    required this.quantity,
-  });
+  _StockAllocation({required this.location, required this.quantity});
 }
 
 class _StockSelection {
   final Location location;
   final int quantity;
 
-  _StockSelection({
-    required this.location,
-    required this.quantity,
-  });
+  _StockSelection({required this.location, required this.quantity});
 }
 
 class _AddItemDialog extends StatefulWidget {
@@ -774,26 +1090,16 @@ class _AddItemDialogState extends State<_AddItemDialog> {
 
     if (_selectedStockLocation == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Please choose a stock location.',
-          ),
-        ),
+        const SnackBar(content: Text('Please choose a stock location.')),
       );
       return;
     }
 
-    final value = int.tryParse(
-      _controller.text.trim(),
-    );
+    final value = int.tryParse(_controller.text.trim());
 
     if (value == null || value <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Please enter a valid quantity.',
-          ),
-        ),
+        const SnackBar(content: Text('Please enter a valid quantity.')),
       );
       return;
     }
@@ -820,10 +1126,7 @@ class _AddItemDialogState extends State<_AddItemDialog> {
     }
 
     navigator.pop(
-      _StockSelection(
-        location: _selectedStockLocation!,
-        quantity: value,
-      ),
+      _StockSelection(location: _selectedStockLocation!, quantity: value),
     );
   }
 
@@ -840,15 +1143,11 @@ class _AddItemDialogState extends State<_AddItemDialog> {
           children: [
             Text(
               variant.productName,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
             ),
             const SizedBox(height: 8),
             Text('Model: ${variant.modelNumber}'),
-            if (variant.sizeName != null)
-              Text('Size: ${variant.sizeName}'),
+            if (variant.sizeName != null) Text('Size: ${variant.sizeName}'),
             if (variant.colourName != null)
               Text('Colour: ${variant.colourName}'),
             const SizedBox(height: 12),
@@ -876,9 +1175,7 @@ class _AddItemDialogState extends State<_AddItemDialog> {
             ),
             const SizedBox(height: 8),
             DropdownButtonFormField<int>(
-              key: ValueKey(
-                'stock-location-${_selectedStockLocation?.id}',
-              ),
+              key: ValueKey('stock-location-${_selectedStockLocation?.id}'),
               initialValue: _selectedStockLocation?.id,
               decoration: const InputDecoration(
                 labelText: 'Choose stock location',
@@ -886,9 +1183,7 @@ class _AddItemDialogState extends State<_AddItemDialog> {
               items: widget.availableInventory.map((item) {
                 return DropdownMenuItem<int>(
                   value: item.locationId,
-                  child: Text(
-                    '${item.locationName} (${item.quantity})',
-                  ),
+                  child: Text('${item.locationName} (${item.quantity})'),
                 );
               }).toList(),
               onChanged: (value) {
@@ -913,9 +1208,7 @@ class _AddItemDialogState extends State<_AddItemDialog> {
             TextField(
               controller: _controller,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Quantity',
-              ),
+              decoration: const InputDecoration(labelText: 'Quantity'),
             ),
           ],
         ),
@@ -925,10 +1218,7 @@ class _AddItemDialogState extends State<_AddItemDialog> {
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Cancel'),
         ),
-        FilledButton(
-          onPressed: _add,
-          child: const Text('Add'),
-        ),
+        FilledButton(onPressed: _add, child: const Text('Add')),
       ],
     );
   }
@@ -937,17 +1227,22 @@ class _AddItemDialogState extends State<_AddItemDialog> {
 class InvoiceDetailsScreen extends StatelessWidget {
   final Invoice invoice;
 
-  const InvoiceDetailsScreen({
-    super.key,
-    required this.invoice,
-  });
+  const InvoiceDetailsScreen({super.key, required this.invoice});
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    final itemDiscountTotal = invoice.items.fold<double>(
+      0,
+      (total, item) => total + item.discountAmount * item.quantity,
+    );
+
+    final subtotal =
+        invoice.totalAmount + invoice.discountAmount + itemDiscountTotal;
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Invoice #${invoice.id}'),
-      ),
+      appBar: AppBar(title: Text('Invoice #${invoice.id}')),
       body: WideContent(
         child: ListView(
           padding: const EdgeInsets.all(16),
@@ -970,10 +1265,7 @@ class InvoiceDetailsScreen extends StatelessWidget {
                       label: 'Cashier Location',
                       value: invoice.locationName,
                     ),
-                    InfoTile(
-                      label: 'Date',
-                      value: '${invoice.createdAt}',
-                    ),
+                    InfoTile(label: 'Date', value: '${invoice.createdAt}'),
                   ],
                 ),
               ),
@@ -998,41 +1290,100 @@ class InvoiceDetailsScreen extends StatelessWidget {
                     TextSpan(
                       children: [
                         TextSpan(
-                          text: '${item.modelNumber}'
+                          text:
+                              '${item.modelNumber}'
                               '${variantDetails.isEmpty ? '' : ' • $variantDetails'}\n'
                               'Qty: ',
                         ),
-                        TextSpan(
-                          text: '${item.quantity}',
-                        ),
+                        TextSpan(text: '${item.quantity}'),
                         const TextSpan(text: ' × '),
-                        TextSpan(
-                          text: money(item.unitPrice),
-                          style: TextStyle(
-                            color: amountColor(context, item.unitPrice),
-                            fontWeight: FontWeight.w600,
+                        if (!item.hasDiscount)
+                          TextSpan(
+                            text: money(item.unitPrice),
+                            style: TextStyle(
+                              color: amountColor(context, item.unitPrice),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          )
+                        else ...[
+                          TextSpan(
+                            text: money(item.unitPrice),
+                            style: TextStyle(
+                              decoration: TextDecoration.lineThrough,
+                              color: theme.colorScheme.outline,
+                            ),
                           ),
-                        ),
+                          TextSpan(
+                            text: ' → ${money(item.unitPriceAfterDiscount)}',
+                            style: TextStyle(
+                              color: amountColor(
+                                context,
+                                item.unitPriceAfterDiscount,
+                              ),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          TextSpan(
+                            text:
+                                '\nDiscount: '
+                                '-${money(item.discountAmount)}/unit'
+                                '${item.discountPercent == null ? '' : ' (${percentLabel(item.discountPercent!)})'}',
+                            style: TextStyle(
+                              color: amountColor(context, -item.discountAmount),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
                   isThreeLine: true,
-                  trailing: Text(
-                    money(item.totalPrice),
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: amountColor(context, item.totalPrice),
-                    ),
-                  ),
+                  trailing: item.hasDiscount
+                      ? Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              money(item.totalBeforeDiscount),
+                              style: TextStyle(
+                                fontSize: 12,
+                                decoration: TextDecoration.lineThrough,
+                                color: theme.colorScheme.outline,
+                              ),
+                            ),
+                            Text(
+                              money(item.totalPrice),
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: amountColor(context, item.totalPrice),
+                              ),
+                            ),
+                          ],
+                        )
+                      : Text(
+                          money(item.totalPrice),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: amountColor(context, item.totalPrice),
+                          ),
+                        ),
                 ),
               );
             }),
+            InfoTile(label: 'Subtotal', value: money(subtotal)),
+            if (itemDiscountTotal > 0)
+              InfoTile(
+                label: 'Item discounts',
+                value: moneyNegative(itemDiscountTotal),
+                valueStyle: amountStyle(context, -itemDiscountTotal),
+              ),
             if (invoice.discountAmount > 0)
               InfoTile(
                 label: 'Discount',
-                value: moneyNegative(invoice.discountAmount),
-                valueStyle:
-                    amountStyle(context, -invoice.discountAmount),
+                value: invoice.discountPercent == null
+                    ? moneyNegative(invoice.discountAmount)
+                    : '${moneyNegative(invoice.discountAmount)} '
+                          '(${percentLabel(invoice.discountPercent!)})',
+                valueStyle: amountStyle(context, -invoice.discountAmount),
               ),
             const SizedBox(height: 8),
             Container(
@@ -1046,21 +1397,17 @@ class InvoiceDetailsScreen extends StatelessWidget {
                   Text(
                     'Total',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onPrimaryContainer,
-                        ),
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
                   ),
                   const Spacer(),
                   Text(
                     money(invoice.totalAmount),
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onPrimaryContainer,
-                        ),
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
                   ),
                 ],
               ),

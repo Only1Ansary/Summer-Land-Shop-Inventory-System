@@ -241,10 +241,7 @@ class _DonutPainter extends CustomPainter {
         ..isAntiAlias = true;
 
       canvas.drawArc(
-        Rect.fromCircle(
-          center: Offset(center.$1, center.$2),
-          radius: radius,
-        ),
+        Rect.fromCircle(center: Offset(center.$1, center.$2), radius: radius),
         angle,
         sweep,
         false,

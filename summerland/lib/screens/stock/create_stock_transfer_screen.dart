@@ -19,8 +19,7 @@ class CreateStockTransferScreen extends StatefulWidget {
       _CreateStockTransferScreenState();
 }
 
-class _CreateStockTransferScreenState
-    extends State<CreateStockTransferScreen> {
+class _CreateStockTransferScreenState extends State<CreateStockTransferScreen> {
   late final LocationService _locationService;
   late final ProductVariantService _variantService;
   late final StockTransferService _transferService;
@@ -35,10 +34,8 @@ class _CreateStockTransferScreenState
   Location? _toLocation;
   ProductVariant? _selectedVariant;
 
-  final TextEditingController _searchController =
-      TextEditingController();
-  final TextEditingController _quantityController =
-      TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
+  final TextEditingController _quantityController = TextEditingController();
 
   bool _isLoading = true;
   bool _isSubmitting = false;
@@ -67,14 +64,9 @@ class _CreateStockTransferScreenState
     super.dispose();
   }
 
-  Future<void> _loadVariantInventory(
-    ProductVariant variant,
-  ) async {
+  Future<void> _loadVariantInventory(ProductVariant variant) async {
     try {
-      final inventory =
-          await _inventoryService.getVariantInventory(
-        variant.id,
-      );
+      final inventory = await _inventoryService.getVariantInventory(variant.id);
 
       if (!mounted) return;
 
@@ -84,7 +76,7 @@ class _CreateStockTransferScreenState
     } catch (e) {
       if (!mounted) return;
 
-      _showError(e.toString());
+      _showError(friendlyError(e));
     }
   }
 
@@ -105,7 +97,7 @@ class _CreateStockTransferScreenState
       if (!mounted) return;
 
       setState(() {
-        _error = e.toString();
+        _error = friendlyError(e);
         _isLoading = false;
       });
     }
@@ -157,15 +149,11 @@ class _CreateStockTransferScreenState
     }
 
     if (_fromLocation!.id == _toLocation!.id) {
-      _showError(
-        'Source and destination locations must be different.',
-      );
+      _showError('Source and destination locations must be different.');
       return;
     }
 
-    final quantity = int.tryParse(
-      _quantityController.text.trim(),
-    );
+    final quantity = int.tryParse(_quantityController.text.trim());
 
     if (quantity == null || quantity <= 0) {
       _showError('Quantity must be greater than zero.');
@@ -187,9 +175,7 @@ class _CreateStockTransferScreenState
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Stock transfer created successfully.'),
-        ),
+        const SnackBar(content: Text('Stock transfer created successfully.')),
       );
 
       Navigator.pop(context, true);
@@ -200,16 +186,13 @@ class _CreateStockTransferScreenState
         _isSubmitting = false;
       });
 
-      _showError(e.toString());
+      _showError(friendlyError(e));
     }
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-      ),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   Widget _buildVariantSearch() {
@@ -237,9 +220,7 @@ class _CreateStockTransferScreenState
           Card(
             child: ListTile(
               leading: const Icon(Icons.check_circle_rounded),
-              title: Text(
-                _variantDisplayName(_selectedVariant!),
-              ),
+              title: Text(_variantDisplayName(_selectedVariant!)),
               subtitle: Text(
                 'Model: ${_selectedVariant!.modelNumber}\n'
                 'Quantity: ${_selectedVariant!.totalQuantity}\n'
@@ -257,9 +238,7 @@ class _CreateStockTransferScreenState
           )
         else if (_searchController.text.trim().isNotEmpty)
           Container(
-            constraints: const BoxConstraints(
-              maxHeight: 300,
-            ),
+            constraints: const BoxConstraints(maxHeight: 300),
             child: _filteredVariants.isEmpty
                 ? const Card(
                     child: Padding(
@@ -275,9 +254,7 @@ class _CreateStockTransferScreenState
 
                       return Card(
                         child: ListTile(
-                          title: Text(
-                            _variantDisplayName(variant),
-                          ),
+                          title: Text(_variantDisplayName(variant)),
                           subtitle: Text(
                             'Model: ${variant.modelNumber}\n'
                             'Quantity: ${variant.totalQuantity}\n'
@@ -328,18 +305,14 @@ class _CreateStockTransferScreenState
           ),
           items: _locations.map((location) {
             final inventory = _variantInventory
-                .where(
-                  (item) => item.locationId == location.id,
-                )
+                .where((item) => item.locationId == location.id)
                 .firstOrNull;
 
             final quantity = inventory?.quantity ?? 0;
 
             return DropdownMenuItem<Location>(
               value: location,
-              child: Text(
-                '${location.name} ($quantity)',
-              ),
+              child: Text('${location.name} ($quantity)'),
             );
           }).toList(),
           onChanged: (value) {
@@ -364,18 +337,14 @@ class _CreateStockTransferScreenState
           ),
           items: _locations.map((location) {
             final inventory = _variantInventory
-                .where(
-                  (item) => item.locationId == location.id,
-                )
+                .where((item) => item.locationId == location.id)
                 .firstOrNull;
 
             final quantity = inventory?.quantity ?? 0;
 
             return DropdownMenuItem<Location>(
               value: location,
-              child: Text(
-                '${location.name} ($quantity)',
-              ),
+              child: Text('${location.name} ($quantity)'),
             );
           }).toList(),
           onChanged: (value) {
@@ -404,9 +373,7 @@ class _CreateStockTransferScreenState
               ? const SizedBox(
                   height: 18,
                   width: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                  ),
+                  child: CircularProgressIndicator(strokeWidth: 2),
                 )
               : const Icon(Icons.swap_horiz_rounded),
           label: const Text('Transfer Stock'),
@@ -418,26 +385,21 @@ class _CreateStockTransferScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Create Stock Transfer'),
-      ),
+      appBar: AppBar(title: const Text('Create Stock Transfer')),
       body: _isLoading
           ? const LoadingState()
           : _error != null
-              ? ErrorState(
-                  message: _error!,
-                  onRetry: _loadData,
-                )
-              : ResponsiveFormPage(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _buildVariantSearch(),
-                      const SizedBox(height: 24),
-                      _buildTransferForm(),
-                    ],
-                  ),
-                ),
+          ? ErrorState(message: _error!, onRetry: _loadData)
+          : ResponsiveFormPage(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildVariantSearch(),
+                  const SizedBox(height: 24),
+                  _buildTransferForm(),
+                ],
+              ),
+            ),
     );
   }
 }

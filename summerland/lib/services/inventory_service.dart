@@ -6,18 +6,10 @@ class InventoryService {
 
   InventoryService(this._apiService);
 
-  Future<List<Inventory>> getVariantInventory(
-      int variantId,
-      ) async {
-    final data = await _apiService.get(
-      '/api/Inventory/variant/$variantId',
-    );
+  Future<List<Inventory>> getVariantInventory(int variantId) async {
+    final data = await _apiService.get('/api/Inventory/variant/$variantId');
 
-    return (data as List)
-        .map(
-          (json) => Inventory.fromJson(json),
-    )
-        .toList();
+    return (data as List).map((json) => Inventory.fromJson(json)).toList();
   }
 
   Future<Inventory> addInventory({
@@ -25,14 +17,11 @@ class InventoryService {
     required int locationId,
     required int quantity,
   }) async {
-    final data = await _apiService.post(
-      '/api/Inventory',
-      {
-        'productVariantId': productVariantId,
-        'locationId': locationId,
-        'quantity': quantity,
-      },
-    );
+    final data = await _apiService.post('/api/Inventory', {
+      'productVariantId': productVariantId,
+      'locationId': locationId,
+      'quantity': quantity,
+    });
 
     return Inventory.fromJson(data);
   }

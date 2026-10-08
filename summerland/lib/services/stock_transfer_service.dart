@@ -31,8 +31,6 @@ class StockTransferService {
   Future<List<StockTransfer>> getTransfers() async {
     final data = await _apiService.get('/api/StockTransfers');
 
-    return (data as List)
-        .map((json) => StockTransfer.fromJson(json))
-        .toList();
+    return (data as List).map((json) => StockTransfer.fromJson(json)).toList();
   }
 }

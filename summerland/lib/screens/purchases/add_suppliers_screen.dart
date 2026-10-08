@@ -16,12 +16,10 @@ class AddSuppliersScreen extends StatefulWidget {
 }
 
 class _AddSuppliersScreenState extends State<AddSuppliersScreen> {
-  final SupplierService _supplierService =
-      SupplierService(ApiService());
+  final SupplierService _supplierService = SupplierService(ApiService());
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
-
 
   bool _isSaving = false;
 
@@ -57,7 +55,8 @@ class _AddSuppliersScreenState extends State<AddSuppliersScreen> {
       if (_isEditing) {
         await _supplierService.updateSupplier(
           widget.supplier!.id,
-          supplierName: name, debt: widget.supplier!.debt,
+          supplierName: name,
+          debt: widget.supplier!.debt,
         );
       } else {
         await _supplierService.createSupplier(name);
@@ -73,9 +72,8 @@ class _AddSuppliersScreenState extends State<AddSuppliersScreen> {
         _isSaving = false;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(friendlyError(e))));
     }
   }
 

@@ -14,6 +14,10 @@
 
         public decimal DiscountAmount { get; set; }
 
+        // Percent the invoice discount was entered as; null when it was
+        // entered as a fixed amount.
+        public decimal? DiscountPercent { get; set; }
+
         public ICollection<SaleInvoiceItem> Items { get; set; }
             = new List<SaleInvoiceItem>();
     }

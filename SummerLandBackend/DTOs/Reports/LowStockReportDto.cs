@@ -15,6 +15,9 @@ public class LowStockItemDto
     public string ModelNumber { get; set; } = string.Empty;
     public string ProductName { get; set; } = string.Empty;
 
+    public int CategoryId { get; set; }
+    public string CategoryName { get; set; } = string.Empty;
+
     public string? SizeName { get; set; }
     public string? ColourName { get; set; }
 

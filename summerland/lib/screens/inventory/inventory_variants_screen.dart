@@ -18,26 +18,21 @@ import 'add_inventory_screen.dart';
 class InventoryVariantsScreen extends StatefulWidget {
   final Product product;
 
-  const InventoryVariantsScreen({
-    super.key,
-    required this.product,
-  });
+  const InventoryVariantsScreen({super.key, required this.product});
 
   @override
   State<InventoryVariantsScreen> createState() =>
       _InventoryVariantsScreenState();
 }
 
-class _InventoryVariantsScreenState
-    extends State<InventoryVariantsScreen> {
+class _InventoryVariantsScreenState extends State<InventoryVariantsScreen> {
   final ApiService _apiService = ApiService();
 
   late final ProductVariantService _variantService;
   late final SizeService _sizeService;
   late final ColourService _colourService;
 
-  final TextEditingController _searchController =
-      TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
 
   List<ProductVariant> _allVariants = [];
   List<ProductVariant> _filteredVariants = [];
@@ -89,9 +84,7 @@ class _InventoryVariantsScreenState
 
       setState(() {
         _allVariants = variants
-            .where(
-              (variant) => variant.productId == widget.product.id,
-            )
+            .where((variant) => variant.productId == widget.product.id)
             .toList();
 
         _sizes = results[1] as List<SizeModel>;
@@ -106,7 +99,7 @@ class _InventoryVariantsScreenState
 
       setState(() {
         _isLoading = false;
-        _errorMessage = e.toString();
+        _errorMessage = friendlyError(e);
       });
     }
   }
@@ -118,21 +111,17 @@ class _InventoryVariantsScreenState
       _filteredVariants = _allVariants.where((variant) {
         final matchesSearch =
             query.isEmpty ||
-                variant.barcode.toLowerCase().contains(query) ||
-                (variant.sizeName?.toLowerCase().contains(query) ?? false) ||
-                (variant.colourName?.toLowerCase().contains(query) ?? false);
+            variant.barcode.toLowerCase().contains(query) ||
+            (variant.sizeName?.toLowerCase().contains(query) ?? false) ||
+            (variant.colourName?.toLowerCase().contains(query) ?? false);
 
         final matchesSize =
-            _selectedSizeId == null ||
-                variant.sizeId == _selectedSizeId;
+            _selectedSizeId == null || variant.sizeId == _selectedSizeId;
 
         final matchesColour =
-            _selectedColourId == null ||
-                variant.colourId == _selectedColourId;
+            _selectedColourId == null || variant.colourId == _selectedColourId;
 
-        return matchesSearch &&
-            matchesSize &&
-            matchesColour;
+        return matchesSearch && matchesSize && matchesColour;
       }).toList();
     });
   }
@@ -147,12 +136,7 @@ class _InventoryVariantsScreenState
   }
 
   Future<void> _openVariant(ProductVariant variant) async {
-    await pushScreen(
-      context,
-      (_) => AddInventoryScreen(
-        variant: variant,
-      ),
-    );
+    await pushScreen(context, (_) => AddInventoryScreen(variant: variant));
 
     _loadData();
   }
@@ -160,9 +144,7 @@ class _InventoryVariantsScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.product.name),
-      ),
+      appBar: AppBar(title: Text(widget.product.name)),
       body: _buildBody(),
     );
   }
@@ -173,19 +155,14 @@ class _InventoryVariantsScreenState
     }
 
     if (_errorMessage != null) {
-      return ErrorState(
-        message: _errorMessage!,
-        onRetry: _loadData,
-      );
+      return ErrorState(message: _errorMessage!, onRetry: _loadData);
     }
 
     return Column(
       children: [
         _buildSearchAndFilters(),
         const Divider(height: 1),
-        Expanded(
-          child: _buildVariantsList(),
-        ),
+        Expanded(child: _buildVariantsList()),
       ],
     );
   }
@@ -229,9 +206,7 @@ class _InventoryVariantsScreenState
                         _showFilters = !_showFilters;
                       });
                     },
-                    icon: Icon(
-                      _showFilters ? Icons.expand_less : Icons.tune,
-                    ),
+                    icon: Icon(_showFilters ? Icons.expand_less : Icons.tune),
                     label: Text(_showFilters ? 'Hide Filters' : 'Filters'),
                   ),
                 ],
@@ -243,9 +218,7 @@ class _InventoryVariantsScreenState
                     final sizeDropdown = DropdownButtonFormField<int>(
                       key: ValueKey('size-$_selectedSizeId'),
                       initialValue: _selectedSizeId,
-                      decoration: const InputDecoration(
-                        labelText: 'Size',
-                      ),
+                      decoration: const InputDecoration(labelText: 'Size'),
                       items: [
                         const DropdownMenuItem<int>(
                           value: null,
@@ -269,9 +242,7 @@ class _InventoryVariantsScreenState
                     final colourDropdown = DropdownButtonFormField<int>(
                       key: ValueKey('colour-$_selectedColourId'),
                       initialValue: _selectedColourId,
-                      decoration: const InputDecoration(
-                        labelText: 'Colour',
-                      ),
+                      decoration: const InputDecoration(labelText: 'Colour'),
                       items: [
                         const DropdownMenuItem<int>(
                           value: null,
@@ -370,9 +341,7 @@ class _InventoryVariantsScreenState
                         width: 40,
                         height: 40,
                         decoration: BoxDecoration(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .primary
+                          color: Theme.of(context).colorScheme.primary
                               .withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(10),
                         ),
@@ -398,9 +367,7 @@ class _InventoryVariantsScreenState
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           if (variant.barcode.isNotEmpty)
-                            Text(
-                              'Barcode: ${variant.barcode}',
-                            ),
+                            Text('Barcode: ${variant.barcode}'),
                           Text.rich(
                             TextSpan(
                               children: [
@@ -415,10 +382,7 @@ class _InventoryVariantsScreenState
                                 TextSpan(
                                   text: money(variant.price),
                                   style: TextStyle(
-                                    color: amountColor(
-                                      context,
-                                      variant.price,
-                                    ),
+                                    color: amountColor(context, variant.price),
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -443,13 +407,11 @@ class _InventoryVariantsScreenState
   String _buildVariantName(ProductVariant variant) {
     final parts = <String>[];
 
-    if (variant.sizeName != null &&
-        variant.sizeName!.isNotEmpty) {
+    if (variant.sizeName != null && variant.sizeName!.isNotEmpty) {
       parts.add(variant.sizeName!);
     }
 
-    if (variant.colourName != null &&
-        variant.colourName!.isNotEmpty) {
+    if (variant.colourName != null && variant.colourName!.isNotEmpty) {
       parts.add(variant.colourName!);
     }
 

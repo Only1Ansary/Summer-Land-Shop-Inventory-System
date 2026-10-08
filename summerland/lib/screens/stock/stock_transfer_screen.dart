@@ -13,12 +13,10 @@ class StockTransfersScreen extends StatefulWidget {
   const StockTransfersScreen({super.key});
 
   @override
-  State<StockTransfersScreen> createState() =>
-      _StockTransfersScreenState();
+  State<StockTransfersScreen> createState() => _StockTransfersScreenState();
 }
 
-class _StockTransfersScreenState
-    extends State<StockTransfersScreen> {
+class _StockTransfersScreenState extends State<StockTransfersScreen> {
   late final StockTransferService _service;
 
   List<StockTransfer> _transfers = [];
@@ -53,7 +51,7 @@ class _StockTransfersScreenState
       if (!mounted) return;
 
       setState(() {
-        _error = e.toString();
+        _error = friendlyError(e);
         _isLoading = false;
       });
     }
@@ -100,10 +98,7 @@ class _StockTransfersScreenState
     }
 
     if (_error != null) {
-      return ErrorState(
-        message: _error!,
-        onRetry: _loadTransfers,
-      );
+      return ErrorState(message: _error!, onRetry: _loadTransfers);
     }
 
     return WideContent(
@@ -145,9 +140,7 @@ class _StockTransfersScreenState
                           const SizedBox(height: 4),
                           Text(
                             'Model: ${transfer.modelNumber}',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodySmall
+                            style: Theme.of(context).textTheme.bodySmall
                                 ?.copyWith(
                                   color: Theme.of(context)
                                       .colorScheme
@@ -187,9 +180,7 @@ class _StockTransfersScreenState
                               const Spacer(),
                               Text(
                                 '${transfer.createdAt.toLocal()}',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
+                                style: Theme.of(context).textTheme.bodySmall
                                     ?.copyWith(
                                       color: Theme.of(context)
                                           .colorScheme
@@ -210,10 +201,7 @@ class _StockTransfersScreenState
 }
 
 class _LocationChip extends StatelessWidget {
-  const _LocationChip({
-    required this.label,
-    required this.isSource,
-  });
+  const _LocationChip({required this.label, required this.isSource});
 
   final String label;
   final bool isSource;
@@ -247,10 +235,7 @@ class _LocationChip extends StatelessWidget {
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 13,
-            ),
+            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
           ),
         ],
       ),
