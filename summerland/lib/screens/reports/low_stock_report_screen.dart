@@ -76,10 +76,27 @@ class _LowStockReportScreenState extends State<LowStockReportScreen> {
     }
   }
 
+  String _variantLabel(LowStockItem item) {
+    final parts = <String>[];
+
+    if (item.sizeName != null && item.sizeName!.isNotEmpty) {
+      parts.add(item.sizeName!);
+    }
+
+    if (item.colourName != null && item.colourName!.isNotEmpty) {
+      parts.add(item.colourName!);
+    }
+
+    if (parts.isEmpty) {
+      return 'Variant #${item.productVariantId}';
+    }
+
+    return parts.join(' / ');
+  }
+
   @override
   Widget build(BuildContext context) {
     final report = _report;
-
     return AppShell(
       title: 'Low Stock',
       destinationId: 'report-low-stock',
@@ -156,10 +173,24 @@ class _LowStockReportScreenState extends State<LowStockReportScreen> {
                           margin: const EdgeInsets.only(bottom: 10),
                           child: ExpansionTile(
                             title: Text(item.productName),
-                            subtitle: Text(
-                              '${item.modelNumber} • Qty: '
-                              '${item.totalQuantity}'
-                              '${item.categoryName.isEmpty ? '' : '\n${item.categoryName}'}',
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _variantLabel(item),
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .primary,
+                                  ),
+                                ),
+                                Text(
+                                  '${item.modelNumber} • Qty: '
+                                  '${item.totalQuantity}'
+                                  '${item.categoryName.isEmpty ? '' : '\n${item.categoryName}'}',
+                                ),
+                              ],
                             ),
                             trailing: const LowStockBadge(),
                             children: [

@@ -215,6 +215,30 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
                     ),
                     const SizedBox(height: 16),
                     const SectionHeader(
+                      title: 'Staff Payments',
+                      subtitle: 'Salary and bonuses paid in this period',
+                    ),
+                    const SizedBox(height: 8),
+                    StatGrid(
+                      stats: [
+                        StatData(
+                          label: 'Payments',
+                          value: '${report.employeePaymentCount}',
+                          icon: Icons.people_outline,
+                        ),
+                        StatData(
+                          label: 'Total Paid',
+                          value: money(report.employeePaymentTotal),
+                          icon: Icons.payments_outlined,
+                          valueColor: amountColor(
+                            context,
+                            report.employeePaymentTotal,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    const SectionHeader(
                       title: 'Debts & Suppliers',
                       subtitle: 'Current standing with suppliers',
                     ),

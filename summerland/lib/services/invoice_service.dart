@@ -28,12 +28,14 @@ class InvoiceService {
 
   Future<Invoice> createInvoice({
     required int locationId,
+    required int employeeId,
     required List<Map<String, dynamic>> items,
     double discountAmount = 0.0,
     double discountPercent = 0.0,
   }) async {
     final data = await _apiService.post('/api/SaleInvoices', {
       'locationId': locationId,
+      'employeeId': employeeId,
       'items': items,
       'discountAmount': discountAmount,
       'discountPercent': discountPercent,

@@ -12,10 +12,14 @@ namespace SummerLandBackend.Controllers;
 public class SaleInvoicesController : ControllerBase
 {
     private readonly ShopDbContext _context;
+    private readonly EmployeeSalesService _employeeSalesService;
 
-    public SaleInvoicesController(ShopDbContext context)
+    public SaleInvoicesController(
+        ShopDbContext context,
+        EmployeeSalesService employeeSalesService)
     {
         _context = context;
+        _employeeSalesService = employeeSalesService;
     }
 
     [HttpPost]
@@ -31,6 +35,12 @@ public class SaleInvoicesController : ControllerBase
         if (cashierLocation == null)
             return BadRequest("Invalid cashier location.");
 
+        var employee = await _context.Employees
+            .FirstOrDefaultAsync(e => e.Id == dto.EmployeeId);
+
+        if (employee == null)
+            return BadRequest("Invalid employee.");
+
         await using var transaction =
             await _context.Database.BeginTransactionAsync();
 
@@ -40,6 +50,8 @@ public class SaleInvoicesController : ControllerBase
             {
                 CreatedAt = DateTime.UtcNow,
                 LocationId = dto.LocationId,
+                EmployeeId = dto.EmployeeId,
+                EmployeeName = employee.Name,
                 TotalAmount = 0
             };
 
@@ -249,12 +261,20 @@ public class SaleInvoicesController : ControllerBase
 
             invoice.TotalAmount -= invoiceDiscount;
 
+            // Credit the amount the customer actually pays (after every
+            // discount) to the employee who made the sale.
+            await _employeeSalesService.RecordSaleAsync(
+                dto.EmployeeId,
+                invoice.TotalAmount,
+                invoice.CreatedAt);
+
             await _context.SaveChangesAsync();
 
             await transaction.CommitAsync();
 
             var createdInvoice = await _context.Invoices
                 .Include(i => i.Location)
+                .Include(i => i.Employee)
                 .Include(i => i.Items)
                     .ThenInclude(ii => ii.ProductVariant)
                         .ThenInclude(v => v.Product)
@@ -272,6 +292,9 @@ public class SaleInvoicesController : ControllerBase
                 CreatedAt = createdInvoice.CreatedAt,
                 LocationId = createdInvoice.LocationId,
                 LocationName = createdInvoice.Location.Name,
+                EmployeeId = createdInvoice.EmployeeId,
+                EmployeeName = createdInvoice.EmployeeName
+                    ?? createdInvoice.Employee?.Name,
                 TotalAmount = createdInvoice.TotalAmount,
                 DiscountAmount = createdInvoice.DiscountAmount,
                 DiscountPercent = createdInvoice.DiscountPercent,
@@ -333,6 +356,7 @@ public class SaleInvoicesController : ControllerBase
     {
         var query = _context.Invoices
             .Include(i => i.Location)
+            .Include(i => i.Employee)
             .Include(i => i.Items)
                 .ThenInclude(ii => ii.ProductVariant)
                     .ThenInclude(v => v.Product)
@@ -365,6 +389,9 @@ public class SaleInvoicesController : ControllerBase
                 CreatedAt = i.CreatedAt,
                 LocationId = i.LocationId,
                 LocationName = i.Location.Name,
+                EmployeeId = i.EmployeeId,
+                EmployeeName = i.EmployeeName
+                    ?? (i.Employee != null ? i.Employee.Name : null),
                 TotalAmount = i.TotalAmount,
                 DiscountAmount = i.DiscountAmount,
                 DiscountPercent = i.DiscountPercent,
@@ -418,6 +445,7 @@ public class SaleInvoicesController : ControllerBase
     {
         var invoice = await _context.Invoices
             .Include(i => i.Location)
+            .Include(i => i.Employee)
             .Include(i => i.Items)
                 .ThenInclude(item => item.ProductVariant)
                     .ThenInclude(v => v.Product)
@@ -440,6 +468,9 @@ public class SaleInvoicesController : ControllerBase
             CreatedAt = invoice.CreatedAt,
             LocationId = invoice.LocationId,
             LocationName = invoice.Location.Name,
+            EmployeeId = invoice.EmployeeId,
+            EmployeeName = invoice.EmployeeName
+                ?? (invoice.Employee != null ? invoice.Employee.Name : null),
             TotalAmount = invoice.TotalAmount,
             DiscountAmount = invoice.DiscountAmount,
             DiscountPercent = invoice.DiscountPercent,

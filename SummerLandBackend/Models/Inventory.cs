@@ -12,6 +12,6 @@
 
         public int Quantity { get; set; }
 
-        public int LowStockThreshold { get; set; } = 5;
+        public int LowStockThreshold { get; set; } = 2;
     }
 }

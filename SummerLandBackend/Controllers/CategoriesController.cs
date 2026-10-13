@@ -85,4 +85,31 @@ public class CategoriesController : ControllerBase
 
         return Ok(category);
     }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteCategory(int id)
+    {
+        var category = await _context.Categories
+            .FirstOrDefaultAsync(c => c.Id == id);
+
+        if (category == null)
+        {
+            return NotFound("Category not found.");
+        }
+
+        var hasProducts = await _context.Products
+            .AnyAsync(p => p.CategoryId == id);
+
+        if (hasProducts)
+        {
+            return BadRequest(
+                "Category is used by products and cannot be deleted.");
+        }
+
+        _context.Categories.Remove(category);
+
+        await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
 }

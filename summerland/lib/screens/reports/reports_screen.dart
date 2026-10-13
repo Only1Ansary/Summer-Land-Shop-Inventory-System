@@ -15,6 +15,7 @@ class ReportsScreen extends StatelessWidget {
       ('Low Stock Report', Icons.warning_amber_rounded, 'report-low-stock'),
       ('Stock Movements', Icons.swap_vert_rounded, 'report-movements'),
       ('Best Selling', Icons.trending_up_rounded, 'report-best-selling'),
+      ('Employees Report', Icons.badge_rounded, 'report-employees'),
     ];
 
     return AppShell(

@@ -1,4 +1,5 @@
 import '../models/reports/sales_report.dart';
+import '../models/reports/employees_report.dart';
 import '../models/reports/inventory_report.dart';
 import '../models/reports/low_stock_report.dart';
 import '../models/reports/stock_movement_report.dart';
@@ -38,6 +39,26 @@ class ReportService {
     final data = await _apiService.get('/api/Reports/inventory');
 
     return InventoryReport.fromJson(data);
+  }
+
+  Future<EmployeesReport> getEmployeesReport({int? year, int? month}) async {
+    final query = <String>[];
+
+    if (year != null) {
+      query.add('year=$year');
+    }
+
+    if (month != null) {
+      query.add('month=$month');
+    }
+
+    final endpoint = query.isEmpty
+        ? '/api/Reports/employees'
+        : '/api/Reports/employees?${query.join('&')}';
+
+    final data = await _apiService.get(endpoint);
+
+    return EmployeesReport.fromJson(data);
   }
 
   Future<LowStockReport> getLowStockReport({int? categoryId}) async {

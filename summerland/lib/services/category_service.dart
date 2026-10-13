@@ -23,4 +23,8 @@ class CategoryService {
 
     return Category.fromJson(data);
   }
+
+  Future<void> deleteCategory(int id) async {
+    await _apiService.delete('/api/Categories/$id');
+  }
 }

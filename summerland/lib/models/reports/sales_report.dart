@@ -11,6 +11,8 @@ class SalesReport {
   final double purchaseTotalCost;
   final double purchaseTotalPaid;
   final double purchaseDebt;
+  final int employeePaymentCount;
+  final double employeePaymentTotal;
   final int supplierCount;
   final double supplierDebtTotal;
   final double profit;
@@ -29,6 +31,8 @@ class SalesReport {
     required this.purchaseTotalCost,
     required this.purchaseTotalPaid,
     required this.purchaseDebt,
+    required this.employeePaymentCount,
+    required this.employeePaymentTotal,
     required this.supplierCount,
     required this.supplierDebtTotal,
     required this.profit,
@@ -51,6 +55,8 @@ class SalesReport {
       purchaseTotalCost: amount('purchaseTotalCost'),
       purchaseTotalPaid: amount('purchaseTotalPaid'),
       purchaseDebt: amount('purchaseDebt'),
+      employeePaymentCount: json['employeePaymentCount'] ?? 0,
+      employeePaymentTotal: amount('employeePaymentTotal'),
       supplierCount: json['supplierCount'] ?? 0,
       supplierDebtTotal: amount('supplierDebtTotal'),
       profit: amount('profit'),

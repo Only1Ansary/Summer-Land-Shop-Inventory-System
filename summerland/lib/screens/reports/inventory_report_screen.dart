@@ -51,6 +51,24 @@ class _InventoryReportScreenState extends State<InventoryReportScreen> {
     }
   }
 
+  String _variantLabel(InventoryReportItem item) {
+    final parts = <String>[];
+
+    if (item.sizeName != null && item.sizeName!.isNotEmpty) {
+      parts.add(item.sizeName!);
+    }
+
+    if (item.colourName != null && item.colourName!.isNotEmpty) {
+      parts.add(item.colourName!);
+    }
+
+    if (parts.isEmpty) {
+      return 'Variant #${item.productVariantId}';
+    }
+
+    return parts.join(' / ');
+  }
+
   @override
   Widget build(BuildContext context) {
     final report = _report;
@@ -109,21 +127,39 @@ class _InventoryReportScreenState extends State<InventoryReportScreen> {
                         margin: const EdgeInsets.only(bottom: 10),
                         child: ExpansionTile(
                           title: Text(item.productName),
-                          subtitle: Text(
-                            '${item.modelNumber} • Qty: ${item.totalQuantity}',
-                          ),
-                          trailing: item.isLowStock
-                              ? const LowStockBadge()
-                              : Text(
-                                  money(item.inventoryValue),
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: amountColor(
-                                      context,
-                                      item.inventoryValue,
-                                    ),
-                                  ),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _variantLabel(item),
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: Theme.of(context).colorScheme.primary,
                                 ),
+                              ),
+                              Text(
+                                '${item.modelNumber} • Qty: '
+                                '${item.totalQuantity}',
+                              ),
+                            ],
+                          ),
+                          trailing: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                money(item.price),
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: amountColor(context, item.price),
+                                ),
+                              ),
+                              if (item.isLowStock) ...[
+                                const SizedBox(height: 4),
+                                const LowStockBadge(),
+                              ],
+                            ],
+                          ),
                           children: [
                             ListTile(
                               leading: const Icon(

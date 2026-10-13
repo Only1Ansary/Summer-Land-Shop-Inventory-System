@@ -128,6 +128,10 @@ class _ShowSaleInvoiceScreenState extends State<ShowSaleInvoiceScreen> {
                   const Divider(height: 24),
                   InfoTile(label: 'Date', value: '${invoice.createdAt}'),
                   InfoTile(label: 'Location', value: invoice.locationName),
+                  InfoTile(
+                    label: 'Employee',
+                    value: invoice.employeeName ?? 'None',
+                  ),
                 ],
               ),
             ),

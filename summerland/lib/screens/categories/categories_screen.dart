@@ -53,6 +53,48 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     }
   }
 
+  Future<void> _deleteCategory(Category category) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete category?'),
+        content: Text('Delete "${category.name}"? This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) {
+      return;
+    }
+
+    try {
+      await _categoryService.deleteCategory(category.id);
+
+      if (!mounted) return;
+
+      await _loadCategories();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('${category.name} deleted.')));
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(friendlyError(e))));
+    }
+  }
+
   Future<void> _addCategory() async {
     final name = await showAppNameDialog(
       context,
@@ -128,6 +170,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       return ErrorState(message: _error!, onRetry: _loadCategories);
     }
 
+    final theme = Theme.of(context);
+
     return WideContent(
       child: RefreshIndicator(
         onRefresh: _loadCategories,
@@ -166,10 +210,21 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                         ),
                       ),
                       title: Text(category.name),
-                      trailing: IconButton(
-                        tooltip: 'Edit',
-                        icon: const Icon(Icons.edit_outlined),
-                        onPressed: () => _editCategory(category),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            tooltip: 'Edit',
+                            icon: const Icon(Icons.edit_outlined),
+                            onPressed: () => _editCategory(category),
+                          ),
+                          IconButton(
+                            tooltip: 'Delete',
+                            icon: const Icon(Icons.delete_outline),
+                            color: theme.colorScheme.error,
+                            onPressed: () => _deleteCategory(category),
+                          ),
+                        ],
                       ),
                     ),
                   );

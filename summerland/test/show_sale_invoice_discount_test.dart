@@ -136,4 +136,56 @@ void main() {
     expect(find.text('Discount'), findsNothing);
     expect(find.text('240.00 EGP'), findsWidgets);
   });
+
+  testWidgets('the employee who made the sale is shown', (
+    WidgetTester tester,
+  ) async {
+    final base = discountedInvoice();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ShowSaleInvoiceScreen(
+          invoice: Invoice(
+            id: base.id,
+            createdAt: base.createdAt,
+            locationId: base.locationId,
+            locationName: base.locationName,
+            employeeId: 7,
+            employeeName: 'Mona',
+            totalAmount: base.totalAmount,
+            discountAmount: base.discountAmount,
+            items: base.items,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Employee'), findsOneWidget);
+    expect(find.text('Mona'), findsOneWidget);
+  });
+
+  testWidgets('an invoice with no employee shows None', (
+    WidgetTester tester,
+  ) async {
+    final base = discountedInvoice();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ShowSaleInvoiceScreen(
+          invoice: Invoice(
+            id: base.id,
+            createdAt: base.createdAt,
+            locationId: base.locationId,
+            locationName: base.locationName,
+            totalAmount: base.totalAmount,
+            discountAmount: base.discountAmount,
+            items: base.items,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Employee'), findsOneWidget);
+    expect(find.text('None'), findsOneWidget);
+  });
 }

@@ -19,7 +19,7 @@ public class ProductVariant
 
     public decimal Price { get; set; }
 
-    public int LowStockThreshold { get; set; } = 5;
+    public int LowStockThreshold { get; set; } = 2;
 
     public ICollection<Inventory> Inventory { get; set; }
         = new List<Inventory>();

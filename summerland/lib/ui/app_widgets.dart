@@ -392,6 +392,142 @@ class DateFilterBar extends StatelessWidget {
   }
 }
 
+/// Full month names, used by the month picker and month-scoped reports.
+const List<String> monthNames = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
+
+/// Formats a year and month as e.g. "October 2026".
+String monthLabel(int year, int month) => '${monthNames[month - 1]} $year';
+
+/// A single button that opens a month picker, used by month-scoped reports.
+class MonthFilterBar extends StatelessWidget {
+  const MonthFilterBar({super.key, required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton.icon(
+      onPressed: onTap,
+      icon: const Icon(Icons.calendar_month_outlined, size: 18),
+      label: Text(label),
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        minimumSize: const Size.fromHeight(48),
+      ),
+    );
+  }
+}
+
+/// Opens a dialog to pick a month, returning the first day of that month.
+Future<DateTime?> showMonthPicker(
+  BuildContext context, {
+  required DateTime initial,
+}) {
+  return showDialog<DateTime>(
+    context: context,
+    builder: (_) => _MonthPickerDialog(initial: initial),
+  );
+}
+
+class _MonthPickerDialog extends StatefulWidget {
+  const _MonthPickerDialog({required this.initial});
+
+  final DateTime initial;
+
+  @override
+  State<_MonthPickerDialog> createState() => _MonthPickerDialogState();
+}
+
+class _MonthPickerDialogState extends State<_MonthPickerDialog> {
+  late int _year;
+
+  @override
+  void initState() {
+    super.initState();
+    _year = widget.initial.year;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final selectedMonth = widget.initial.year == _year
+        ? widget.initial.month
+        : 0;
+
+    return AlertDialog(
+      titlePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      title: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          IconButton(
+            onPressed: () => setState(() => _year--),
+            icon: const Icon(Icons.chevron_left),
+            tooltip: 'Previous year',
+          ),
+          Text('$_year', style: theme.textTheme.titleMedium),
+          IconButton(
+            onPressed: () => setState(() => _year++),
+            icon: const Icon(Icons.chevron_right),
+            tooltip: 'Next year',
+          ),
+        ],
+      ),
+      contentPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      content: SizedBox(
+        width: 320,
+        child: GridView.count(
+          crossAxisCount: 3,
+          shrinkWrap: true,
+          childAspectRatio: 2.2,
+          mainAxisSpacing: 8,
+          crossAxisSpacing: 8,
+          children: [
+            for (var month = 1; month <= 12; month++)
+              _MonthCell(
+                label: monthNames[month - 1].substring(0, 3),
+                selected: month == selectedMonth,
+                onTap: () => Navigator.of(context).pop(DateTime(_year, month)),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MonthCell extends StatelessWidget {
+  const _MonthCell({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return selected
+        ? FilledButton(onPressed: onTap, child: Text(label))
+        : OutlinedButton(onPressed: onTap, child: Text(label));
+  }
+}
+
 /// Small rounded pill used for statuses such as low stock / normal.
 class StatusBadge extends StatelessWidget {
   const StatusBadge({

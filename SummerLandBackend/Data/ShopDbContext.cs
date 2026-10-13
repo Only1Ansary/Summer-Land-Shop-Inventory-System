@@ -28,6 +28,9 @@ public class ShopDbContext : DbContext
     public DbSet<SaleInvoice> Invoices { get; set; }
     public DbSet<SaleInvoiceItem> InvoiceItems { get; set; }
     public DbSet<StockMovement> StockMovements { get; set; }
+    public DbSet<Employee> Employees { get; set; }
+    public DbSet<EmployeeMonth> EmployeeMonths { get; set; }
+    public DbSet<EmployeePayment> EmployeePayments { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -108,6 +111,15 @@ public class ShopDbContext : DbContext
             .WithMany()
             .HasForeignKey(i => i.LocationId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // SaleInvoice -> Employee (the employee who made the sale).
+        // Deleting an employee keeps the invoice: the id is cleared but
+        // the name stays on the invoice.
+        modelBuilder.Entity<SaleInvoice>()
+            .HasOne(i => i.Employee)
+            .WithMany()
+            .HasForeignKey(i => i.EmployeeId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         modelBuilder.Entity<SaleInvoiceItem>()
             .HasOne(i => i.Invoice)
@@ -257,6 +269,53 @@ public class ShopDbContext : DbContext
 
         modelBuilder.Entity<PurchaseReturn>()
             .Property(r => r.UnitPurchasePrice)
+            .HasColumnType("decimal(18,2)");
+
+        modelBuilder.Entity<Employee>()
+            .Property(e => e.Salary)
+            .HasColumnType("decimal(18,2)");
+
+        modelBuilder.Entity<Employee>()
+            .Property(e => e.Target)
+            .HasColumnType("decimal(18,2)");
+
+        modelBuilder.Entity<Employee>()
+            .Property(e => e.Bonus)
+            .HasColumnType("decimal(18,2)");
+
+        modelBuilder.Entity<Employee>()
+            .Property(e => e.TotalSales)
+            .HasColumnType("decimal(18,2)");
+
+        // Employee -> monthly history
+        modelBuilder.Entity<EmployeeMonth>()
+            .HasOne(m => m.Employee)
+            .WithMany()
+            .HasForeignKey(m => m.EmployeeId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // One record per employee per month
+        modelBuilder.Entity<EmployeeMonth>()
+            .HasIndex(m => new { m.EmployeeId, m.Year, m.Month })
+            .IsUnique();
+
+        modelBuilder.Entity<EmployeeMonth>()
+            .Property(m => m.TotalSales)
+            .HasColumnType("decimal(18,2)");
+
+        modelBuilder.Entity<EmployeeMonth>()
+            .Property(m => m.Bonus)
+            .HasColumnType("decimal(18,2)");
+
+        // Employee -> payments. Deleting an employee removes their records.
+        modelBuilder.Entity<EmployeePayment>()
+            .HasOne(p => p.Employee)
+            .WithMany()
+            .HasForeignKey(p => p.EmployeeId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<EmployeePayment>()
+            .Property(p => p.Amount)
             .HasColumnType("decimal(18,2)");
     }
 }

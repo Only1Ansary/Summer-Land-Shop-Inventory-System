@@ -21,6 +21,7 @@ builder.Services.AddDbContext<ShopDbContext>(options =>
 );
 
 builder.Services.AddScoped<BarcodeService>();
+builder.Services.AddScoped<EmployeeSalesService>();
 
 var app = builder.Build();
 

@@ -39,6 +39,7 @@ class SaleInvoiceTile extends StatelessWidget {
         subtitle: Text(
           '${_formatDate(invoice.createdAt)} · '
           '${invoice.locationName} · '
+          '${invoice.employeeName ?? 'None'} · '
           '${invoice.items.length} '
           'item${invoice.items.length == 1 ? '' : 's'}',
         ),

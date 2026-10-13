@@ -8,6 +8,11 @@ namespace SummerLandBackend.DTOs.SaleInvoices
             ErrorMessage = "Choose a valid location for the invoice.")]
         public int LocationId { get; set; }
 
+        // Every new sale must be assigned to the employee who made it.
+        [Range(1, int.MaxValue,
+            ErrorMessage = "Choose an employee for the invoice.")]
+        public int EmployeeId { get; set; }
+
         [Required(ErrorMessage = "Invoice must contain at least one item.")]
         [MinLength(1,
             ErrorMessage = "Invoice must contain at least one item.")]

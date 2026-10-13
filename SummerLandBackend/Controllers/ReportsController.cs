@@ -108,12 +108,21 @@ public class ReportsController : ControllerBase
         var supplierCount = await _context.Suppliers.CountAsync(ct);
         var supplierDebtTotal = await _context.Suppliers.SumAsync(s => (decimal?)s.Debt, ct) ?? 0m;
 
+        // ---------- Staff payments (salary + bonuses settled) ----------
+        var employeePayments = await _context.EmployeePayments.AsNoTracking()
+            .Where(p => p.PaidAt >= fromDate && p.PaidAt <= toDate)
+            .ToListAsync(ct);
+
+        var employeePaymentCount = employeePayments.Count;
+        var employeePaymentTotal = employeePayments.Sum(p => p.Amount);
+
         // ---------- Figures ----------
         var itemsSold = retainedQuantity;
 
         var grossSales = netSales + returnsAmount;
-        // Profit accounts for the purchase cost actually incurred in the period.
-        var profit = netSales - purchases.Sum(p => p.TotalPaid);
+        // Profit accounts for the purchase cost actually incurred in the
+        // period and what was paid out to employees.
+        var profit = netSales - purchases.Sum(p => p.TotalPaid) - employeePaymentTotal;
 
         return Ok(new SalesReportDto
         {
@@ -132,6 +141,9 @@ public class ReportsController : ControllerBase
             PurchaseTotalPaid = purchases.Sum(p => p.TotalPaid),
             PurchaseDebt = purchases.Sum(p => p.Debt),
 
+            EmployeePaymentCount = employeePaymentCount,
+            EmployeePaymentTotal = employeePaymentTotal,
+
             SupplierCount = supplierCount,
             SupplierDebtTotal = supplierDebtTotal,
 
@@ -139,6 +151,136 @@ public class ReportsController : ControllerBase
 
             CategorySales = categorySales
         });
+    }
+
+    [HttpGet("employees")]
+    public async Task<ActionResult<EmployeesReportDto>> GetEmployeesReport(
+        [FromQuery] int? year,
+        [FromQuery] int? month,
+        CancellationToken ct)
+    {
+        var now = DateTime.UtcNow;
+        var reportYear = year ?? now.Year;
+        var reportMonth = month ?? now.Month;
+
+        if (reportMonth < 1 || reportMonth > 12)
+        {
+            return BadRequest("Month must be between 1 and 12.");
+        }
+
+        var monthStart = new DateTime(reportYear, reportMonth, 1,
+            0, 0, 0, DateTimeKind.Utc);
+        var monthEnd = monthStart.AddMonths(1);
+
+        var employees = await _context.Employees.AsNoTracking()
+            .OrderBy(e => e.Name)
+            .ToListAsync(ct);
+
+        // The sales and target flag for the month being reported on.
+        var months = await _context.EmployeeMonths.AsNoTracking()
+            .Where(m => m.Year == reportYear && m.Month == reportMonth)
+            .ToListAsync(ct);
+        var monthByEmployee = months
+            .GroupBy(m => m.EmployeeId)
+            .ToDictionary(g => g.Key, g => g.Last());
+
+        var monthPayments = await _context.EmployeePayments.AsNoTracking()
+            .Where(p => p.PaidAt >= monthStart && p.PaidAt < monthEnd)
+            .GroupBy(p => p.EmployeeId)
+            .Select(g => new
+            {
+                EmployeeId = g.Key,
+                Count = g.Count(),
+                Total = g.Sum(p => p.Amount)
+            })
+            .ToListAsync(ct);
+
+        var allPayments = await _context.EmployeePayments.AsNoTracking()
+            .GroupBy(p => p.EmployeeId)
+            .Select(g => new
+            {
+                EmployeeId = g.Key,
+                Total = g.Sum(p => p.Amount)
+            })
+            .ToListAsync(ct);
+
+        var monthByEmployeePay = monthPayments
+            .ToDictionary(p => p.EmployeeId);
+        var allByEmployee = allPayments
+            .ToDictionary(p => p.EmployeeId);
+
+        var items = employees
+            .Select(e =>
+            {
+                monthByEmployee.TryGetValue(e.Id, out var monthRecord);
+                allByEmployee.TryGetValue(e.Id, out var all);
+                monthByEmployeePay.TryGetValue(e.Id, out var monthPay);
+
+                var sales = monthRecord?.TotalSales ?? 0m;
+                var achieved = monthRecord?.AchievedTarget ?? false;
+                var paidInMonth = monthPay?.Total ?? 0m;
+                var bonusAmount = EmployeeCompensation.BonusAmount(e, sales);
+
+                return new EmployeeReportItemDto
+                {
+                    EmployeeId = e.Id,
+                    Name = e.Name,
+                    BonusType = (int)e.BonusType,
+                    Salary = e.Salary,
+                    Target = e.Target,
+                    Bonus = e.Bonus,
+                    BonusAmount = bonusAmount,
+                    TotalSales = sales,
+                    AchievedTarget = achieved,
+                    PaymentCountInMonth = monthPay?.Count ?? 0,
+                    PaymentTotalInMonth = paidInMonth,
+                    TotalPaid = all?.Total ?? 0m,
+                    MonthlyObligation = e.Salary + bonusAmount,
+                    LeftToPay = EmployeeCompensation.LeftToPay(e, sales, paidInMonth),
+                };
+            })
+            .ToList();
+
+        var topSales = items.Count > 0
+            ? items.Max(i => i.TotalSales)
+            : 0m;
+
+        var employeeOfTheMonth = topSales > 0
+            ? items
+                .Where(i => i.TotalSales == topSales)
+                .Select(i => new EmployeeOfMonthDto
+                {
+                    EmployeeId = i.EmployeeId,
+                    Name = i.Name,
+                    TotalSales = i.TotalSales,
+                })
+                .ToList()
+            : new List<EmployeeOfMonthDto>();
+
+        var response = new EmployeesReportDto
+        {
+            Year = reportYear,
+            Month = reportMonth,
+
+            EmployeeCount = employees.Count,
+
+            TotalMonthlySalaries = employees.Sum(e => e.Salary),
+            TotalBonusOwed = items.Sum(i => i.BonusAmount),
+            TotalSales = items.Sum(i => i.TotalSales),
+            TargetMetCount = items.Count(i => i.AchievedTarget),
+
+            PaymentCountInMonth = monthPayments.Sum(p => p.Count),
+            PaymentTotalInMonth = monthPayments.Sum(p => p.Total),
+            TotalPaid = allPayments.Sum(p => p.Total),
+
+            TotalLeftToPay = items.Sum(i => i.LeftToPay),
+
+            EmployeeOfTheMonth = employeeOfTheMonth,
+
+            Employees = items
+        };
+
+        return Ok(response);
     }
 
     [HttpGet("inventory")]

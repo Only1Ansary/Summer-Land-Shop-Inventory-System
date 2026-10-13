@@ -5,6 +5,8 @@ class Invoice {
   final DateTime createdAt;
   final int locationId;
   final String locationName;
+  final int? employeeId;
+  final String? employeeName;
   final double totalAmount;
   final double discountAmount;
   final double? discountPercent;
@@ -15,6 +17,8 @@ class Invoice {
     required this.createdAt,
     required this.locationId,
     required this.locationName,
+    this.employeeId,
+    this.employeeName,
     required this.totalAmount,
     this.discountAmount = 0.0,
     this.discountPercent,
@@ -27,6 +31,8 @@ class Invoice {
       createdAt: DateTime.parse(json['createdAt']),
       locationId: json['locationId'],
       locationName: json['locationName'],
+      employeeId: json['employeeId'] as int?,
+      employeeName: json['employeeName'] as String?,
       totalAmount: (json['totalAmount'] as num).toDouble(),
       discountAmount: (json['discountAmount'] as num?)?.toDouble() ?? 0.0,
       discountPercent: (json['discountPercent'] as num?)?.toDouble(),

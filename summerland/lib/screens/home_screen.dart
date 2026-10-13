@@ -119,6 +119,12 @@ class _HomeDashboard extends StatelessWidget {
       icon: Icons.location_on_rounded,
       destinationId: 'locations',
     ),
+    _HomeTile(
+      title: 'Employees',
+      subtitle: 'Staff & payroll',
+      icon: Icons.badge_rounded,
+      destinationId: 'employees',
+    ),
   ];
 
   @override

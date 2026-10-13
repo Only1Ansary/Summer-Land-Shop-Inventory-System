@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../screens/categories/categories_screen.dart';
 import '../screens/colours/colours_screen.dart';
+import '../screens/employees/employees_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/inventory/inventory_screen.dart';
 import '../screens/invoices/create_invoice_screen.dart';
@@ -12,6 +13,7 @@ import '../screens/purchases/create_purchase_invoice_screen.dart';
 import '../screens/purchases/show_purchase_invoices_screen.dart';
 import '../screens/purchases/show_suppliers_screen.dart';
 import '../screens/reports/best_selling_report_screen.dart';
+import '../screens/reports/employees_report_screen.dart';
 import '../screens/reports/inventory_report_screen.dart';
 import '../screens/reports/low_stock_report_screen.dart';
 import '../screens/reports/reports_screen.dart';
@@ -75,21 +77,14 @@ class AppDestinations {
       group: 'Catalog',
       builder: _categories,
     ),
+
     const AppNavigationItem(
-      id: 'colours',
-      title: 'Colours',
-      icon: Icons.palette_outlined,
-      selectedIcon: Icons.palette_rounded,
+      id: 'locations',
+      title: 'Locations',
+      icon: Icons.location_on_outlined,
+      selectedIcon: Icons.location_on_rounded,
       group: 'Catalog',
-      builder: _colours,
-    ),
-    const AppNavigationItem(
-      id: 'sizes',
-      title: 'Sizes',
-      icon: Icons.straighten_outlined,
-      selectedIcon: Icons.straighten_rounded,
-      group: 'Catalog',
-      builder: _sizes,
+      builder: _locations,
     ),
 
     // Stock
@@ -211,15 +206,23 @@ class AppDestinations {
       group: 'Reports',
       builder: _bestSellingReport,
     ),
-
-    // Locations
     const AppNavigationItem(
-      id: 'locations',
-      title: 'Locations',
-      icon: Icons.location_on_outlined,
-      selectedIcon: Icons.location_on_rounded,
-      group: 'Locations',
-      builder: _locations,
+      id: 'report-employees',
+      title: 'Employees Report',
+      icon: Icons.badge_outlined,
+      selectedIcon: Icons.badge_rounded,
+      group: 'Reports',
+      builder: _employeesReport,
+    ),
+
+    // Employees
+    const AppNavigationItem(
+      id: 'employees',
+      title: 'Employees',
+      icon: Icons.badge_outlined,
+      selectedIcon: Icons.badge_rounded,
+      group: 'Employees',
+      builder: _employees,
     ),
   ];
 
@@ -240,6 +243,7 @@ class AppDestinations {
     'report-low-stock',
     'report-movements',
     'report-best-selling',
+    'report-employees',
   };
 
   static AppNavigationItem byId(String id) {
@@ -267,8 +271,6 @@ class AppDestinations {
   static Widget _home() => const HomeScreen();
   static Widget _products() => const ProductsScreen();
   static Widget _categories() => const CategoriesScreen();
-  static Widget _colours() => const ColoursScreen();
-  static Widget _sizes() => const SizesScreen();
   static Widget _inventory() => const InventoryScreen();
   static Widget _transfers() => const StockTransfersScreen();
   static Widget _sales() => const CreateInvoiceScreen();
@@ -283,5 +285,7 @@ class AppDestinations {
   static Widget _lowStockReport() => const LowStockReportScreen();
   static Widget _movementsReport() => const StockMovementsReportScreen();
   static Widget _bestSellingReport() => const BestSellingReportScreen();
+  static Widget _employeesReport() => const EmployeesReportScreen();
   static Widget _locations() => const LocationsScreen();
+  static Widget _employees() => const EmployeesScreen();
 }

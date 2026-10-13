@@ -27,6 +27,6 @@ namespace SummerLandBackend.DTOs.ProductVariants
 
         [Range(0, int.MaxValue,
             ErrorMessage = "Low stock threshold cannot be negative.")]
-        public int LowStockThreshold { get; set; } = 1;
+        public int LowStockThreshold { get; set; } = 2;
     }
 }

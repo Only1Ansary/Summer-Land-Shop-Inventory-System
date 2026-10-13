@@ -102,6 +102,48 @@ class _LocationsScreenState extends State<LocationsScreen> {
     }
   }
 
+  Future<void> _deleteLocation(Location location) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete location?'),
+        content: Text('Delete "${location.name}"? This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) {
+      return;
+    }
+
+    try {
+      await _service.deleteLocation(location.id);
+
+      if (!mounted) return;
+
+      await _loadLocations();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('${location.name} deleted.')));
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(friendlyError(e))));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return AppShell(
@@ -120,6 +162,8 @@ class _LocationsScreenState extends State<LocationsScreen> {
     if (_isLoading) {
       return const LoadingState();
     }
+
+    final theme = Theme.of(context);
 
     return WideContent(
       child: RefreshIndicator(
@@ -159,10 +203,21 @@ class _LocationsScreenState extends State<LocationsScreen> {
                         ),
                       ),
                       title: Text(location.name),
-                      trailing: IconButton(
-                        tooltip: 'Edit',
-                        icon: const Icon(Icons.edit_outlined),
-                        onPressed: () => _editLocation(location),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            tooltip: 'Edit',
+                            icon: const Icon(Icons.edit_outlined),
+                            onPressed: () => _editLocation(location),
+                          ),
+                          IconButton(
+                            tooltip: 'Delete',
+                            icon: const Icon(Icons.delete_outline),
+                            color: theme.colorScheme.error,
+                            onPressed: () => _deleteLocation(location),
+                          ),
+                        ],
                       ),
                     ),
                   );

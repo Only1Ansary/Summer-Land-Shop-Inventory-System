@@ -26,6 +26,10 @@
 
         public decimal PurchaseDebt { get; set; }
 
+        public int EmployeePaymentCount { get; set; }
+
+        public decimal EmployeePaymentTotal { get; set; }
+
         public int SupplierCount { get; set; }
 
         public decimal SupplierDebtTotal { get; set; }

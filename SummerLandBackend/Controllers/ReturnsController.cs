@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SummerLandBackend.Data;
 using SummerLandBackend.DTOs.Returns;
 using SummerLandBackend.Models;
+using SummerLandBackend.Services;
 
 namespace SummerLandBackend.Controllers;
 
@@ -11,10 +12,14 @@ namespace SummerLandBackend.Controllers;
 public class ReturnsController : ControllerBase
 {
     private readonly ShopDbContext _context;
+    private readonly EmployeeSalesService _employeeSalesService;
 
-    public ReturnsController(ShopDbContext context)
+    public ReturnsController(
+        ShopDbContext context,
+        EmployeeSalesService employeeSalesService)
     {
         _context = context;
+        _employeeSalesService = employeeSalesService;
     }
 
     [HttpPost]
@@ -108,6 +113,16 @@ public class ReturnsController : ControllerBase
             if (invoice.TotalAmount < 0)
             {
                 invoice.TotalAmount = 0;
+            }
+
+            // Take the refunded amount back off the employee's sales for
+            // the month the original sale was made in.
+            if (invoice.EmployeeId is int employeeId)
+            {
+                await _employeeSalesService.RecordReturnAsync(
+                    employeeId,
+                    totalAmount,
+                    invoice.CreatedAt);
             }
 
             if (invoiceItem.Quantity == 0)

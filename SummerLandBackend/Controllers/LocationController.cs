@@ -88,4 +88,79 @@ public class LocationsController : ControllerBase
 
         return Ok(location);
     }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteLocation(int id)
+    {
+        var location = await _context.Locations
+            .FirstOrDefaultAsync(l => l.Id == id);
+
+        if (location == null)
+        {
+            return NotFound("Location not found.");
+        }
+
+        var hasStock = await _context.Inventory
+            .AnyAsync(i => i.LocationId == id && i.Quantity > 0);
+
+        if (hasStock)
+        {
+            return BadRequest(
+                "Location still has stock on hand. Move or clear the "
+                + "stock before deleting it.");
+        }
+
+        var hasInvoices = await _context.Invoices
+            .AnyAsync(i => i.LocationId == id);
+
+        if (hasInvoices)
+        {
+            return BadRequest(
+                "Location is used by sales invoices and cannot be deleted.");
+        }
+
+        var hasMovements = await _context.StockMovements
+            .AnyAsync(m => m.LocationId == id);
+
+        if (hasMovements)
+        {
+            return BadRequest(
+                "Location is used by stock movements and cannot be deleted.");
+        }
+
+        var hasTransfers = await _context.StockTransfers
+            .AnyAsync(t => t.FromLocationId == id || t.ToLocationId == id);
+
+        if (hasTransfers)
+        {
+            return BadRequest(
+                "Location is used by stock transfers and cannot be deleted.");
+        }
+
+        var hasReturns = await _context.Returns
+            .AnyAsync(r => r.LocationId == id);
+
+        if (hasReturns)
+        {
+            return BadRequest(
+                "Location is used by returns and cannot be deleted.");
+        }
+
+        // Any inventory rows left are empty placeholders for this
+        // location, so they go with it.
+        var emptyInventory = await _context.Inventory
+            .Where(i => i.LocationId == id)
+            .ToListAsync();
+
+        if (emptyInventory.Count > 0)
+        {
+            _context.Inventory.RemoveRange(emptyInventory);
+        }
+
+        _context.Locations.Remove(location);
+
+        await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
 }

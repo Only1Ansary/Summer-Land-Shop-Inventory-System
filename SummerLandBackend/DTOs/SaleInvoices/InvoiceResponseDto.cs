@@ -10,6 +10,11 @@ public class InvoiceResponseDto
 
     public string LocationName { get; set; } = string.Empty;
 
+    // Null for invoices recorded before employees were tracked.
+    public int? EmployeeId { get; set; }
+
+    public string? EmployeeName { get; set; }
+
     public decimal TotalAmount { get; set; }
 
     public decimal DiscountAmount { get; set; }

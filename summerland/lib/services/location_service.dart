@@ -23,4 +23,8 @@ class LocationService {
 
     return Location.fromJson(data);
   }
+
+  Future<void> deleteLocation(int id) async {
+    await _apiService.delete('/api/Locations/$id');
+  }
 }

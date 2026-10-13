@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../../models/employee.dart';
 import '../../models/inventory.dart';
 import '../../models/invoice.dart';
 import '../../models/location.dart';
 import '../../models/product_variant.dart';
 import '../../services/api_service.dart';
+import '../../services/employee_service.dart';
 import '../../services/invoice_service.dart';
 import '../../services/inventory_service.dart';
 import '../../services/location_service.dart';
@@ -28,14 +30,17 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   late final ProductVariantService _variantService;
   late final InventoryService _inventoryService;
   late final InvoiceService _invoiceService;
+  late final EmployeeService _employeeService;
 
   List<Location> _locations = [];
   List<ProductVariant> _allVariants = [];
   List<ProductVariant> _filteredVariants = [];
+  List<Employee> _employees = [];
 
   final List<_InvoiceCartItem> _cart = [];
 
   Location? _selectedCashierLocation;
+  Employee? _selectedEmployee;
 
   final TextEditingController _searchController = TextEditingController();
 
@@ -48,6 +53,10 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   bool _isCreating = false;
   bool _isIncrementing = false;
 
+  // The cart panel starts collapsed so it never covers the variant
+  // results while items are being picked.
+  bool _isCartExpanded = false;
+
   @override
   void initState() {
     super.initState();
@@ -56,6 +65,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     _variantService = ProductVariantService(_apiService);
     _inventoryService = InventoryService(_apiService);
     _invoiceService = InvoiceService(_apiService);
+    _employeeService = EmployeeService(_apiService);
 
     _loadData();
   }
@@ -77,6 +87,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       final results = await Future.wait([
         _locationService.getLocations(),
         _variantService.getVariants(),
+        _employeeService.getEmployees(),
       ]);
 
       if (!mounted) return;
@@ -84,6 +95,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       setState(() {
         _locations = results[0] as List<Location>;
         _allVariants = results[1] as List<ProductVariant>;
+        _employees = results[2] as List<Employee>;
         _filteredVariants = [];
         _isLoading = false;
       });
@@ -118,11 +130,6 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   }
 
   Future<void> _selectVariant(ProductVariant variant) async {
-    if (_selectedCashierLocation == null) {
-      _showError('Please select the cashier location first.');
-      return;
-    }
-
     try {
       final inventory = await _inventoryService.getVariantInventory(variant.id);
 
@@ -215,6 +222,10 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   void _removeCartItem(int index) {
     setState(() {
       _cart.removeAt(index).dispose();
+
+      if (_cart.isEmpty) {
+        _isCartExpanded = false;
+      }
     });
   }
 
@@ -357,9 +368,45 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
 
   double get _netTotal => _cartTotalAfterItemDiscounts - _discount;
 
+  // The invoice needs a cashier location, an employee and at least one item
+  // before it can be created.
+  bool get _canCreate =>
+      _selectedCashierLocation != null &&
+      _selectedEmployee != null &&
+      _cart.isNotEmpty;
+
+  // What the user still has to do before the invoice can be created.
+  String get _createHint {
+    final missingLocation = _selectedCashierLocation == null;
+    final missingEmployee = _selectedEmployee == null;
+
+    if (missingLocation && missingEmployee) {
+      return 'Select a cashier location and an employee to create the invoice.';
+    }
+
+    if (missingLocation) {
+      return 'Select a cashier location to create the invoice.';
+    }
+
+    if (missingEmployee) {
+      return 'Select an employee to create the invoice.';
+    }
+
+    if (_cart.isEmpty) {
+      return 'Add at least one item to create the invoice.';
+    }
+
+    return '';
+  }
+
   Future<void> _createInvoice() async {
     if (_selectedCashierLocation == null) {
       _showError('Please select the cashier location.');
+      return;
+    }
+
+    if (_selectedEmployee == null) {
+      _showError('Please select an employee.');
       return;
     }
 
@@ -415,6 +462,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
 
       final invoice = await _invoiceService.createInvoice(
         locationId: _selectedCashierLocation!.id,
+        employeeId: _selectedEmployee!.id,
         items: items,
         discountAmount: _discountIsPercent ? 0 : _discount,
         discountPercent: _discountIsPercent ? _discountEntry : 0,
@@ -426,6 +474,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         _isCreating = false;
         _discountController.clear();
         _discountIsPercent = false;
+        _isCartExpanded = false;
       });
 
       await pushScreen(context, (_) => InvoiceDetailsScreen(invoice: invoice));
@@ -456,50 +505,22 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       padding: const EdgeInsets.all(16),
       color: Theme.of(context).colorScheme.surface,
       child: WideContent(
-        child: Column(
-          children: [
-            DropdownButtonFormField<int>(
-              key: ValueKey('cashier-location-${_selectedCashierLocation?.id}'),
-              initialValue: _selectedCashierLocation?.id,
-              decoration: const InputDecoration(
-                labelText: 'Cashier Location',
-                prefixIcon: Icon(Icons.storefront_outlined),
-              ),
-              items: _locations.map((location) {
-                return DropdownMenuItem<int>(
-                  value: location.id,
-                  child: Text(location.name),
-                );
-              }).toList(),
-              onChanged: (value) {
-                if (value == null) return;
-
-                setState(() {
-                  _selectedCashierLocation = _locations.firstWhere(
-                    (location) => location.id == value,
-                  );
-                });
-              },
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _searchController,
-              onChanged: _searchVariants,
-              decoration: InputDecoration(
-                labelText: 'Search Model / Name / Barcode',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchController.text.isEmpty
-                    ? null
-                    : IconButton(
-                        onPressed: () {
-                          _searchController.clear();
-                          _searchVariants('');
-                        },
-                        icon: const Icon(Icons.clear),
-                      ),
-              ),
-            ),
-          ],
+        child: TextField(
+          controller: _searchController,
+          onChanged: _searchVariants,
+          decoration: InputDecoration(
+            labelText: 'Search Model / Name / Barcode',
+            prefixIcon: const Icon(Icons.search),
+            suffixIcon: _searchController.text.isEmpty
+                ? null
+                : IconButton(
+                    onPressed: () {
+                      _searchController.clear();
+                      _searchVariants('');
+                    },
+                    icon: const Icon(Icons.clear),
+                  ),
+          ),
         ),
       ),
     );
@@ -595,11 +616,10 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     );
   }
 
-  Widget _buildCartBar() {
+  Widget _buildInvoiceSummary() {
     final theme = Theme.of(context);
 
     return Container(
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         border: Border(
@@ -607,324 +627,470 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         ),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            children: [
-              Text(
-                'Items: ${_cart.length}',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const Spacer(),
-              Text(
-                'Total: ${money(_netTotal)}',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20,
-                  color: amountColor(context, _netTotal),
-                ),
-              ),
-            ],
-          ),
-          if (_itemDiscountTotal > 0)
-            Padding(
-              padding: const EdgeInsets.only(top: 6),
+          const Divider(height: 1),
+          InkWell(
+            onTap: () {
+              setState(() {
+                _isCartExpanded = !_isCartExpanded;
+              });
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
-                  Text(
-                    'Items ${money(_cartTotal)}',
-                    style: TextStyle(
-                      fontSize: 13,
-                      decoration: TextDecoration.lineThrough,
-                      color: theme.colorScheme.outline,
-                    ),
+                  Icon(
+                    Icons.shopping_cart_outlined,
+                    size: 20,
+                    color: theme.colorScheme.primary,
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Item discounts -${money(_itemDiscountTotal)}',
+                    'Items: ${_cart.length}',
                     style: TextStyle(
-                      fontSize: 13,
-                      color: amountColor(context, -_itemDiscountTotal),
+                      fontWeight: FontWeight.w600,
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    'Total: ${money(_netTotal)}',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                      color: amountColor(context, _netTotal),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(
+                    _isCartExpanded ? Icons.expand_less : Icons.expand_more,
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ],
               ),
             ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _discountController,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  onChanged: (_) => setState(() {}),
-                  decoration: InputDecoration(
-                    labelText: _discountIsPercent
-                        ? 'Invoice discount %'
-                        : 'Invoice discount',
-                    prefixText: _discountIsPercent ? null : 'EGP ',
-                    isDense: true,
-                    suffixIcon: _discountController.text.isEmpty
-                        ? null
-                        : IconButton(
-                            onPressed: () {
-                              _discountController.clear();
-                              setState(() {});
-                            },
-                            icon: const Icon(Icons.clear),
-                          ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              ChoiceChip(
-                label: const Text('EGP'),
-                selected: !_discountIsPercent,
-                visualDensity: VisualDensity.compact,
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                onSelected: (_) {
-                  setState(() {
-                    _discountIsPercent = false;
-                    _discountController.clear();
-                  });
-                },
-              ),
-              const SizedBox(width: 6),
-              ChoiceChip(
-                label: const Text('%'),
-                selected: _discountIsPercent,
-                visualDensity: VisualDensity.compact,
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                onSelected: (_) {
-                  setState(() {
-                    _discountIsPercent = true;
-                    _discountController.clear();
-                  });
-                },
-              ),
-            ],
           ),
-          const SizedBox(height: 6),
-          Text(
-            _discountEntryInvalid
-                ? 'Enter a percentage up to 100.'
-                : _discount > 0
-                ? 'Discount applied: -${money(_discount)} '
-                      '${_discountIsPercent ? '(${_discountController.text.trim()}% of '
-                                '${money(_cartTotalAfterItemDiscounts)})' : '(items '
-                                '${money(_cartTotalAfterItemDiscounts)})'}'
-                : 'Invoice discount, applied after item discounts.',
-            style: TextStyle(
-              color: _discountEntryInvalid
-                  ? theme.colorScheme.error
-                  : _discount > 0
-                  ? amountColor(context, -_discount)
-                  : theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            height: 220,
-            child: ListView.builder(
-              itemCount: _cart.length,
-              itemBuilder: (context, index) {
-                final item = _cart[index];
-                final gross = item.variant.price * item.totalQuantity;
-                final net = gross - item.discountTotal;
-                final discountError = item.discountError;
-
-                return ListTile(
-                  dense: true,
-                  title: Text(item.variant.productName),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              item.variant.modelNumber,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: item.totalQuantity > 1
-                                ? () => _decrementCartItem(index)
-                                : null,
-                            iconSize: 20,
-                            visualDensity: VisualDensity.compact,
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(
-                              minWidth: 36,
-                              minHeight: 36,
-                            ),
-                            tooltip: 'Decrease quantity',
-                            icon: const Icon(Icons.remove_circle_outline),
-                          ),
-                          Text(
-                            '${item.totalQuantity}',
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: !_isIncrementing
-                                ? () => _incrementCartItem(index)
-                                : null,
-                            iconSize: 20,
-                            visualDensity: VisualDensity.compact,
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(
-                              minWidth: 36,
-                              minHeight: 36,
-                            ),
-                            tooltip: 'Increase quantity',
-                            icon: const Icon(Icons.add_circle_outline),
-                          ),
-                        ],
-                      ),
-                      ...item.allocations.map(
-                        (allocation) => Text(
-                          '  ${allocation.location.name}: '
-                          '${allocation.quantity}',
-                          style: const TextStyle(fontSize: 12),
-                        ),
-                      ),
-                      if (item.discountTotal > 0)
-                        Text(
-                          '  Unit: ${money(item.variant.price)} → '
-                          '${money(item.variant.price - (item.unitDiscount ?? 0))}'
-                          '${item.discountIsPercent ? ' (-${item.discountController.text}%)' : ''}'
-                          ' · line -${money(item.discountTotal)}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: theme.colorScheme.primary,
-                          ),
-                        ),
-                      Row(
-                        children: [
-                          SizedBox(
-                            width: 92,
-                            child: TextField(
-                              controller: item.discountController,
-                              keyboardType:
-                                  const TextInputType.numberWithOptions(
-                                    decimal: true,
-                                  ),
-                              onChanged: (_) => setState(() {}),
-                              style: const TextStyle(fontSize: 13),
-                              decoration: InputDecoration(
+          if (_isCartExpanded)
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.sizeOf(context).height * 0.5,
+              ),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 460),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: DropdownButtonFormField<int>(
+                                key: ValueKey(
+                                  'cashier-location-'
+                                  '${_selectedCashierLocation?.id}',
+                                ),
+                                initialValue: _selectedCashierLocation?.id,
                                 isDense: true,
-                                labelText: item.discountIsPercent
-                                    ? 'Discount %'
-                                    : 'Discount/unit',
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 10,
+                                isExpanded: true,
+                                decoration: const InputDecoration(
+                                  labelText: 'Cashier Location',
+                                  prefixIcon: Icon(Icons.storefront_outlined),
+                                ),
+                                items: _locations.map((location) {
+                                  return DropdownMenuItem<int>(
+                                    value: location.id,
+                                    child: Text(
+                                      location.name,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  );
+                                }).toList(),
+                                onChanged: (value) {
+                                  if (value == null) return;
+
+                                  setState(() {
+                                    _selectedCashierLocation = _locations
+                                        .firstWhere(
+                                          (location) => location.id == value,
+                                        );
+                                  });
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: DropdownButtonFormField<int>(
+                                key: ValueKey(
+                                  'invoice-employee-${_selectedEmployee?.id}',
+                                ),
+                                initialValue: _selectedEmployee?.id,
+                                isDense: true,
+                                isExpanded: true,
+                                decoration: const InputDecoration(
+                                  labelText: 'Employee',
+                                  prefixIcon: Icon(Icons.badge_outlined),
+                                ),
+                                items: _employees.map((employee) {
+                                  return DropdownMenuItem<int>(
+                                    value: employee.id,
+                                    child: Text(
+                                      employee.name,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  );
+                                }).toList(),
+                                onChanged: (value) {
+                                  if (value == null) return;
+
+                                  setState(() {
+                                    _selectedEmployee = _employees.firstWhere(
+                                      (employee) => employee.id == value,
+                                    );
+                                  });
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    if (_itemDiscountTotal > 0)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: Row(
+                          children: [
+                            Text(
+                              'Items ${money(_cartTotal)}',
+                              style: TextStyle(
+                                fontSize: 13,
+                                decoration: TextDecoration.lineThrough,
+                                color: theme.colorScheme.outline,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Item discounts -${money(_itemDiscountTotal)}',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: amountColor(
+                                  context,
+                                  -_itemDiscountTotal,
                                 ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 6),
-                          ChoiceChip(
-                            label: const Text('EGP'),
-                            selected: !item.discountIsPercent,
-                            visualDensity: VisualDensity.compact,
-                            materialTapTargetSize:
-                                MaterialTapTargetSize.shrinkWrap,
-                            onSelected: (_) {
-                              setState(() {
-                                item.discountIsPercent = false;
-                                item.discountController.clear();
-                              });
-                            },
-                          ),
-                          const SizedBox(width: 4),
-                          ChoiceChip(
-                            label: const Text('%'),
-                            selected: item.discountIsPercent,
-                            visualDensity: VisualDensity.compact,
-                            materialTapTargetSize:
-                                MaterialTapTargetSize.shrinkWrap,
-                            onSelected: (_) {
-                              setState(() {
-                                item.discountIsPercent = true;
-                                item.discountController.clear();
-                              });
-                            },
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                      if (discountError != null)
-                        Text(
-                          discountError,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: theme.colorScheme.error,
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _discountController,
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                            onChanged: (_) => setState(() {}),
+                            decoration: InputDecoration(
+                              labelText: _discountIsPercent
+                                  ? 'Invoice discount %'
+                                  : 'Invoice discount',
+                              prefixText: _discountIsPercent ? null : 'EGP ',
+                              isDense: true,
+                              suffixIcon: _discountController.text.isEmpty
+                                  ? null
+                                  : IconButton(
+                                      onPressed: () {
+                                        _discountController.clear();
+                                        setState(() {});
+                                      },
+                                      icon: const Icon(Icons.clear),
+                                    ),
+                            ),
                           ),
                         ),
-                    ],
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      item.discountTotal > 0
-                          ? Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
+                        const SizedBox(width: 8),
+                        ChoiceChip(
+                          label: const Text('EGP'),
+                          selected: !_discountIsPercent,
+                          visualDensity: VisualDensity.compact,
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                          onSelected: (_) {
+                            setState(() {
+                              _discountIsPercent = false;
+                              _discountController.clear();
+                            });
+                          },
+                        ),
+                        const SizedBox(width: 6),
+                        ChoiceChip(
+                          label: const Text('%'),
+                          selected: _discountIsPercent,
+                          visualDensity: VisualDensity.compact,
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                          onSelected: (_) {
+                            setState(() {
+                              _discountIsPercent = true;
+                              _discountController.clear();
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      _discountEntryInvalid
+                          ? 'Enter a percentage up to 100.'
+                          : _discount > 0
+                          ? 'Discount applied: -${money(_discount)} '
+                                '${_discountIsPercent ? '(${_discountController.text.trim()}% of '
+                                          '${money(_cartTotalAfterItemDiscounts)})' : '(items '
+                                          '${money(_cartTotalAfterItemDiscounts)})'}'
+                          : 'Invoice discount, applied after item discounts.',
+                      style: TextStyle(
+                        color: _discountEntryInvalid
+                            ? theme.colorScheme.error
+                            : _discount > 0
+                            ? amountColor(context, -_discount)
+                            : theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: _cart.length,
+                      itemBuilder: (context, index) {
+                        final item = _cart[index];
+                        final gross = item.variant.price * item.totalQuantity;
+                        final net = gross - item.discountTotal;
+                        final discountError = item.discountError;
+
+                        return ListTile(
+                          dense: true,
+                          title: Text(item.variant.productName),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      item.variant.modelNumber,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    onPressed: item.totalQuantity > 1
+                                        ? () => _decrementCartItem(index)
+                                        : null,
+                                    iconSize: 20,
+                                    visualDensity: VisualDensity.compact,
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(
+                                      minWidth: 36,
+                                      minHeight: 36,
+                                    ),
+                                    tooltip: 'Decrease quantity',
+                                    icon: const Icon(
+                                      Icons.remove_circle_outline,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${item.totalQuantity}',
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    onPressed: !_isIncrementing
+                                        ? () => _incrementCartItem(index)
+                                        : null,
+                                    iconSize: 20,
+                                    visualDensity: VisualDensity.compact,
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(
+                                      minWidth: 36,
+                                      minHeight: 36,
+                                    ),
+                                    tooltip: 'Increase quantity',
+                                    icon: const Icon(Icons.add_circle_outline),
+                                  ),
+                                ],
+                              ),
+                              ...item.allocations.map(
+                                (allocation) => Text(
+                                  '  ${allocation.location.name}: '
+                                  '${allocation.quantity}',
+                                  style: const TextStyle(fontSize: 12),
+                                ),
+                              ),
+                              if (item.discountTotal > 0)
                                 Text(
-                                  money(gross),
+                                  '  Unit: ${money(item.variant.price)} → '
+                                  '${money(item.variant.price - (item.unitDiscount ?? 0))}'
+                                  '${item.discountIsPercent ? ' (-${item.discountController.text}%)' : ''}'
+                                  ' · line -${money(item.discountTotal)}',
                                   style: TextStyle(
                                     fontSize: 12,
-                                    decoration: TextDecoration.lineThrough,
-                                    color: theme.colorScheme.outline,
+                                    color: theme.colorScheme.primary,
                                   ),
                                 ),
-                                Text(
-                                  money(net),
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: amountColor(context, net),
+                              Row(
+                                children: [
+                                  SizedBox(
+                                    width: 92,
+                                    child: TextField(
+                                      controller: item.discountController,
+                                      keyboardType:
+                                          const TextInputType.numberWithOptions(
+                                            decimal: true,
+                                          ),
+                                      onChanged: (_) => setState(() {}),
+                                      style: const TextStyle(fontSize: 13),
+                                      decoration: InputDecoration(
+                                        isDense: true,
+                                        labelText: item.discountIsPercent
+                                            ? 'Discount %'
+                                            : 'Discount/unit',
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 10,
+                                            ),
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ],
-                            )
-                          : Text(
-                              money(net),
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                color: amountColor(context, net),
+                                  const SizedBox(width: 6),
+                                  ChoiceChip(
+                                    label: const Text('EGP'),
+                                    selected: !item.discountIsPercent,
+                                    visualDensity: VisualDensity.compact,
+                                    materialTapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                    onSelected: (_) {
+                                      setState(() {
+                                        item.discountIsPercent = false;
+                                        item.discountController.clear();
+                                      });
+                                    },
+                                  ),
+                                  const SizedBox(width: 4),
+                                  ChoiceChip(
+                                    label: const Text('%'),
+                                    selected: item.discountIsPercent,
+                                    visualDensity: VisualDensity.compact,
+                                    materialTapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                    onSelected: (_) {
+                                      setState(() {
+                                        item.discountIsPercent = true;
+                                        item.discountController.clear();
+                                      });
+                                    },
+                                  ),
+                                ],
                               ),
-                            ),
-                      IconButton(
-                        onPressed: () => _removeCartItem(index),
-                        icon: const Icon(Icons.delete_outline),
-                      ),
-                    ],
-                  ),
-                );
-              },
+                              if (discountError != null)
+                                Text(
+                                  discountError,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: theme.colorScheme.error,
+                                  ),
+                                ),
+                            ],
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              item.discountTotal > 0
+                                  ? Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.end,
+                                      children: [
+                                        Text(
+                                          money(gross),
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            decoration:
+                                                TextDecoration.lineThrough,
+                                            color: theme.colorScheme.outline,
+                                          ),
+                                        ),
+                                        Text(
+                                          money(net),
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            color: amountColor(context, net),
+                                          ),
+                                        ),
+                                      ],
+                                    )
+                                  : Text(
+                                      money(net),
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        color: amountColor(context, net),
+                                      ),
+                                    ),
+                              IconButton(
+                                onPressed: () => _removeCartItem(index),
+                                icon: const Icon(Icons.delete_outline),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: _isCreating ? null : _createInvoice,
-              icon: _isCreating
-                  ? const SizedBox(
-                      height: 18,
-                      width: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.receipt_long_outlined),
-              label: const Text('Create Invoice'),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (!_canCreate && !_isCreating)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      _createHint,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: (_isCreating || !_canCreate)
+                        ? null
+                        : _createInvoice,
+                    icon: _isCreating
+                        ? const SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.receipt_long_outlined),
+                    label: const Text('Create Invoice'),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -950,7 +1116,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                       ? _buildVariantResults()
                       : _buildVariantResults(),
                 ),
-                if (_cart.isNotEmpty) _buildCartBar(),
+                _buildInvoiceSummary(),
               ],
             ),
     );
@@ -1264,6 +1430,10 @@ class InvoiceDetailsScreen extends StatelessWidget {
                     InfoTile(
                       label: 'Cashier Location',
                       value: invoice.locationName,
+                    ),
+                    InfoTile(
+                      label: 'Employee',
+                      value: invoice.employeeName ?? 'None',
                     ),
                     InfoTile(label: 'Date', value: '${invoice.createdAt}'),
                   ],

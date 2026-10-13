@@ -108,7 +108,7 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
       _currentStock = variant.totalQuantity;
     } else {
       _priceController.text = _formatPrice(widget.product.sellingPrice);
-      _thresholdController.text = '0';
+      _thresholdController.text = '2';
     }
   }
 
