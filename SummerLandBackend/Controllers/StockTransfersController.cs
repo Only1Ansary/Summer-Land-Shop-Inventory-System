@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SummerLandBackend.Data;
 using SummerLandBackend.DTOs.StockTransfers;
 using SummerLandBackend.Models;
+using SummerLandBackend.Services;
 
 namespace SummerLandBackend.Controllers;
 
@@ -226,9 +227,11 @@ public class StockTransfersController : ControllerBase
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<StockTransferResponseDto>>>
-        GetTransfers()
+        GetTransfers(
+            [FromQuery] DateTime? from,
+            [FromQuery] DateTime? to)
     {
-        var transfers = await _context.StockTransfers
+        var query = _context.StockTransfers
             .Include(t => t.ProductVariant)
                 .ThenInclude(v => v.Product)
             .Include(t => t.ProductVariant)
@@ -237,6 +240,23 @@ public class StockTransfersController : ControllerBase
                 .ThenInclude(v => v.Colour)
             .Include(t => t.FromLocation)
             .Include(t => t.ToLocation)
+            .AsQueryable();
+
+        if (from.HasValue)
+        {
+            var fromDate = QueryDateRange.Start(from);
+
+            query = query.Where(t => t.CreatedAt >= fromDate);
+        }
+
+        if (to.HasValue)
+        {
+            var toDate = QueryDateRange.End(to);
+
+            query = query.Where(t => t.CreatedAt <= toDate);
+        }
+
+        var transfers = await query
             .OrderByDescending(t => t.CreatedAt)
             .ToListAsync();
 

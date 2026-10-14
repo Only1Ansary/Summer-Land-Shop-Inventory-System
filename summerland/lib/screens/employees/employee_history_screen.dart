@@ -97,52 +97,175 @@ class _EmployeeHistoryScreenState extends State<EmployeeHistoryScreen> {
           children: [
             _CurrentMonthCard(employee: widget.employee),
             const SizedBox(height: 20),
-            const SectionHeader(
+            _CollapsibleSection(
               title: 'Monthly history',
               subtitle: 'Recorded from sales, newest first',
+              icon: Icons.calendar_month_outlined,
+              count: _months.length,
+              children: [
+                if (_months.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 40),
+                    child: EmptyState(
+                      icon: Icons.calendar_month_outlined,
+                      title: 'No monthly history yet',
+                      message:
+                          'Each month appears here once sales are recorded '
+                          'for this employee.',
+                    ),
+                  )
+                else
+                  for (final month in _months)
+                    EmployeeMonthTile(
+                      record: month,
+                      target: widget.employee.target,
+                      bonusType: widget.employee.bonusType,
+                      bonusValue: widget.employee.bonus,
+                    ),
+              ],
             ),
-            const SizedBox(height: 12),
-            if (_months.isEmpty)
-              const Padding(
-                padding: EdgeInsets.only(top: 40),
-                child: EmptyState(
-                  icon: Icons.calendar_month_outlined,
-                  title: 'No monthly history yet',
-                  message:
-                      'Each month appears here once sales are recorded '
-                      'for this employee.',
-                ),
-              )
-            else
-              for (final month in _months)
-                EmployeeMonthTile(
-                  record: month,
-                  target: widget.employee.target,
-                  bonusType: widget.employee.bonusType,
-                  bonusValue: widget.employee.bonus,
-                ),
             const SizedBox(height: 20),
-            const SectionHeader(
+            _CollapsibleSection(
               title: 'Payments',
               subtitle: 'Salary and bonus paid out, newest first',
+              icon: Icons.payments_outlined,
+              count: _payments.length,
+              children: [
+                if (_payments.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 40),
+                    child: EmptyState(
+                      icon: Icons.payments_outlined,
+                      title: 'No payments yet',
+                      message:
+                          'Tap the payments button on the Employees screen '
+                          'to record what was paid out.',
+                    ),
+                  )
+                else
+                  for (final payment in _payments)
+                    _PaymentTile(payment: payment),
+              ],
             ),
-            const SizedBox(height: 12),
-            if (_payments.isEmpty)
-              const Padding(
-                padding: EdgeInsets.only(top: 40),
-                child: EmptyState(
-                  icon: Icons.payments_outlined,
-                  title: 'No payments yet',
-                  message:
-                      'Tap the payments button on the Employees screen '
-                      'to record what was paid out.',
-                ),
-              )
-            else
-              for (final payment in _payments) _PaymentTile(payment: payment),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// A card header that toggles the visibility of its [children].
+///
+/// Starts collapsed so the screen reads as a pair of summaries; tapping
+/// a header smoothly reveals the records underneath. A count pill and a
+/// rotating chevron make the state obvious at a glance.
+class _CollapsibleSection extends StatefulWidget {
+  const _CollapsibleSection({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.count,
+    required this.children,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final int count;
+  final List<Widget> children;
+
+  @override
+  State<_CollapsibleSection> createState() => _CollapsibleSectionState();
+}
+
+class _CollapsibleSectionState extends State<_CollapsibleSection> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Card(
+          margin: EdgeInsets.zero,
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: () => setState(() => _expanded = !_expanded),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      widget.icon,
+                      size: 20,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.title,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          widget.subtitle,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  StatusBadge(
+                    label: '${widget.count}',
+                    color: theme.colorScheme.primary,
+                  ),
+                  const SizedBox(width: 4),
+                  AnimatedRotation(
+                    turns: _expanded ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOut,
+                    child: Icon(
+                      Icons.expand_more_rounded,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeInOut,
+          alignment: Alignment.topCenter,
+          child: _expanded
+              ? Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: widget.children,
+                  ),
+                )
+              : const SizedBox(width: double.infinity),
+        ),
+      ],
     );
   }
 }

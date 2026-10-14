@@ -65,6 +65,9 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
 
   List<Location> _locations = [];
 
+  /// Stock held at each location for the variant being edited.
+  Map<int, int> _locationStock = {};
+
   int? _selectedSizeId;
   int? _selectedColourId;
 
@@ -91,6 +94,8 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
 
     _loadLocations();
 
+    _priceController.text = _formatPrice(widget.product.sellingPrice);
+
     if (isEditing) {
       final variant = widget.variant!;
 
@@ -99,15 +104,12 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
 
       _barcodeController.text = variant.barcode;
 
-      _priceController.text = variant.price.toString();
-
       _thresholdController.text = variant.lowStockThreshold.toString();
 
       _barcodeType = variant.barcodeType;
 
       _currentStock = variant.totalQuantity;
     } else {
-      _priceController.text = _formatPrice(widget.product.sellingPrice);
       _thresholdController.text = '2';
     }
   }
@@ -141,10 +143,34 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
       setState(() {
         _locations = locations;
       });
+
+      await _loadLocationStock();
     } catch (e) {
       if (!mounted) return;
 
       _showError(friendlyError(e));
+    }
+  }
+
+  Future<void> _loadLocationStock() async {
+    if (!isEditing) return;
+
+    try {
+      final inventory = await _inventoryService.getVariantInventory(
+        widget.variant!.id,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _locationStock = {
+          for (final item in inventory) item.locationId: item.quantity,
+        };
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      debugPrint('Failed to load location stock: $e');
     }
   }
 
@@ -299,6 +325,8 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
       setState(() {
         _currentStock = variant.totalQuantity;
       });
+
+      await _loadLocationStock();
     } catch (e) {
       if (!mounted) return;
 
@@ -471,7 +499,10 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
                     .map(
                       (location) => DropdownMenuItem<int>(
                         value: location.id,
-                        child: Text(location.name),
+                        child: Text(
+                          '${location.name} · '
+                          '${_locationStock[location.id] ?? 0} in stock',
+                        ),
                       ),
                     )
                     .toList(),
@@ -757,13 +788,14 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
 
               TextFormField(
                 controller: _priceController,
+                readOnly: true,
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
                 decoration: const InputDecoration(
                   labelText: 'Price',
                   prefixIcon: Icon(Icons.payments_outlined),
-                  helperText: 'Defaults to the product selling price.',
+                  helperText: "Price is derived from the product's selling price and cannot be edited.",
                 ),
                 validator: (value) {
                   final price = double.tryParse(value?.trim() ?? '');

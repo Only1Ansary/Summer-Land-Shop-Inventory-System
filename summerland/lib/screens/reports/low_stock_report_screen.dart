@@ -29,6 +29,25 @@ class _LowStockReportScreenState extends State<LowStockReportScreen> {
   bool _loading = true;
   String? _error;
 
+  static const int _pageSize = 10;
+  int _currentPage = 0;
+
+  List<T> _pageSlice<T>(List<T> items) {
+    final start = _currentPage * _pageSize;
+
+    if (start >= items.length) return const [];
+
+    final end = start + _pageSize;
+
+    return items.sublist(start, end > items.length ? items.length : end);
+  }
+
+  void _goToPage(int page) {
+    setState(() {
+      _currentPage = page;
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -66,6 +85,7 @@ class _LowStockReportScreenState extends State<LowStockReportScreen> {
 
       setState(() {
         _report = report;
+        _currentPage = 0;
         _loading = false;
       });
     } catch (e) {
@@ -96,7 +116,8 @@ class _LowStockReportScreenState extends State<LowStockReportScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final report = _report;
+    final items = _report?.items ?? const <LowStockItem>[];
+
     return AppShell(
       title: 'Low Stock',
       destinationId: 'report-low-stock',
@@ -104,145 +125,163 @@ class _LowStockReportScreenState extends State<LowStockReportScreen> {
           ? const LoadingState()
           : _error != null
           ? ErrorState(message: _error!, onRetry: _loadReport)
-          : RefreshIndicator(
-              onRefresh: _loadReport,
-              child: WideContent(
-                child: ListView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.all(16),
-                  children: [
-                    // Kept above the list so a category with nothing to
-                    // reorder can still be changed.
-                    DropdownButtonFormField<int?>(
-                      key: ValueKey('category-$_categoryId'),
-                      initialValue: _categoryId,
-                      decoration: const InputDecoration(
-                        labelText: 'Category',
-                        prefixIcon: Icon(Icons.category_outlined),
-                      ),
-                      items: [
-                        const DropdownMenuItem<int?>(
-                          value: null,
-                          child: Text('All Categories'),
-                        ),
-                        ..._categories.map(
-                          (category) => DropdownMenuItem<int?>(
-                            value: category.id,
-                            child: Text(category.name),
-                          ),
-                        ),
-                      ],
-                      onChanged: (value) async {
-                        setState(() {
-                          _categoryId = value;
-                        });
-
-                        await _loadReport();
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    StatGrid(
-                      stats: [
-                        StatData(
-                          label: 'Low Stock Variants',
-                          value: '${report!.items.length}',
-                          icon: Icons.warning_amber_rounded,
-                          color: AppPalette.warning,
-                        ),
-                      ],
-                    ),
-                    if (report.items.isEmpty) ...[
-                      const SizedBox(height: 16),
-                      const SizedBox(
-                        height: 200,
-                        child: EmptyState(
-                          icon: Icons.verified_rounded,
-                          title: 'No low stock items',
-                          message: 'All variants are above their thresholds.',
-                        ),
-                      ),
-                    ] else ...[
-                      const SizedBox(height: 16),
-                      const SectionHeader(
-                        title: 'Needs Reordering',
-                        subtitle: 'Variants below their low stock threshold',
-                      ),
-                      const SizedBox(height: 8),
-                      ...report.items.map(
-                        (item) => Card(
-                          margin: const EdgeInsets.only(bottom: 10),
-                          child: ExpansionTile(
-                            title: Text(item.productName),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  _variantLabel(item),
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .primary,
-                                  ),
-                                ),
-                                Text(
-                                  '${item.modelNumber} • Qty: '
-                                  '${item.totalQuantity}'
-                                  '${item.categoryName.isEmpty ? '' : '\n${item.categoryName}'}',
-                                ),
-                              ],
+          : Column(
+              children: [
+                Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: _loadReport,
+                    child: WideContent(
+                      child: ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.all(16),
+                        children: [
+                          // Kept above the list so a category with nothing
+                          // to reorder can still be changed.
+                          DropdownButtonFormField<int?>(
+                            key: ValueKey('category-$_categoryId'),
+                            initialValue: _categoryId,
+                            decoration: const InputDecoration(
+                              labelText: 'Category',
+                              prefixIcon: Icon(Icons.category_outlined),
                             ),
-                            trailing: const LowStockBadge(),
-                            children: [
-                              ListTile(
-                                title: const Text('Threshold'),
-                                trailing: Text(
-                                  '${item.lowStockThreshold}',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
+                            items: [
+                              const DropdownMenuItem<int?>(
+                                value: null,
+                                child: Text('All Categories'),
                               ),
-                              ListTile(
-                                leading: const Icon(
-                                  Icons.qr_code_2_outlined,
-                                  size: 20,
-                                ),
-                                title: const Text('Barcode'),
-                                trailing: Text(item.barcode),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.fromLTRB(
-                                  16,
-                                  0,
-                                  16,
-                                  8,
-                                ),
-                                child: BarcodeView(
-                                  item.barcode,
-                                  showText: false,
-                                ),
-                              ),
-                              const Divider(height: 1),
-                              ...item.locations.map(
-                                (location) => ListTile(
-                                  title: Text(location.locationName),
-                                  trailing: Text(
-                                    '${location.quantity}',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
+                              ..._categories.map(
+                                (category) => DropdownMenuItem<int?>(
+                                  value: category.id,
+                                  child: Text(category.name),
                                 ),
                               ),
                             ],
+                            onChanged: (value) async {
+                              setState(() {
+                                _categoryId = value;
+                              });
+
+                              await _loadReport();
+                            },
                           ),
-                        ),
+                          const SizedBox(height: 16),
+                          StatGrid(
+                            stats: [
+                              StatData(
+                                label: 'Low Stock Variants',
+                                value: '${items.length}',
+                                icon: Icons.warning_amber_rounded,
+                                color: AppPalette.warning,
+                              ),
+                            ],
+                          ),
+                          if (items.isEmpty) ...[
+                            const SizedBox(height: 16),
+                            const SizedBox(
+                              height: 200,
+                              child: EmptyState(
+                                icon: Icons.verified_rounded,
+                                title: 'No low stock items',
+                                message:
+                                    'All variants are above their thresholds.',
+                              ),
+                            ),
+                          ] else ...[
+                            const SizedBox(height: 16),
+                            const SectionHeader(
+                              title: 'Needs Reordering',
+                              subtitle:
+                                  'Variants below their low stock threshold',
+                            ),
+                            const SizedBox(height: 8),
+                            ..._pageSlice(items).map(
+                              (item) => Card(
+                                margin: const EdgeInsets.only(bottom: 10),
+                                child: ExpansionTile(
+                                  title: Text(item.productName),
+                                  subtitle: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        _variantLabel(item),
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary,
+                                        ),
+                                      ),
+                                      Text(
+                                        '${item.modelNumber} • Qty: '
+                                        '${item.totalQuantity}'
+                                        '${item.categoryName.isEmpty ? '' : '\n${item.categoryName}'}',
+                                      ),
+                                    ],
+                                  ),
+                                  trailing: const LowStockBadge(),
+                                  children: [
+                                    ListTile(
+                                      title: const Text('Threshold'),
+                                      trailing: Text(
+                                        '${item.lowStockThreshold}',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                    ListTile(
+                                      leading: const Icon(
+                                        Icons.qr_code_2_outlined,
+                                        size: 20,
+                                      ),
+                                      title: const Text('Barcode'),
+                                      trailing: Text(item.barcode),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.fromLTRB(
+                                        16,
+                                        0,
+                                        16,
+                                        8,
+                                      ),
+                                      child: BarcodeView(
+                                        item.barcode,
+                                        showText: false,
+                                      ),
+                                    ),
+                                    const Divider(height: 1),
+                                    ...item.locations.map(
+                                      (location) => ListTile(
+                                        title: Text(location.locationName),
+                                        trailing: Text(
+                                          '${location.quantity}',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
-                    ],
-                  ],
+                    ),
+                  ),
                 ),
-              ),
+                if (items.isNotEmpty)
+                  WideContent(
+                    child: PaginationBar(
+                      page: _currentPage,
+                      pageSize: _pageSize,
+                      totalItems: items.length,
+                      onPageChanged: _goToPage,
+                    ),
+                  ),
+              ],
             ),
     );
   }

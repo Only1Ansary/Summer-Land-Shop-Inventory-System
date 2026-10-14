@@ -50,7 +50,24 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
   bool _isLoading = false;
   bool _isSearching = false;
+  bool _hasSearched = false;
   String? _error;
+
+  static const int _pageSize = 10;
+  int _currentPage = 0;
+
+  List<Product> get _pageProducts {
+    final start = _currentPage * _pageSize;
+
+    if (start >= _products.length) return const [];
+
+    final end = start + _pageSize;
+
+    return _products.sublist(
+      start,
+      end > _products.length ? _products.length : end,
+    );
+  }
 
   bool _showFilters = false;
 
@@ -64,7 +81,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
   @override
   void initState() {
     super.initState();
-    _loadData();
+    _loadReferenceData();
   }
 
   @override
@@ -74,7 +91,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
     super.dispose();
   }
 
-  Future<void> _loadData() async {
+  Future<void> _loadReferenceData() async {
     setState(() {
       _isLoading = true;
       _error = null;
@@ -82,7 +99,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
     try {
       final results = await Future.wait([
-        _productService.getProducts(),
         _categoryService.getCategories(),
         _sizeService.getSizes(),
         _colourService.getColours(),
@@ -91,10 +107,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
       if (!mounted) return;
 
       setState(() {
-        _products = results[0] as List<Product>;
-        _categories = results[1] as List<Category>;
-        _sizes = results[2] as List<SizeModel>;
-        _colours = results[3] as List<Colour>;
+        _categories = results[0] as List<Category>;
+        _sizes = results[1] as List<SizeModel>;
+        _colours = results[2] as List<Colour>;
       });
     } catch (e) {
       if (!mounted) return;
@@ -108,6 +123,16 @@ class _ProductsScreenState extends State<ProductsScreen> {
           _isLoading = false;
         });
       }
+    }
+  }
+
+  /// Re-runs the current search after a product changes.
+  ///
+  /// Products are never listed on their own, so when nothing is being
+  /// searched there is nothing to refresh.
+  Future<void> _refreshAfterChange() async {
+    if (_hasSearched) {
+      await _search();
     }
   }
 
@@ -125,12 +150,20 @@ class _ProductsScreenState extends State<ProductsScreen> {
         _selectedColourId != null;
 
     if (!hasFilters) {
-      await _loadData();
+      // Nothing to search for - return to the "start searching" state
+      // instead of listing every product.
+      setState(() {
+        _hasSearched = false;
+        _products = [];
+        _currentPage = 0;
+      });
+
       return;
     }
 
     setState(() {
       _isSearching = true;
+      _hasSearched = true;
       _error = null;
     });
 
@@ -146,6 +179,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
       setState(() {
         _products = products;
+        _currentPage = 0;
       });
     } catch (e) {
       if (!mounted) return;
@@ -213,7 +247,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
     );
 
     if (result == true) {
-      _loadData();
+      _refreshAfterChange();
     }
   }
 
@@ -227,7 +261,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
       ),
     );
 
-    _loadData();
+    _refreshAfterChange();
   }
 
   Future<void> _deleteProduct(Product product) async {
@@ -248,7 +282,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
         const SnackBar(content: Text('Product deleted successfully.')),
       );
 
-      _loadData();
+      _refreshAfterChange();
     } catch (e) {
       if (!mounted) return;
 
@@ -421,29 +455,51 @@ class _ProductsScreenState extends State<ProductsScreen> {
     }
 
     if (_error != null) {
-      return ErrorState(message: _error!, onRetry: _loadData);
+      return ErrorState(
+        message: _error!,
+        onRetry: _hasSearched ? _search : _loadReferenceData,
+      );
+    }
+
+    if (!_hasSearched) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: EmptyState(
+            icon: Icons.search,
+            title: 'Search for products',
+            message:
+                'Enter a model, name or barcode, or use the filters, '
+                'to find products.',
+          ),
+        ),
+      );
+    }
+
+    if (_products.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: EmptyState(
+            icon: Icons.inventory_2_outlined,
+            title: 'No products found',
+            message: 'Try adjusting your search or add a new product.',
+          ),
+        ),
+      );
     }
 
     return WideContent(
-      child: RefreshIndicator(
-        onRefresh: _loadData,
-        child: _products.isEmpty
-            ? ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                children: const [
-                  SizedBox(height: 120),
-                  EmptyState(
-                    icon: Icons.inventory_2_outlined,
-                    title: 'No products found',
-                    message: 'Try adjusting your search or add a new product.',
-                  ),
-                ],
-              )
-            : ListView.builder(
+      child: Column(
+        children: [
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _search,
+              child: ListView.builder(
                 padding: const EdgeInsets.all(16),
-                itemCount: _products.length,
+                itemCount: _pageProducts.length,
                 itemBuilder: (context, index) {
-                  final product = _products[index];
+                  final product = _pageProducts[index];
 
                   return Card(
                     margin: const EdgeInsets.only(bottom: 10),
@@ -494,7 +550,22 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   );
                 },
               ),
+            ),
+          ),
+          PaginationBar(
+            page: _currentPage,
+            pageSize: _pageSize,
+            totalItems: _products.length,
+            onPageChanged: _goToPage,
+          ),
+        ],
       ),
     );
+  }
+
+  void _goToPage(int page) {
+    setState(() {
+      _currentPage = page;
+    });
   }
 }

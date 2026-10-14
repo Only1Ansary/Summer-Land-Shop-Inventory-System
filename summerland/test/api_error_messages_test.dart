@@ -38,7 +38,6 @@ void main() {
     }
 
     fail('Expected the request to fail.');
-    throw StateError('unreachable');
   }
 
   test('an empty 400 never shows "Bad request"', () async {

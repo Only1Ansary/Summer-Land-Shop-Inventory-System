@@ -45,6 +45,10 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
 
   final ColourService _colourService = ColourService(ApiService());
 
+  /// The product being shown. Starts as the one passed in and is
+  /// refreshed after an edit so the details never go stale.
+  late Product _product;
+
   List<ProductVariant> _variants = [];
 
   List<SizeModel> _sizes = [];
@@ -58,6 +62,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   void initState() {
     super.initState();
 
+    _product = widget.product;
     _sizes = List.of(widget.sizes);
     _colours = List.of(widget.colours);
 
@@ -99,7 +104,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
 
       setState(() {
         _variants = variants
-            .where((variant) => variant.productId == widget.product.id)
+            .where((variant) => variant.productId == _product.id)
             .toList();
       });
     } catch (e) {
@@ -124,7 +129,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
 
     if (categories == null) return;
 
-    final updatedProduct = await _productService.getProduct(widget.product.id);
+    final updatedProduct = await _productService.getProduct(_product.id);
 
     if (!mounted) return;
 
@@ -134,7 +139,24 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     );
 
     if (result == true) {
-      _loadVariants();
+      await _refreshProduct();
+      await _loadVariants();
+    }
+  }
+
+  /// Reloads the product so edits are reflected without leaving the
+  /// screen.
+  Future<void> _refreshProduct() async {
+    try {
+      final product = await _productService.getProduct(_product.id);
+
+      if (!mounted) return;
+
+      setState(() {
+        _product = product;
+      });
+    } catch (_) {
+      // Keep the current details if the refresh fails.
     }
   }
 
@@ -157,7 +179,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     final result = await pushScreen(
       context,
       (_) => ProductVariantFormScreen(
-        product: widget.product,
+        product: _product,
         sizes: _sizes,
         colours: _colours,
       ),
@@ -172,7 +194,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     final result = await pushScreen(
       context,
       (_) => ProductVariantFormScreen(
-        product: widget.product,
+        product: _product,
         sizes: _sizes,
         colours: _colours,
         variant: variant,
@@ -258,32 +280,30 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              widget.product.name,
+              _product.name,
               style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const Divider(height: 24),
-            InfoTile(label: 'Model', value: widget.product.modelNumber),
-            InfoTile(label: 'Category', value: widget.product.categoryName),
+            InfoTile(label: 'Model', value: _product.modelNumber),
+            InfoTile(label: 'Category', value: _product.categoryName),
             InfoTile(
               label: 'Barcode',
-              value: widget.product.barcode.isEmpty
-                  ? 'N/A'
-                  : widget.product.barcode,
+              value: _product.barcode.isEmpty ? 'N/A' : _product.barcode,
             ),
-            BarcodeView(widget.product.barcode, showText: false),
+            BarcodeView(_product.barcode, showText: false),
             InfoTile(
               label: 'Purchase Price',
-              value: money(widget.product.purchasePrice),
-              valueStyle: amountStyle(context, widget.product.purchasePrice),
+              value: money(_product.purchasePrice),
+              valueStyle: amountStyle(context, _product.purchasePrice),
             ),
             InfoTile(
               label: 'Profit Margin',
-              value: '${_formatPercent(widget.product.profitMargin)}%',
+              value: '${_formatPercent(_product.profitMargin)}%',
             ),
             InfoTile(
               label: 'Selling Price',
-              value: money(widget.product.sellingPrice),
-              valueStyle: amountStyle(context, widget.product.sellingPrice),
+              value: money(_product.sellingPrice),
+              valueStyle: amountStyle(context, _product.sellingPrice),
             ),
           ],
         ),

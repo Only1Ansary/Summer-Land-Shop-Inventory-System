@@ -23,13 +23,38 @@ class _StockTransfersScreenState extends State<StockTransfersScreen> {
   bool _isLoading = true;
   String? _error;
 
+  DateTime? _from;
+  DateTime? _to;
+
+  static const int _pageSize = 10;
+  int _currentPage = 0;
+
   @override
   void initState() {
     super.initState();
 
     _service = StockTransferService(ApiService());
 
+    _from = defaultFilterFromDate();
+    _to = defaultFilterToDate();
+
     _loadTransfers();
+  }
+
+  List<T> _pageSlice<T>(List<T> items) {
+    final start = _currentPage * _pageSize;
+
+    if (start >= items.length) return const [];
+
+    final end = start + _pageSize;
+
+    return items.sublist(start, end > items.length ? items.length : end);
+  }
+
+  void _goToPage(int page) {
+    setState(() {
+      _currentPage = page;
+    });
   }
 
   Future<void> _loadTransfers() async {
@@ -39,12 +64,13 @@ class _StockTransfersScreenState extends State<StockTransfersScreen> {
     });
 
     try {
-      final transfers = await _service.getTransfers();
+      final transfers = await _service.getTransfers(from: _from, to: _to);
 
       if (!mounted) return;
 
       setState(() {
         _transfers = transfers;
+        _currentPage = 0;
         _isLoading = false;
       });
     } catch (e) {
@@ -55,6 +81,31 @@ class _StockTransfersScreenState extends State<StockTransfersScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  Future<void> _pickDate(bool isFrom) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: isFrom ? (_from ?? DateTime.now()) : (_to ?? DateTime.now()),
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+    );
+
+    if (picked == null) return;
+
+    setState(() {
+      if (isFrom) {
+        _from = picked;
+      } else {
+        _to = picked;
+      }
+    });
+
+    await _loadTransfers();
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
   }
 
   String _variantName(StockTransfer transfer) {
@@ -88,7 +139,27 @@ class _StockTransfersScreenState extends State<StockTransfersScreen> {
         tooltip: 'Create stock transfer',
         child: const Icon(Icons.swap_horiz),
       ),
-      body: _buildBody(),
+      body: Column(
+        children: [
+          _buildFilterSection(),
+          const Divider(height: 1),
+          Expanded(child: _buildBody()),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterSection() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+      child: WideContent(
+        child: DateFilterBar(
+          fromLabel: _formatDate(_from!),
+          toLabel: _formatDate(_to!),
+          onFrom: () => _pickDate(true),
+          onTo: () => _pickDate(false),
+        ),
+      ),
     );
   }
 
@@ -101,100 +172,119 @@ class _StockTransfersScreenState extends State<StockTransfersScreen> {
       return ErrorState(message: _error!, onRetry: _loadTransfers);
     }
 
-    return WideContent(
-      child: RefreshIndicator(
-        onRefresh: _loadTransfers,
-        child: _transfers.isEmpty
-            ? ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                children: const [
-                  SizedBox(height: 120),
-                  EmptyState(
-                    icon: Icons.swap_horiz_rounded,
-                    title: 'No stock transfers found',
-                    message:
-                        'Transfer stock between locations using the + button.',
-                  ),
-                ],
-              )
-            : ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: _transfers.length,
-                itemBuilder: (context, index) {
-                  final transfer = _transfers[index];
+    final pageItems = _pageSlice(_transfers);
 
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 10),
-                    child: Padding(
+    return WideContent(
+      child: Column(
+        children: [
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _loadTransfers,
+              child: _transfers.isEmpty
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: const [
+                        SizedBox(height: 120),
+                        EmptyState(
+                          icon: Icons.swap_horiz_rounded,
+                          title: 'No stock transfers found',
+                          message:
+                              'Transfer stock between locations using the + '
+                              'button.',
+                        ),
+                      ],
+                    )
+                  : ListView.builder(
                       padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _variantName(transfer),
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 16,
+                      itemCount: pageItems.length,
+                      itemBuilder: (context, index) {
+                        final transfer = pageItems[index];
+
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 10),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _variantName(transfer),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Model: ${transfer.modelNumber}',
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurfaceVariant,
+                                      ),
+                                ),
+                                const Divider(height: 20),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _LocationChip(
+                                        label: transfer.fromLocationName,
+                                        isSource: true,
+                                      ),
+                                    ),
+                                    const Padding(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                      ),
+                                      child: Icon(
+                                        Icons.arrow_forward_rounded,
+                                        size: 20,
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: _LocationChip(
+                                        label: transfer.toLocationName,
+                                        isSource: false,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                Row(
+                                  children: [
+                                    _QuantityBadge(
+                                      label: 'Qty: ${transfer.quantity}',
+                                    ),
+                                    const Spacer(),
+                                    Text(
+                                      '${transfer.createdAt.toLocal()}',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurfaceVariant,
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Model: ${transfer.modelNumber}',
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurfaceVariant,
-                                ),
-                          ),
-                          const Divider(height: 20),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _LocationChip(
-                                  label: transfer.fromLocationName,
-                                  isSource: true,
-                                ),
-                              ),
-                              const Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 8),
-                                child: Icon(
-                                  Icons.arrow_forward_rounded,
-                                  size: 20,
-                                ),
-                              ),
-                              Expanded(
-                                child: _LocationChip(
-                                  label: transfer.toLocationName,
-                                  isSource: false,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              _QuantityBadge(
-                                label: 'Qty: ${transfer.quantity}',
-                              ),
-                              const Spacer(),
-                              Text(
-                                '${transfer.createdAt.toLocal()}',
-                                style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurfaceVariant,
-                                    ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                        );
+                      },
                     ),
-                  );
-                },
-              ),
+            ),
+          ),
+          PaginationBar(
+            page: _currentPage,
+            pageSize: _pageSize,
+            totalItems: _transfers.length,
+            onPageChanged: _goToPage,
+          ),
+        ],
       ),
     );
   }

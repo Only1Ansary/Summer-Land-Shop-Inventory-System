@@ -31,10 +31,7 @@ class _AddInventoryScreenState extends State<AddInventoryScreen> {
   List<Inventory> _inventory = [];
   List<Location> _locations = [];
 
-  int? _selectedLocationId;
-
   bool _isLoading = false;
-  bool _isAdding = false;
 
   String? _error;
 
@@ -80,67 +77,6 @@ class _AddInventoryScreenState extends State<AddInventoryScreen> {
       if (mounted) {
         setState(() {
           _isLoading = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _addInventory() async {
-    final quantity = int.tryParse(_quantityController.text.trim());
-
-    if (_selectedLocationId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a location.')),
-      );
-
-      return;
-    }
-
-    if (quantity == null || quantity <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Quantity must be greater than zero.')),
-      );
-
-      return;
-    }
-
-    if (quantity > 100000) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Quantity cannot exceed 100,000.')),
-      );
-
-      return;
-    }
-
-    setState(() {
-      _isAdding = true;
-    });
-
-    try {
-      await _inventoryService.addInventory(
-        productVariantId: widget.variant.id,
-        locationId: _selectedLocationId!,
-        quantity: quantity,
-      );
-
-      if (!mounted) return;
-
-      _quantityController.clear();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Inventory added successfully.')),
-      );
-
-      await _loadData();
-    } catch (e) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(friendlyError(e))));
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isAdding = false;
         });
       }
     }

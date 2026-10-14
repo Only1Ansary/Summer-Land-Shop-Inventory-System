@@ -196,6 +196,8 @@ public class ProductsController : ControllerBase
             return Conflict("A product with this model number already exists.");
         }
 
+        var profitMarginChanged = product.ProfitMargin != dto.ProfitMargin;
+
         product.ModelNumber = dto.ModelNumber.Trim();
         product.Name = dto.Name.Trim();
         product.CategoryId = dto.CategoryId;
@@ -204,6 +206,28 @@ public class ProductsController : ControllerBase
         product.ProfitMargin = dto.ProfitMargin;
 
         await _context.SaveChangesAsync();
+
+        if (profitMarginChanged)
+        {
+            // SellingPrice is a stored computed column, so reload the entity to
+            // read the value the database worked out from the new margin.
+            await _context.Entry(product).ReloadAsync();
+
+            var variants = await _context.ProductVariants
+                .Where(v => v.ProductId == id)
+                .ToListAsync();
+
+            if (variants.Count > 0)
+            {
+                // Keep every variant's selling price aligned with the product.
+                foreach (var variant in variants)
+                {
+                    variant.Price = product.SellingPrice;
+                }
+
+                await _context.SaveChangesAsync();
+            }
+        }
 
         return NoContent();
     }

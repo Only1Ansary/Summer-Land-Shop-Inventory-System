@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../screens/categories/categories_screen.dart';
-import '../screens/colours/colours_screen.dart';
 import '../screens/employees/employees_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/inventory/inventory_screen.dart';
@@ -20,7 +19,6 @@ import '../screens/reports/reports_screen.dart';
 import '../screens/reports/sales_report_screen.dart';
 import '../screens/reports/stock_movements_report_screen.dart';
 import '../screens/returns/returns_screen.dart';
-import '../screens/sizes/sizes_screen.dart';
 import '../screens/stock/stock_transfer_screen.dart';
 
 /// A single entry in the persistent app navigation.

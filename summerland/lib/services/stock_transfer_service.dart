@@ -28,8 +28,25 @@ class StockTransferService {
     return StockTransfer.fromJson(data);
   }
 
-  Future<List<StockTransfer>> getTransfers() async {
-    final data = await _apiService.get('/api/StockTransfers');
+  Future<List<StockTransfer>> getTransfers({
+    DateTime? from,
+    DateTime? to,
+  }) async {
+    final query = <String>[];
+
+    if (from != null) {
+      query.add('from=${Uri.encodeComponent(from.toIso8601String())}');
+    }
+
+    if (to != null) {
+      query.add('to=${Uri.encodeComponent(to.toIso8601String())}');
+    }
+
+    final endpoint = query.isEmpty
+        ? '/api/StockTransfers'
+        : '/api/StockTransfers?${query.join('&')}';
+
+    final data = await _apiService.get(endpoint);
 
     return (data as List).map((json) => StockTransfer.fromJson(json)).toList();
   }

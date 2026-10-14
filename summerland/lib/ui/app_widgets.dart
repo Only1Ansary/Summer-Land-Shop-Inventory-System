@@ -584,6 +584,86 @@ class LowStockBadge extends StatelessWidget {
   }
 }
 
+/// Footer bar showing the visible item range with previous / next page
+/// controls. Hidden when there is nothing to page through.
+class PaginationBar extends StatelessWidget {
+  const PaginationBar({
+    super.key,
+    required this.page,
+    required this.pageSize,
+    required this.totalItems,
+    required this.onPageChanged,
+  });
+
+  /// Zero-based index of the page being shown.
+  final int page;
+
+  /// Number of items shown on each page.
+  final int pageSize;
+
+  /// Total number of items across every page.
+  final int totalItems;
+
+  /// Called with the requested zero-based page index.
+  final ValueChanged<int> onPageChanged;
+
+  int get _pageCount =>
+      totalItems == 0 ? 0 : ((totalItems - 1) ~/ pageSize) + 1;
+
+  @override
+  Widget build(BuildContext context) {
+    if (totalItems == 0) return const SizedBox.shrink();
+
+    final theme = Theme.of(context);
+
+    final start = page * pageSize;
+    final end = start + pageSize > totalItems ? totalItems : start + pageSize;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: theme.dividerColor)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'Showing ${start + 1}-$end of $totalItems',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                tooltip: 'Previous page',
+                onPressed: page > 0 ? () => onPageChanged(page - 1) : null,
+                icon: const Icon(Icons.chevron_left),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Text(
+                  'Page ${page + 1} of $_pageCount',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
+              IconButton(
+                tooltip: 'Next page',
+                onPressed: page < _pageCount - 1
+                    ? () => onPageChanged(page + 1)
+                    : null,
+                icon: const Icon(Icons.chevron_right),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// Label / value row used on detail screens.
 class InfoTile extends StatelessWidget {
   const InfoTile({

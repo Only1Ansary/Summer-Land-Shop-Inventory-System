@@ -33,6 +33,25 @@ class _StockMovementsReportScreenState
   bool _loading = true;
   String? _error;
 
+  static const int _pageSize = 10;
+  int _currentPage = 0;
+
+  List<T> _pageSlice<T>(List<T> items) {
+    final start = _currentPage * _pageSize;
+
+    if (start >= items.length) return const [];
+
+    final end = start + _pageSize;
+
+    return items.sublist(start, end > items.length ? items.length : end);
+  }
+
+  void _goToPage(int page) {
+    setState(() {
+      _currentPage = page;
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -66,6 +85,7 @@ class _StockMovementsReportScreenState
       setState(() {
         _locations = locations;
         _report = report;
+        _currentPage = 0;
         _loading = false;
       });
     } catch (e) {
@@ -104,6 +124,7 @@ class _StockMovementsReportScreenState
   @override
   Widget build(BuildContext context) {
     final report = _report;
+    final items = report?.items ?? const <StockMovementReportItem>[];
 
     return AppShell(
       title: 'Stock Movements',
@@ -112,91 +133,109 @@ class _StockMovementsReportScreenState
           ? const LoadingState()
           : _error != null
           ? ErrorState(message: _error!, onRetry: _loadData)
-          : RefreshIndicator(
-              onRefresh: _loadData,
-              child: WideContent(
-                child: ListView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.all(16),
-                  children: [
-                    DateFilterBar(
-                      fromLabel: _from == null ? 'From' : _formatDate(_from!),
-                      toLabel: _to == null ? 'To' : _formatDate(_to!),
-                      onFrom: () => _pickDate(true),
-                      onTo: () => _pickDate(false),
-                    ),
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<int?>(
-                      key: ValueKey('location-$_selectedLocationId'),
-                      initialValue: _selectedLocationId,
-                      decoration: const InputDecoration(
-                        labelText: 'Location',
-                        prefixIcon: Icon(Icons.location_on_outlined),
-                      ),
-                      items: [
-                        const DropdownMenuItem<int?>(
-                          value: null,
-                          child: Text('All Locations'),
-                        ),
-                        ..._locations.map(
-                          (location) => DropdownMenuItem<int?>(
-                            value: location.id,
-                            child: Text(location.name),
+          : Column(
+              children: [
+                Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: _loadData,
+                    child: WideContent(
+                      child: ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.all(16),
+                        children: [
+                          DateFilterBar(
+                            fromLabel: _from == null
+                                ? 'From'
+                                : _formatDate(_from!),
+                            toLabel: _to == null ? 'To' : _formatDate(_to!),
+                            onFrom: () => _pickDate(true),
+                            onTo: () => _pickDate(false),
                           ),
-                        ),
-                      ],
-                      onChanged: (value) async {
-                        setState(() {
-                          _selectedLocationId = value;
-                        });
+                          const SizedBox(height: 12),
+                          DropdownButtonFormField<int?>(
+                            key: ValueKey('location-$_selectedLocationId'),
+                            initialValue: _selectedLocationId,
+                            decoration: const InputDecoration(
+                              labelText: 'Location',
+                              prefixIcon: Icon(Icons.location_on_outlined),
+                            ),
+                            items: [
+                              const DropdownMenuItem<int?>(
+                                value: null,
+                                child: Text('All Locations'),
+                              ),
+                              ..._locations.map(
+                                (location) => DropdownMenuItem<int?>(
+                                  value: location.id,
+                                  child: Text(location.name),
+                                ),
+                              ),
+                            ],
+                            onChanged: (value) async {
+                              setState(() {
+                                _selectedLocationId = value;
+                              });
 
-                        await _loadData();
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    StatGrid(
-                      stats: [
-                        StatData(
-                          label: 'Movements',
-                          value: '${report!.movementCount}',
-                          icon: Icons.swap_vert_rounded,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    const SectionHeader(
-                      title: 'Movement History',
-                      subtitle: 'Quantity changes from transfers and refills',
-                    ),
-                    const SizedBox(height: 8),
-                    ...report.items.map(
-                      (item) => Card(
-                        margin: const EdgeInsets.only(bottom: 10),
-                        child: ListTile(
-                          isThreeLine: true,
-                          title: Text(item.productName),
-                          subtitle: Text(
-                            '${item.modelNumber}\n'
-                            '${item.locationName} • ${item.reason}\n'
-                            '${item.createdAt}',
+                              await _loadData();
+                            },
                           ),
-                          trailing: StatusBadge(
-                            label: item.quantityChange > 0
-                                ? '+${item.quantityChange}'
-                                : '${item.quantityChange}',
-                            color: item.quantityChange > 0
-                                ? AppPalette.success
-                                : AppPalette.danger,
-                            icon: item.quantityChange > 0
-                                ? Icons.arrow_upward_rounded
-                                : Icons.arrow_downward_rounded,
+                          const SizedBox(height: 16),
+                          StatGrid(
+                            stats: [
+                              StatData(
+                                label: 'Movements',
+                                value: '${report!.movementCount}',
+                                icon: Icons.swap_vert_rounded,
+                              ),
+                            ],
                           ),
-                        ),
+                          const SizedBox(height: 16),
+                          const SectionHeader(
+                            title: 'Movement History',
+                            subtitle:
+                                'Quantity changes from transfers and refills',
+                          ),
+                          const SizedBox(height: 8),
+                          ..._pageSlice(items).map(
+                            (item) => Card(
+                              margin: const EdgeInsets.only(bottom: 10),
+                              child: ListTile(
+                                isThreeLine: true,
+                                title: Text(item.productName),
+                                subtitle: Text(
+                                  '${item.modelNumber}\n'
+                                  '${item.locationName} • ${item.reason}\n'
+                                  '${item.createdAt}',
+                                ),
+                                trailing: StatusBadge(
+                                  label: item.quantityChange > 0
+                                      ? '+${item.quantityChange}'
+                                      : '${item.quantityChange}',
+                                  color: item.quantityChange > 0
+                                      ? AppPalette.success
+                                      : AppPalette.danger,
+                                  icon: item.quantityChange > 0
+                                      ? Icons.arrow_upward_rounded
+                                      : Icons.arrow_downward_rounded,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
+                  ),
                 ),
-              ),
+                if (items.isNotEmpty)
+                  WideContent(
+                    child: PaginationBar(
+                      page: _currentPage,
+                      pageSize: _pageSize,
+                      totalItems: items.length,
+                      onPageChanged: _goToPage,
+                    ),
+                  ),
+              ],
             ),
     );
   }

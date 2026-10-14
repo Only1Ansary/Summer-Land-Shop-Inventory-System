@@ -23,6 +23,25 @@ class _InventoryReportScreenState extends State<InventoryReportScreen> {
   bool _loading = true;
   String? _error;
 
+  static const int _pageSize = 10;
+  int _currentPage = 0;
+
+  List<T> _pageSlice<T>(List<T> items) {
+    final start = _currentPage * _pageSize;
+
+    if (start >= items.length) return const [];
+
+    final end = start + _pageSize;
+
+    return items.sublist(start, end > items.length ? items.length : end);
+  }
+
+  void _goToPage(int page) {
+    setState(() {
+      _currentPage = page;
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -41,6 +60,7 @@ class _InventoryReportScreenState extends State<InventoryReportScreen> {
 
       setState(() {
         _report = report;
+        _currentPage = 0;
         _loading = false;
       });
     } catch (e) {
@@ -72,6 +92,7 @@ class _InventoryReportScreenState extends State<InventoryReportScreen> {
   @override
   Widget build(BuildContext context) {
     final report = _report;
+    final items = report?.items ?? const <InventoryReportItem>[];
 
     return AppShell(
       title: 'Inventory Report',
@@ -80,139 +101,164 @@ class _InventoryReportScreenState extends State<InventoryReportScreen> {
           ? const LoadingState()
           : _error != null
           ? ErrorState(message: _error!, onRetry: _loadReport)
-          : RefreshIndicator(
-              onRefresh: _loadReport,
-              child: WideContent(
-                child: ListView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.all(16),
-                  children: [
-                    StatGrid(
-                      stats: [
-                        StatData(
-                          label: 'Variants',
-                          value: '${report!.totalVariants}',
-                          icon: Icons.inventory_2_outlined,
-                        ),
-                        StatData(
-                          label: 'Total Quantity',
-                          value: '${report.totalQuantity}',
-                          icon: Icons.numbers_rounded,
-                        ),
-                        StatData(
-                          label: 'Inventory Value',
-                          value: money(report.totalInventoryValue),
-                          icon: Icons.payments_outlined,
-                          valueColor: amountColor(
-                            context,
-                            report.totalInventoryValue,
-                          ),
-                        ),
-                        StatData(
-                          label: 'Low Stock',
-                          value: '${report.lowStockVariants}',
-                          icon: Icons.warning_amber_rounded,
-                          color: AppPalette.warning,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    const SectionHeader(
-                      title: 'Product Quantities',
-                      subtitle: 'Tap a product to see stock by location',
-                    ),
-                    const SizedBox(height: 8),
-                    ...report.items.map(
-                      (item) => Card(
-                        margin: const EdgeInsets.only(bottom: 10),
-                        child: ExpansionTile(
-                          title: Text(item.productName),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _variantLabel(item),
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  color: Theme.of(context).colorScheme.primary,
+          : Column(
+              children: [
+                Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: _loadReport,
+                    child: WideContent(
+                      child: ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.all(16),
+                        children: [
+                          StatGrid(
+                            stats: [
+                              StatData(
+                                label: 'Variants',
+                                value: '${report!.totalVariants}',
+                                icon: Icons.inventory_2_outlined,
+                              ),
+                              StatData(
+                                label: 'Total Quantity',
+                                value: '${report.totalQuantity}',
+                                icon: Icons.numbers_rounded,
+                              ),
+                              StatData(
+                                label: 'Inventory Value',
+                                value: money(report.totalInventoryValue),
+                                icon: Icons.payments_outlined,
+                                valueColor: amountColor(
+                                  context,
+                                  report.totalInventoryValue,
                                 ),
                               ),
-                              Text(
-                                '${item.modelNumber} • Qty: '
-                                '${item.totalQuantity}',
+                              StatData(
+                                label: 'Low Stock',
+                                value: '${report.lowStockVariants}',
+                                icon: Icons.warning_amber_rounded,
+                                color: AppPalette.warning,
                               ),
                             ],
                           ),
-                          trailing: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                money(item.price),
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  color: amountColor(context, item.price),
-                                ),
-                              ),
-                              if (item.isLowStock) ...[
-                                const SizedBox(height: 4),
-                                const LowStockBadge(),
-                              ],
-                            ],
+                          const SizedBox(height: 16),
+                          const SectionHeader(
+                            title: 'Product Quantities',
+                            subtitle: 'Tap a product to see stock by location',
                           ),
-                          children: [
-                            ListTile(
-                              leading: const Icon(
-                                Icons.qr_code_2_outlined,
-                                size: 20,
-                              ),
-                              title: const Text('Barcode'),
-                              subtitle: Text(item.barcode),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                              child: BarcodeView(item.barcode, showText: false),
-                            ),
-                            ListTile(
-                              leading: const Icon(
-                                Icons.attach_money_outlined,
-                                size: 20,
-                              ),
-                              title: const Text('Price'),
-                              subtitle: Text(
-                                money(item.price),
-                                style: TextStyle(
-                                  color: amountColor(context, item.price),
+                          const SizedBox(height: 8),
+                          ..._pageSlice(items).map(
+                            (item) => Card(
+                              margin: const EdgeInsets.only(bottom: 10),
+                              child: ExpansionTile(
+                                title: Text(item.productName),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _variantLabel(item),
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary,
+                                      ),
+                                    ),
+                                    Text(
+                                      '${item.modelNumber} • Qty: '
+                                      '${item.totalQuantity}',
+                                    ),
+                                  ],
                                 ),
-                              ),
-                            ),
-                            ListTile(
-                              leading: const Icon(
-                                Icons.low_priority_rounded,
-                                size: 20,
-                              ),
-                              title: const Text('Low Stock Threshold'),
-                              subtitle: Text('${item.lowStockThreshold}'),
-                            ),
-                            const Divider(height: 1),
-                            ...item.locations.map(
-                              (location) => ListTile(
-                                title: Text(location.locationName),
-                                trailing: Text(
-                                  '${location.quantity}',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
+                                trailing: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      money(item.price),
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        color: amountColor(context, item.price),
+                                      ),
+                                    ),
+                                    if (item.isLowStock) ...[
+                                      const SizedBox(height: 4),
+                                      const LowStockBadge(),
+                                    ],
+                                  ],
+                                ),
+                                children: [
+                                  ListTile(
+                                    leading: const Icon(
+                                      Icons.qr_code_2_outlined,
+                                      size: 20,
+                                    ),
+                                    title: const Text('Barcode'),
+                                    subtitle: Text(item.barcode),
                                   ),
-                                ),
+                                  Padding(
+                                    padding: const EdgeInsets.fromLTRB(
+                                      16,
+                                      0,
+                                      16,
+                                      8,
+                                    ),
+                                    child: BarcodeView(
+                                      item.barcode,
+                                      showText: false,
+                                    ),
+                                  ),
+                                  ListTile(
+                                    leading: const Icon(
+                                      Icons.attach_money_outlined,
+                                      size: 20,
+                                    ),
+                                    title: const Text('Price'),
+                                    subtitle: Text(
+                                      money(item.price),
+                                      style: TextStyle(
+                                        color: amountColor(context, item.price),
+                                      ),
+                                    ),
+                                  ),
+                                  ListTile(
+                                    leading: const Icon(
+                                      Icons.low_priority_rounded,
+                                      size: 20,
+                                    ),
+                                    title: const Text('Low Stock Threshold'),
+                                    subtitle: Text('${item.lowStockThreshold}'),
+                                  ),
+                                  const Divider(height: 1),
+                                  ...item.locations.map(
+                                    (location) => ListTile(
+                                      title: Text(location.locationName),
+                                      trailing: Text(
+                                        '${location.quantity}',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
+                  ),
                 ),
-              ),
+                if (items.isNotEmpty)
+                  WideContent(
+                    child: PaginationBar(
+                      page: _currentPage,
+                      pageSize: _pageSize,
+                      totalItems: items.length,
+                      onPageChanged: _goToPage,
+                    ),
+                  ),
+              ],
             ),
     );
   }
