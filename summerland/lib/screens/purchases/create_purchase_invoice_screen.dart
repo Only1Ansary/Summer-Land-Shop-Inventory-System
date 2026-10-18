@@ -37,6 +37,7 @@ class _CreatePurchaseInvoiceScreenState
 
   bool _isLoading = true;
   bool _isCreating = false;
+  bool _itemsExpanded = true;
 
   @override
   void initState() {
@@ -407,84 +408,128 @@ class _CreatePurchaseInvoiceScreenState
   }
 
   Widget _buildItemsSection() {
+    final theme = Theme.of(context);
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SectionHeader(
-              title: '2. Items',
-              subtitle: 'Products being purchased',
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () => _addItem(),
-                icon: const Icon(Icons.add),
-                label: const Text('Add Item'),
-              ),
-            ),
-            const SizedBox(height: 12),
-            if (_items.isEmpty)
-              const EmptyState(
-                icon: Icons.production_quantity_limits_outlined,
-                title: 'No items yet',
-                message: 'Add at least one product to create the invoice.',
-              )
-            else
-              ..._items.asMap().entries.map((entry) {
-                final index = entry.key;
-                final item = entry.value;
-
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: ListTile(
-                    leading: Icon(
-                      Icons.production_quantity_limits_outlined,
-                      color: Theme.of(context).colorScheme.primary,
+            InkWell(
+              borderRadius: BorderRadius.circular(8),
+              onTap: () {
+                setState(() {
+                  _itemsExpanded = !_itemsExpanded;
+                });
+              },
+              child: SectionHeader(
+                title: '2. Items',
+                subtitle: 'Products being purchased',
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    StatusBadge(
+                      label: '${_items.length}',
+                      color: theme.colorScheme.primary,
                     ),
-                    title: Text(item.name),
-                    subtitle: Text.rich(
-                      TextSpan(
-                        children: [
-                          TextSpan(
-                            text:
-                                '${item.modelNumber} • ${item.barcode}\n'
-                                'Qty: ',
-                          ),
-                          TextSpan(text: '${item.quantity}'),
-                          const TextSpan(text: ' × '),
-                          TextSpan(
-                            text: money(item.purchasePrice),
-                            style: TextStyle(
-                              color: amountColor(context, item.purchasePrice),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
+                    const SizedBox(width: 4),
+                    AnimatedRotation(
+                      turns: _itemsExpanded ? 0.5 : 0,
+                      duration: const Duration(milliseconds: 200),
+                      curve: Curves.easeOut,
+                      child: Icon(
+                        Icons.expand_more_rounded,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
-                    isThreeLine: true,
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
+                  ],
+                ),
+              ),
+            ),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeInOut,
+              alignment: Alignment.topCenter,
+              child: _itemsExpanded
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        IconButton(
-                          tooltip: 'Edit',
-                          icon: const Icon(Icons.edit_outlined),
-                          onPressed: () => _addItem(existing: item),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: () => _addItem(),
+                            icon: const Icon(Icons.add),
+                            label: const Text('Add Item'),
+                          ),
                         ),
-                        IconButton(
-                          tooltip: 'Remove',
-                          icon: const Icon(Icons.delete_outline),
-                          onPressed: () => _removeItem(index),
-                        ),
+                        const SizedBox(height: 12),
+                        if (_items.isEmpty)
+                          const EmptyState(
+                            icon: Icons.production_quantity_limits_outlined,
+                            title: 'No items yet',
+                            message: 'Add at least one product to create the invoice.',
+                          )
+                        else
+                          ..._items.asMap().entries.map((entry) {
+                            final index = entry.key;
+                            final item = entry.value;
+
+                            return Card(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              child: ListTile(
+                                leading: Icon(
+                                  Icons.production_quantity_limits_outlined,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                                title: Text(item.name),
+                                subtitle: Text.rich(
+                                  TextSpan(
+                                    children: [
+                                      TextSpan(
+                                        text:
+                                            '${item.modelNumber} • '
+                                            '${item.barcode}\nQty: ',
+                                      ),
+                                      TextSpan(text: '${item.quantity}'),
+                                      const TextSpan(text: ' × '),
+                                      TextSpan(
+                                        text: money(item.purchasePrice),
+                                        style: TextStyle(
+                                          color: amountColor(
+                                            context,
+                                            item.purchasePrice,
+                                          ),
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                isThreeLine: true,
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      tooltip: 'Edit',
+                                      icon: const Icon(Icons.edit_outlined),
+                                      onPressed: () => _addItem(existing: item),
+                                    ),
+                                    IconButton(
+                                      tooltip: 'Remove',
+                                      icon: const Icon(Icons.delete_outline),
+                                      onPressed: () => _removeItem(index),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }),
                       ],
-                    ),
-                  ),
-                );
-              }),
+                    )
+                  : const SizedBox.shrink(),
+            ),
           ],
         ),
       ),

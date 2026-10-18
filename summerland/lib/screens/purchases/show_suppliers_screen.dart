@@ -25,6 +25,22 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen> {
   bool _isLoading = false;
   String? _error;
 
+  static const int _pageSize = 10;
+  int _currentPage = 0;
+
+  List<Supplier> get _pageSuppliers {
+    final start = _currentPage * _pageSize;
+
+    if (start >= _suppliers.length) return const [];
+
+    final end = start + _pageSize;
+
+    return _suppliers.sublist(
+      start,
+      end > _suppliers.length ? _suppliers.length : end,
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -35,6 +51,7 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen> {
     setState(() {
       _isLoading = true;
       _error = null;
+      _currentPage = 0;
     });
 
     try {
@@ -205,112 +222,142 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen> {
     }
 
     return WideContent(
-      child: RefreshIndicator(
-        onRefresh: _loadSuppliers,
-        child: _suppliers.isEmpty
-            ? ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                children: const [
-                  SizedBox(height: 120),
-                  EmptyState(
-                    icon: Icons.factory_outlined,
-                    title: 'No suppliers yet',
-                    message:
-                        'Suppliers are created automatically when you '
-                        'save a purchase invoice, or by tapping + below.',
-                  ),
-                ],
-              )
-            : ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: _suppliers.length,
-                itemBuilder: (context, index) {
-                  final supplier = _suppliers[index];
-                  final expanded = _expanded.contains(supplier.id);
+      child: Column(
+        children: [
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _loadSuppliers,
+              child: _suppliers.isEmpty
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: const [
+                        SizedBox(height: 120),
+                        EmptyState(
+                          icon: Icons.factory_outlined,
+                          title: 'No suppliers yet',
+                          message:
+                              'Suppliers are created automatically when you '
+                              'save a purchase invoice, or by tapping + below.',
+                        ),
+                      ],
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _pageSuppliers.length,
+                      itemBuilder: (context, index) {
+                        final supplier = _pageSuppliers[index];
+                        final expanded = _expanded.contains(supplier.id);
 
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    child: Column(
-                      children: [
-                        ListTile(
-                          leading: Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.primary
-                                  .withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Icon(
-                              Icons.factory_rounded,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                          ),
-                          title: Text(supplier.supplierName),
-                          subtitle: Text.rich(
-                            TextSpan(
-                              children: [
-                                const TextSpan(text: 'Debt: '),
-                                TextSpan(
-                                  text: moneyNegative(supplier.debt),
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: amountColor(context, -supplier.debt),
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          child: Column(
+                            children: [
+                              ListTile(
+                                leading: Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).colorScheme.primary
+                                        .withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Icon(
+                                    Icons.factory_rounded,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .primary,
                                   ),
                                 ),
-                                TextSpan(
-                                  text:
-                                      '  ·  ${supplier.invoiceCount} '
-                                      'invoice${supplier.invoiceCount == 1 ? '' : 's'}',
+                                title: Text(supplier.supplierName),
+                                subtitle: Text.rich(
+                                  TextSpan(
+                                    children: [
+                                      const TextSpan(text: 'Debt: '),
+                                      TextSpan(
+                                        text: moneyNegative(supplier.debt),
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: amountColor(
+                                            context,
+                                            -supplier.debt,
+                                          ),
+                                        ),
+                                      ),
+                                      TextSpan(
+                                        text:
+                                            '  ·  ${supplier.invoiceCount} '
+                                            'invoice${supplier.invoiceCount == 1 ? '' : 's'}',
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ],
-                            ),
-                          ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (supplier.debt > 0)
-                                IconButton(
-                                  visualDensity: VisualDensity.compact,
-                                  icon: const Icon(Icons.payments_outlined),
-                                  tooltip: 'Pay debt',
-                                  onPressed: () => _paySupplierDebt(supplier),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (supplier.debt > 0)
+                                      IconButton(
+                                        visualDensity: VisualDensity.compact,
+                                        icon: const Icon(
+                                          Icons.payments_outlined,
+                                        ),
+                                        tooltip: 'Pay debt',
+                                        onPressed: () =>
+                                            _paySupplierDebt(supplier),
+                                      ),
+                                    IconButton(
+                                      visualDensity: VisualDensity.compact,
+                                      icon: const Icon(Icons.history),
+                                      tooltip: 'Payment history',
+                                      onPressed: () =>
+                                          _showPaymentHistory(supplier),
+                                    ),
+                                    IconButton(
+                                      visualDensity: VisualDensity.compact,
+                                      icon: const Icon(Icons.edit_outlined),
+                                      tooltip: 'Edit',
+                                      onPressed: () => _editSupplier(supplier),
+                                    ),
+                                    IconButton(
+                                      visualDensity: VisualDensity.compact,
+                                      icon: const Icon(Icons.delete_outline),
+                                      tooltip: 'Delete',
+                                      onPressed: () =>
+                                          _deleteSupplier(supplier),
+                                    ),
+                                    AnimatedRotation(
+                                      turns: expanded ? 0.5 : 0,
+                                      duration: const Duration(
+                                        milliseconds: 200,
+                                      ),
+                                      child: const Icon(Icons.expand_more),
+                                    ),
+                                  ],
                                 ),
-                              IconButton(
-                                visualDensity: VisualDensity.compact,
-                                icon: const Icon(Icons.history),
-                                tooltip: 'Payment history',
-                                onPressed: () => _showPaymentHistory(supplier),
+                                onTap: () => _toggleExpanded(supplier.id),
                               ),
-                              IconButton(
-                                visualDensity: VisualDensity.compact,
-                                icon: const Icon(Icons.edit_outlined),
-                                tooltip: 'Edit',
-                                onPressed: () => _editSupplier(supplier),
-                              ),
-                              IconButton(
-                                visualDensity: VisualDensity.compact,
-                                icon: const Icon(Icons.delete_outline),
-                                tooltip: 'Delete',
-                                onPressed: () => _deleteSupplier(supplier),
-                              ),
-                              AnimatedRotation(
-                                turns: expanded ? 0.5 : 0,
-                                duration: const Duration(milliseconds: 200),
-                                child: const Icon(Icons.expand_more),
-                              ),
+                              if (expanded) _buildInvoices(supplier),
                             ],
                           ),
-                          onTap: () => _toggleExpanded(supplier.id),
-                        ),
-                        if (expanded) _buildInvoices(supplier),
-                      ],
+                        );
+                      },
                     ),
-                  );
-                },
-              ),
+            ),
+          ),
+          PaginationBar(
+            page: _currentPage,
+            pageSize: _pageSize,
+            totalItems: _suppliers.length,
+            onPageChanged: _goToPage,
+          ),
+        ],
       ),
     );
+  }
+
+  void _goToPage(int page) {
+    setState(() {
+      _currentPage = page;
+    });
   }
 
   Widget _buildInvoices(Supplier supplier) {

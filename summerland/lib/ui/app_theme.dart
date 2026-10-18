@@ -9,7 +9,7 @@ class AppPalette {
   AppPalette._();
 
   /// The single accent / brand seed colour for the whole app.
-  static const Color seed = Color(0xFF00696E);
+  static const Color seed = Color(0xFF00275B);
 
   /// Positive states - in stock, added, normal.
   static const Color success = Color(0xFF2E7D32);
@@ -48,8 +48,19 @@ class AppTheme {
   static const double contentMaxWidth = 900;
 
   static ThemeData light() {
-    final ColorScheme scheme = ColorScheme.fromSeed(seedColor: AppPalette.seed);
+    return _build(ColorScheme.fromSeed(seedColor: AppPalette.seed));
+  }
 
+  static ThemeData dark() {
+    return _build(
+      ColorScheme.fromSeed(
+        seedColor: AppPalette.seed,
+        brightness: Brightness.dark,
+      ),
+    );
+  }
+
+  static ThemeData _build(ColorScheme scheme) {
     return ThemeData(
       colorScheme: scheme,
       scaffoldBackgroundColor: scheme.surface,

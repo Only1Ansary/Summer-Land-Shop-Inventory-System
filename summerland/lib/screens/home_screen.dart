@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../services/pinned_modules_service.dart';
+import '../services/shop_profile_service.dart';
 import '../ui/app_destinations.dart';
 import '../ui/app_shell.dart';
 import '../ui/app_theme.dart';
 import '../ui/app_widgets.dart';
+import '../ui/home_modules.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -19,20 +21,6 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-class _HomeTile {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final String destinationId;
-
-  const _HomeTile({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.destinationId,
-  });
-}
-
 class _HomeDashboard extends StatefulWidget {
   const _HomeDashboard();
 
@@ -43,98 +31,7 @@ class _HomeDashboard extends StatefulWidget {
 class _HomeDashboardState extends State<_HomeDashboard> {
   final PinnedModulesService _pinnedService = PinnedModulesService();
 
-  static const List<_HomeTile> _tiles = [
-    _HomeTile(
-      title: 'Products',
-      subtitle: 'Catalog & variants',
-      icon: Icons.inventory_2_rounded,
-      destinationId: 'products',
-    ),
-    _HomeTile(
-      title: 'Inventory',
-      subtitle: 'Stock by location',
-      icon: Icons.warehouse_rounded,
-      destinationId: 'inventory',
-    ),
-    _HomeTile(
-      title: 'New Sale',
-      subtitle: 'Create an invoice',
-      icon: Icons.point_of_sale_rounded,
-      destinationId: 'sales',
-    ),
-    _HomeTile(
-      title: 'Sale Invoices',
-      subtitle: 'View & search invoices',
-      icon: Icons.receipt_long_rounded,
-      destinationId: 'sale-invoices',
-    ),
-    _HomeTile(
-      title: 'Stock Transfers',
-      subtitle: 'Move stock around',
-      icon: Icons.swap_horiz_rounded,
-      destinationId: 'transfers',
-    ),
-    _HomeTile(
-      title: 'Returns',
-      subtitle: 'Process returns',
-      icon: Icons.assignment_return_rounded,
-      destinationId: 'returns',
-    ),
-    _HomeTile(
-      title: 'Purchases',
-      subtitle: 'View & search invoices',
-      icon: Icons.shopping_bag_rounded,
-      destinationId: 'purchase-invoices',
-    ),
-    _HomeTile(
-      title: 'New Purchase',
-      subtitle: 'Record a purchase',
-      icon: Icons.shopping_cart_checkout_rounded,
-      destinationId: 'add-purchase',
-    ),
-    _HomeTile(
-      title: 'Suppliers',
-      subtitle: 'Manage suppliers',
-      icon: Icons.factory_rounded,
-      destinationId: 'suppliers',
-    ),
-    _HomeTile(
-      title: 'Reports',
-      subtitle: 'Sales & stock insights',
-      icon: Icons.assessment_rounded,
-      destinationId: 'reports',
-    ),
-    _HomeTile(
-      title: 'Categories',
-      subtitle: 'Organise products',
-      icon: Icons.category_rounded,
-      destinationId: 'categories',
-    ),
-    _HomeTile(
-      title: 'Colours',
-      subtitle: 'Colour options',
-      icon: Icons.palette_rounded,
-      destinationId: 'colours',
-    ),
-    _HomeTile(
-      title: 'Sizes',
-      subtitle: 'Size options',
-      icon: Icons.straighten_rounded,
-      destinationId: 'sizes',
-    ),
-    _HomeTile(
-      title: 'Locations',
-      subtitle: 'Store locations',
-      icon: Icons.location_on_rounded,
-      destinationId: 'locations',
-    ),
-    _HomeTile(
-      title: 'Employees',
-      subtitle: 'Staff & payroll',
-      icon: Icons.badge_rounded,
-      destinationId: 'employees',
-    ),
-  ];
+  int _maxPinned = PinnedModulesService.defaultMaxPinned;
 
   List<String> _pinnedIds = [];
   bool _isLoading = true;
@@ -146,12 +43,14 @@ class _HomeDashboardState extends State<_HomeDashboard> {
   }
 
   Future<void> _loadPinned() async {
-    final ids = await _pinnedService.load();
+    final pinned = await _pinnedService.load();
+    final maxPinned = await _pinnedService.loadMaxPinned();
 
     if (!mounted) return;
 
     setState(() {
-      _pinnedIds = ids;
+      _pinnedIds = pinned;
+      _maxPinned = maxPinned;
       _isLoading = false;
     });
   }
@@ -159,10 +58,12 @@ class _HomeDashboardState extends State<_HomeDashboard> {
   Future<void> _togglePin(String destinationId) async {
     final isPinned = _pinnedIds.contains(destinationId);
 
-    if (!isPinned && _pinnedIds.length >= PinnedModulesService.maxPinned) {
+    if (!isPinned && _pinnedIds.length >= _maxPinned) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('You can pin up to 4 modules. Unpin one first.'),
+        SnackBar(
+          content: Text(
+            'You can pin up to $_maxPinned modules. Unpin one first.',
+          ),
         ),
       );
 
@@ -192,15 +93,15 @@ class _HomeDashboardState extends State<_HomeDashboard> {
             ? 3
             : 2;
 
-        final pinnedTiles = _tiles
+        final pinnedTiles = homeModules
             .where((tile) => _pinnedIds.contains(tile.destinationId))
             .toList();
 
-        final otherTiles = _tiles
+        final otherTiles = homeModules
             .where((tile) => !_pinnedIds.contains(tile.destinationId))
             .toList();
 
-        final atLimit = _pinnedIds.length >= PinnedModulesService.maxPinned;
+        final atLimit = _pinnedIds.length >= _maxPinned;
 
         return ListView(
           padding: const EdgeInsets.all(16),
@@ -224,7 +125,7 @@ class _HomeDashboardState extends State<_HomeDashboard> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Welcome to Summerland',
+                          'Welcome to ${ShopProfileService.instance.profile.value.name}',
                           style: theme.textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.w700,
                             color: theme.colorScheme.onPrimaryContainer,
@@ -255,9 +156,9 @@ class _HomeDashboardState extends State<_HomeDashboard> {
               ),
               const SizedBox(height: 20),
             ],
-            const SectionHeader(
+            SectionHeader(
               title: 'All Modules',
-              subtitle: 'Tap the star to pin up to 4 shortcuts',
+              subtitle: 'Tap the star to pin up to $_maxPinned shortcuts',
             ),
             const SizedBox(height: 12),
             _buildGrid(columns: columns, tiles: otherTiles, atLimit: atLimit),
@@ -269,7 +170,7 @@ class _HomeDashboardState extends State<_HomeDashboard> {
 
   Widget _buildGrid({
     required int columns,
-    required List<_HomeTile> tiles,
+    required List<HomeModule> tiles,
     required bool atLimit,
   }) {
     return GridView.count(
@@ -285,6 +186,7 @@ class _HomeDashboardState extends State<_HomeDashboard> {
             tile: tile,
             pinned: _pinnedIds.contains(tile.destinationId),
             atLimit: atLimit,
+            maxPinned: _maxPinned,
             onTogglePin: () => _togglePin(tile.destinationId),
           ),
       ],
@@ -297,12 +199,14 @@ class _HomeTileCard extends StatelessWidget {
     required this.tile,
     required this.pinned,
     required this.atLimit,
+    required this.maxPinned,
     required this.onTogglePin,
   });
 
-  final _HomeTile tile;
+  final HomeModule tile;
   final bool pinned;
   final bool atLimit;
+  final int maxPinned;
   final VoidCallback onTogglePin;
 
   @override
@@ -362,7 +266,7 @@ class _HomeTileCard extends StatelessWidget {
                 tooltip: pinned
                     ? 'Unpin from Home'
                     : atLimit
-                    ? 'You can pin up to 4 modules'
+                    ? 'You can pin up to $maxPinned modules'
                     : 'Pin to Home',
                 visualDensity: VisualDensity.compact,
                 iconSize: 20,

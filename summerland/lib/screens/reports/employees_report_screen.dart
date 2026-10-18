@@ -297,8 +297,17 @@ class _EmployeeReportTileState extends State<_EmployeeReportTile> {
     final theme = Theme.of(context);
     final item = widget.item;
 
+    final hasTarget = item.target > 0;
+    final rawProgress = hasTarget ? item.totalSales / item.target : 0.0;
+    final progress = rawProgress.clamp(0.0, 1.0).toDouble();
+    final percent = (rawProgress * 100).round();
+
+    final accent = item.achievedTarget
+        ? AppPalette.success
+        : AppPalette.warning;
+
     return Card(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: 10),
       clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -309,57 +318,53 @@ class _EmployeeReportTileState extends State<_EmployeeReportTile> {
               padding: const EdgeInsets.all(14),
               child: Row(
                 children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(
-                      Icons.person_rounded,
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
+                  _EmployeeAvatar(name: item.name),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
                           item.name,
                           overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleSmall?.copyWith(
+                          style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
                         ),
+                        const SizedBox(height: 3),
                         Text(
                           'Sales ${money(item.totalSales)}',
-                          style: theme.textTheme.bodySmall?.copyWith(
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
+                        const SizedBox(height: 8),
+                        item.achievedTarget
+                            ? const StatusBadge(
+                                label: 'TARGET MET',
+                                color: AppPalette.success,
+                                icon: Icons.check_circle_outline,
+                              )
+                            : StatusBadge(
+                                label: 'BELOW TARGET',
+                                color: theme.colorScheme.outline,
+                                icon: Icons.remove_circle_outline,
+                              ),
                       ],
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  item.achievedTarget
-                      ? const StatusBadge(
-                          label: 'TARGET MET',
-                          color: AppPalette.success,
-                          icon: Icons.check_circle_outline,
-                        )
-                      : StatusBadge(
-                          label: 'BELOW TARGET',
-                          color: theme.colorScheme.outline,
-                          icon: Icons.remove_circle_outline,
-                        ),
-                  IconButton(
-                    onPressed: () => setState(() => _expanded = !_expanded),
-                    icon: Icon(
-                      _expanded ? Icons.expand_less : Icons.expand_more,
-                    ),
-                    tooltip: _expanded ? 'Hide details' : 'Show details',
+                  const SizedBox(width: 12),
+                  _TargetRing(
+                    progress: progress,
+                    percent: hasTarget ? percent : null,
+                    color: accent,
+                  ),
+                  const SizedBox(width: 2),
+                  Icon(
+                    _expanded ? Icons.expand_less : Icons.expand_more,
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ],
               ),
@@ -368,23 +373,88 @@ class _EmployeeReportTileState extends State<_EmployeeReportTile> {
           if (_expanded)
             Padding(
               padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
-              child: Wrap(
-                spacing: 24,
-                runSpacing: 8,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _Detail(label: 'Salary', value: money(item.salary)),
-                  _Detail(label: 'Target', value: money(item.target)),
-                  _Detail(
-                    label: 'Bonus',
-                    value: '${_bonusLabel()} = ${money(item.bonusAmount)}',
+                  const Divider(height: 12),
+                  if (hasTarget) ...[
+                    const SizedBox(height: 4),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(999),
+                      child: LinearProgressIndicator(
+                        value: progress,
+                        minHeight: 8,
+                        backgroundColor: accent.withValues(alpha: 0.15),
+                        valueColor: AlwaysStoppedAnimation<Color>(accent),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Target progress: $percent% of '
+                      '${money(item.target)}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      const spacing = 10.0;
+                      final width = (constraints.maxWidth - spacing) / 2;
+
+                      return Wrap(
+                        spacing: spacing,
+                        runSpacing: spacing,
+                        children: [
+                          _StatChip(
+                            width: width,
+                            icon: Icons.payments_outlined,
+                            label: 'Salary',
+                            value: money(item.salary),
+                          ),
+                          _StatChip(
+                            width: width,
+                            icon: Icons.flag_outlined,
+                            label: 'Target',
+                            value: hasTarget ? money(item.target) : 'No target',
+                          ),
+                          _StatChip(
+                            width: width,
+                            icon: Icons.card_giftcard_outlined,
+                            label: 'Bonus',
+                            value:
+                                '${_bonusLabel()} = ${money(item.bonusAmount)}',
+                          ),
+                          _StatChip(
+                            width: width,
+                            icon: Icons.shopping_cart_outlined,
+                            label: 'Total Sales',
+                            value: money(item.totalSales),
+                          ),
+                          _StatChip(
+                            width: width,
+                            icon: Icons.pending_actions_outlined,
+                            label: 'Left to Pay',
+                            value: money(item.leftToPay),
+                            valueColor: amountColor(context, -item.leftToPay),
+                          ),
+                          _StatChip(
+                            width: width,
+                            icon: Icons.event_available_outlined,
+                            label: 'Paid in Month',
+                            value: money(item.paymentTotalInMonth),
+                          ),
+                          _StatChip(
+                            width: width,
+                            icon: Icons.history,
+                            label: 'Total Paid',
+                            value: money(item.totalPaid),
+                          ),
+                        ],
+                      );
+                    },
                   ),
-                  _Detail(label: 'Total Sales', value: money(item.totalSales)),
-                  _Detail(label: 'Left to Pay', value: money(item.leftToPay)),
-                  _Detail(
-                    label: 'Paid in Month',
-                    value: money(item.paymentTotalInMonth),
-                  ),
-                  _Detail(label: 'Total Paid', value: money(item.totalPaid)),
                 ],
               ),
             ),
@@ -394,27 +464,164 @@ class _EmployeeReportTileState extends State<_EmployeeReportTile> {
   }
 }
 
-class _Detail extends StatelessWidget {
-  const _Detail({required this.label, required this.value});
+/// Circular initials badge used as the avatar on each employee card.
+class _EmployeeAvatar extends StatelessWidget {
+  const _EmployeeAvatar({required this.name});
 
-  final String label;
-  final String value;
+  final String name;
+
+  String get _initials {
+    final parts = name
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((part) => part.isNotEmpty)
+        .toList();
+
+    if (parts.isEmpty) return '?';
+    if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
+
+    return (parts.first.substring(0, 1) + parts.last.substring(0, 1))
+        .toUpperCase();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final primary = theme.colorScheme.primary;
+
+    return Container(
+      width: 44,
+      height: 44,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: primary.withValues(alpha: 0.12),
+        shape: BoxShape.circle,
+      ),
+      child: Text(
+        _initials,
+        style: theme.textTheme.titleMedium?.copyWith(
+          fontWeight: FontWeight.w700,
+          color: primary,
+        ),
+      ),
+    );
+  }
+}
+
+/// Ring that shows how far an employee is towards their monthly target.
+class _TargetRing extends StatelessWidget {
+  const _TargetRing({
+    required this.progress,
+    required this.percent,
+    required this.color,
+  });
+
+  /// Fraction of the ring that is filled, already clamped to 0..1.
+  final double progress;
+
+  /// Percentage shown in the middle, or null when there is no target.
+  final int? percent;
+
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
+    return SizedBox(
+      width: 56,
+      height: 56,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          SizedBox(
+            width: 56,
+            height: 56,
+            child: CircularProgressIndicator(
+              value: percent == null ? 0 : progress,
+              strokeWidth: 6,
+              strokeCap: StrokeCap.round,
+              backgroundColor: color.withValues(alpha: 0.15),
+              valueColor: AlwaysStoppedAnimation<Color>(color),
+            ),
           ),
-        ),
-        Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
-      ],
+          if (percent == null)
+            Icon(
+              Icons.flag_outlined,
+              size: 20,
+              color: theme.colorScheme.onSurfaceVariant,
+            )
+          else
+            Text(
+              '$percent%',
+              style: theme.textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: color,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Compact tinted tile used for a single figure in the expanded details.
+class _StatChip extends StatelessWidget {
+  const _StatChip({
+    required this.width,
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.valueColor,
+  });
+
+  final double width;
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color? valueColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      width: width,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: theme.colorScheme.primary),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 1),
+                Text(
+                  value,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: valueColor,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

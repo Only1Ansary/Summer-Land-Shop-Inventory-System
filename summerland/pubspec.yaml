@@ -37,10 +37,21 @@ dependencies:
   http: ^1.6.0
   barcode_widget: ^2.0.4
   shared_preferences: ^2.3.2
-
+  file_selector: ^1.1.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
+
+  flutter_launcher_icons: ^0.13.1
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/app_icon.png"
+  remove_alpha_ios: true # Ensures App Store compliance by removing transparency
+  windows:
+    generate: true
+    icon_size: 256
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

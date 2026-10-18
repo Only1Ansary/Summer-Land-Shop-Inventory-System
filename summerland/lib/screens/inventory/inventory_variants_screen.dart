@@ -49,6 +49,22 @@ class _InventoryVariantsScreenState extends State<InventoryVariantsScreen> {
 
   bool _showFilters = false;
 
+  static const int _pageSize = 10;
+  int _currentPage = 0;
+
+  List<ProductVariant> get _pageVariants {
+    final start = _currentPage * _pageSize;
+
+    if (start >= _filteredVariants.length) return const [];
+
+    final end = start + _pageSize;
+
+    return _filteredVariants.sublist(
+      start,
+      end > _filteredVariants.length ? _filteredVariants.length : end,
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -70,6 +86,7 @@ class _InventoryVariantsScreenState extends State<InventoryVariantsScreen> {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
+      _currentPage = 0;
     });
 
     try {
@@ -109,6 +126,8 @@ class _InventoryVariantsScreenState extends State<InventoryVariantsScreen> {
     final query = _searchController.text.trim().toLowerCase();
 
     setState(() {
+      _currentPage = 0;
+
       _filteredVariants = _allVariants.where((variant) {
         final matchesSearch =
             query.isEmpty ||
@@ -132,6 +151,7 @@ class _InventoryVariantsScreenState extends State<InventoryVariantsScreen> {
       _searchController.clear();
       _selectedSizeId = null;
       _selectedColourId = null;
+      _currentPage = 0;
       _filteredVariants = List.from(_allVariants);
     });
   }
@@ -310,101 +330,122 @@ class _InventoryVariantsScreenState extends State<InventoryVariantsScreen> {
 
   Widget _buildVariantsList() {
     return WideContent(
-      child: RefreshIndicator(
-        onRefresh: _loadData,
-        child: _filteredVariants.isEmpty
-            ? ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                children: const [
-                  SizedBox(height: 120),
-                  EmptyState(
-                    icon: Icons.search_off_rounded,
-                    title: 'No variants found',
-                    message: 'Try changing the search or filters.',
-                  ),
-                ],
-              )
-            : ListView.separated(
-                padding: const EdgeInsets.all(16),
-                itemCount: _filteredVariants.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 10),
-                itemBuilder: (context, index) {
-                  final variant = _filteredVariants[index];
+      child: Column(
+        children: [
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _loadData,
+              child: _filteredVariants.isEmpty
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: const [
+                        SizedBox(height: 120),
+                        EmptyState(
+                          icon: Icons.search_off_rounded,
+                          title: 'No variants found',
+                          message: 'Try changing the search or filters.',
+                        ),
+                      ],
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _pageVariants.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 10),
+                      itemBuilder: (context, index) {
+                        final variant = _pageVariants[index];
 
-                  return Card(
-                    margin: EdgeInsets.zero,
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 18,
-                        vertical: 10,
-                      ),
-                      leading: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primary
-                              .withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(
-                          Icons.inventory_2_rounded,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
-                      title: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              _buildVariantName(variant),
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
+                        return Card(
+                          margin: EdgeInsets.zero,
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 18,
+                              vertical: 10,
+                            ),
+                            leading: Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.primary
+                                    .withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Icon(
+                                Icons.inventory_2_rounded,
+                                color: Theme.of(context).colorScheme.primary,
                               ),
                             ),
-                          ),
-                          if (variant.isLowStock) const LowStockBadge(),
-                        ],
-                      ),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (variant.barcode.isNotEmpty) ...[
-                            Text('Barcode: ${variant.barcode}'),
-                            BarcodeView(variant.barcode, showText: false),
-                          ],
-                          Text.rich(
-                            TextSpan(
+                            title: Row(
                               children: [
-                                const TextSpan(text: 'Stock: '),
-                                TextSpan(
-                                  text: '${variant.totalQuantity}',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
+                                Expanded(
+                                  child: Text(
+                                    _buildVariantName(variant),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                 ),
-                                const TextSpan(text: '  •  Price: '),
-                                TextSpan(
-                                  text: money(variant.price),
-                                  style: TextStyle(
-                                    color: amountColor(context, variant.price),
-                                    fontWeight: FontWeight.w600,
+                                if (variant.isLowStock) const LowStockBadge(),
+                              ],
+                            ),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (variant.barcode.isNotEmpty) ...[
+                                  Text('Barcode: ${variant.barcode}'),
+                                  BarcodeView(variant.barcode, showText: false),
+                                ],
+                                Text.rich(
+                                  TextSpan(
+                                    children: [
+                                      const TextSpan(text: 'Stock: '),
+                                      TextSpan(
+                                        text: '${variant.totalQuantity}',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      const TextSpan(text: '  •  Price: '),
+                                      TextSpan(
+                                        text: money(variant.price),
+                                        style: TextStyle(
+                                          color: amountColor(
+                                            context,
+                                            variant.price,
+                                          ),
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],
                             ),
+                            trailing: const Icon(
+                              Icons.chevron_right_rounded,
+                              size: 22,
+                            ),
+                            onTap: () => _openVariant(variant),
                           ),
-                        ],
-                      ),
-                      trailing: const Icon(
-                        Icons.chevron_right_rounded,
-                        size: 22,
-                      ),
-                      onTap: () => _openVariant(variant),
+                        );
+                      },
                     ),
-                  );
-                },
-              ),
+            ),
+          ),
+          PaginationBar(
+            page: _currentPage,
+            pageSize: _pageSize,
+            totalItems: _filteredVariants.length,
+            onPageChanged: _goToPage,
+          ),
+        ],
       ),
     );
+  }
+
+  void _goToPage(int page) {
+    setState(() {
+      _currentPage = page;
+    });
   }
 
   String _buildVariantName(ProductVariant variant) {

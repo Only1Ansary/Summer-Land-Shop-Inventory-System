@@ -2,9 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'screens/home_screen.dart';
+import 'services/shop_profile_service.dart';
+import 'services/theme_service.dart';
 import 'ui/app_theme.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  ThemeService.instance.load();
+  ShopProfileService.instance.load();
+
   runApp(const SummerlandApp());
 }
 
@@ -23,14 +29,22 @@ class SummerlandApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final key = _effectiveNavigatorKey;
 
-    return MaterialApp(
-      title: 'Summerland',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.light(),
-      navigatorKey: key,
-      home: const HomeScreen(),
-      builder: (context, child) =>
-          BackspaceBackShortcuts(navigatorKey: key, child: child!),
+    return AnimatedBuilder(
+      animation: Listenable.merge([
+        ThemeService.instance.mode,
+        ShopProfileService.instance.profile,
+      ]),
+      builder: (context, _) => MaterialApp(
+        title: ShopProfileService.instance.profile.value.name,
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.light(),
+        darkTheme: AppTheme.dark(),
+        themeMode: ThemeService.instance.mode.value,
+        navigatorKey: key,
+        home: const HomeScreen(),
+        builder: (context, child) =>
+            BackspaceBackShortcuts(navigatorKey: key, child: child!),
+      ),
     );
   }
 }

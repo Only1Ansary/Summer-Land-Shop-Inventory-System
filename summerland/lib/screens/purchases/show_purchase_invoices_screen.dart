@@ -32,6 +32,22 @@ class _ShowPurchaseInvoicesScreenState
   bool _isLoading = false;
   String? _error;
 
+  static const int _pageSize = 10;
+  int _currentPage = 0;
+
+  List<PurchaseInvoice> get _pageInvoices {
+    final start = _currentPage * _pageSize;
+
+    if (start >= _invoices.length) return const [];
+
+    final end = start + _pageSize;
+
+    return _invoices.sublist(
+      start,
+      end > _invoices.length ? _invoices.length : end,
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -44,6 +60,7 @@ class _ShowPurchaseInvoicesScreenState
     setState(() {
       _isLoading = true;
       _error = null;
+      _currentPage = 0;
     });
 
     try {
@@ -186,9 +203,9 @@ class _ShowPurchaseInvoicesScreenState
                     )
                   : ListView.builder(
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                      itemCount: _invoices.length,
+                      itemCount: _pageInvoices.length,
                       itemBuilder: (context, index) {
-                        final invoice = _invoices[index];
+                        final invoice = _pageInvoices[index];
 
                         return PurchaseInvoiceTile(
                           invoice: invoice,
@@ -198,8 +215,20 @@ class _ShowPurchaseInvoicesScreenState
                     ),
             ),
           ),
+          PaginationBar(
+            page: _currentPage,
+            pageSize: _pageSize,
+            totalItems: _invoices.length,
+            onPageChanged: _goToPage,
+          ),
         ],
       ),
     );
+  }
+
+  void _goToPage(int page) {
+    setState(() {
+      _currentPage = page;
+    });
   }
 }

@@ -32,6 +32,9 @@ class _BestSellingReportScreenState extends State<BestSellingReportScreen> {
   bool _loading = true;
   String? _error;
 
+  static const int _pageSize = 10;
+  int _currentPage = 0;
+
   @override
   void initState() {
     super.initState();
@@ -51,6 +54,7 @@ class _BestSellingReportScreenState extends State<BestSellingReportScreen> {
     setState(() {
       _loading = true;
       _error = null;
+      _currentPage = 0;
     });
 
     try {
@@ -131,6 +135,7 @@ class _BestSellingReportScreenState extends State<BestSellingReportScreen> {
       setState(() {
         _rankLimit = null;
         _rankError = null;
+        _currentPage = 0;
       });
       return;
     }
@@ -155,6 +160,7 @@ class _BestSellingReportScreenState extends State<BestSellingReportScreen> {
     setState(() {
       _rankLimit = value;
       _rankError = null;
+      _currentPage = 0;
     });
   }
 
@@ -203,11 +209,27 @@ class _BestSellingReportScreenState extends State<BestSellingReportScreen> {
     );
   }
 
+  void _goToPage(int page) {
+    setState(() {
+      _currentPage = page;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final report = _report;
     final items = report?.items ?? const <BestSellingProduct>[];
     final shownRanks = _shownRanks(items.length);
+    final visibleItems = items.take(shownRanks).toList();
+    final pageStart = _currentPage * _pageSize;
+    final pageItems = pageStart >= visibleItems.length
+        ? const <BestSellingProduct>[]
+        : visibleItems.sublist(
+            pageStart,
+            (pageStart + _pageSize) > visibleItems.length
+                ? visibleItems.length
+                : pageStart + _pageSize,
+          );
 
     return AppShell(
       title: 'Best Selling',
@@ -216,21 +238,23 @@ class _BestSellingReportScreenState extends State<BestSellingReportScreen> {
           ? const LoadingState()
           : _error != null
           ? ErrorState(message: _error!, onRetry: _loadData)
-          : RefreshIndicator(
-              onRefresh: _loadData,
-              child: WideContent(
-                child: ListView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.all(16),
-                  children: [
-                    DateFilterBar(
+          : WideContent(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                    child: DateFilterBar(
                       fromLabel: _from == null ? 'From' : _formatDate(_from!),
                       toLabel: _to == null ? 'To' : _formatDate(_to!),
                       onFrom: () => _pickDate(true),
                       onTo: () => _pickDate(false),
                     ),
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<int?>(
+                  ),
+                  const SizedBox(height: 12),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: DropdownButtonFormField<int?>(
                       key: ValueKey('location-$_selectedLocationId'),
                       initialValue: _selectedLocationId,
                       decoration: const InputDecoration(
@@ -257,21 +281,23 @@ class _BestSellingReportScreenState extends State<BestSellingReportScreen> {
                         await _loadData();
                       },
                     ),
-                    if (report!.items.isEmpty) ...[
-                      const SizedBox(height: 16),
-                      const SizedBox(
-                        height: 200,
-                        child: EmptyState(
-                          icon: Icons.trending_down_rounded,
-                          title: 'No sales data',
-                          message: 'Adjust the dates or add new sales.',
-                        ),
+                  ),
+                  if (report!.items.isEmpty)
+                    const Expanded(
+                      child: EmptyState(
+                        icon: Icons.trending_down_rounded,
+                        title: 'No sales data',
+                        message: 'Adjust the dates or add new sales.',
                       ),
-                    ] else ...[
-                      const SizedBox(height: 16),
-                      _buildRankSelector(items.length),
-                      const SizedBox(height: 16),
-                      SectionHeader(
+                    )
+                  else ...[
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                      child: _buildRankSelector(items.length),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                      child: SectionHeader(
                         title: _rankLimit == null
                             ? 'Top Sellers'
                             : 'Top $shownRanks',
@@ -280,51 +306,70 @@ class _BestSellingReportScreenState extends State<BestSellingReportScreen> {
                             ' • ${items.length} product'
                             '${items.length == 1 ? '' : 's'} sold',
                       ),
-                      const SizedBox(height: 8),
-                      ...items.take(shownRanks).toList().asMap().entries.map((
-                        entry,
-                      ) {
-                        final index = entry.key;
-                        final item = entry.value;
-                        final theme = Theme.of(context);
-                        final isTopThree = index < 3;
+                    ),
+                    const SizedBox(height: 8),
+                    Expanded(
+                      child: RefreshIndicator(
+                        onRefresh: _loadData,
+                        child: ListView.builder(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                          itemCount: pageItems.length,
+                          itemBuilder: (context, i) {
+                            final index = pageStart + i;
+                            final item = pageItems[i];
+                            final theme = Theme.of(context);
+                            final isTopThree = index < 3;
 
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 10),
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor: isTopThree
-                                  ? theme.colorScheme.primary
-                                  : theme.colorScheme.surfaceContainerHighest,
-                              foregroundColor: isTopThree
-                                  ? theme.colorScheme.onPrimary
-                                  : theme.colorScheme.onSurfaceVariant,
-                              child: Text(
-                                '${index + 1}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
+                            return Card(
+                              margin: const EdgeInsets.only(bottom: 10),
+                              child: ListTile(
+                                leading: CircleAvatar(
+                                  backgroundColor: isTopThree
+                                      ? theme.colorScheme.primary
+                                      : theme
+                                            .colorScheme
+                                            .surfaceContainerHighest,
+                                  foregroundColor: isTopThree
+                                      ? theme.colorScheme.onPrimary
+                                      : theme.colorScheme.onSurfaceVariant,
+                                  child: Text(
+                                    '${index + 1}',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                title: Text(item.productName),
+                                subtitle: Text(
+                                  '${item.modelNumber}\n'
+                                  'Sold: ${item.totalQuantitySold}',
+                                ),
+                                isThreeLine: true,
+                                trailing: Text(
+                                  money(item.totalSales),
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: amountColor(
+                                      context,
+                                      item.totalSales,
+                                    ),
+                                  ),
                                 ),
                               ),
-                            ),
-                            title: Text(item.productName),
-                            subtitle: Text(
-                              '${item.modelNumber}\n'
-                              'Sold: ${item.totalQuantitySold}',
-                            ),
-                            isThreeLine: true,
-                            trailing: Text(
-                              money(item.totalSales),
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: amountColor(context, item.totalSales),
-                              ),
-                            ),
-                          ),
-                        );
-                      }),
-                    ],
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    PaginationBar(
+                      page: _currentPage,
+                      pageSize: _pageSize,
+                      totalItems: visibleItems.length,
+                      onPageChanged: _goToPage,
+                    ),
                   ],
-                ),
+                ],
               ),
             ),
     );

@@ -56,6 +56,29 @@ void main() {
     );
   });
 
+  testWidgets('respects a custom pin limit from settings', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'home.pinnedModules': ['products', 'inventory'],
+      'home.maxPinned': 2,
+    });
+
+    await pumpHome(tester);
+
+    expect(find.text('Pinned'), findsOneWidget);
+
+    // Try to pin a third module when the limit has been set to two.
+    final third = find.byIcon(Icons.star_border_rounded).first;
+    await tester.ensureVisible(third);
+    await tester.pumpAndSettle();
+    await tester.tap(third);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('You can pin up to 2 modules. Unpin one first.'),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('pinned modules survive a rebuild', (tester) async {
     await pumpHome(tester);
 

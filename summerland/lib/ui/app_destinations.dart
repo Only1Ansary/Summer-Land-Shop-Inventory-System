@@ -19,6 +19,7 @@ import '../screens/reports/reports_screen.dart';
 import '../screens/reports/sales_report_screen.dart';
 import '../screens/reports/stock_movements_report_screen.dart';
 import '../screens/returns/returns_screen.dart';
+import '../screens/settings/settings_screen.dart';
 import '../screens/stock/stock_transfer_screen.dart';
 
 /// A single entry in the persistent app navigation.
@@ -222,6 +223,16 @@ class AppDestinations {
       group: 'Employees',
       builder: _employees,
     ),
+
+    // System
+    const AppNavigationItem(
+      id: 'settings',
+      title: 'Settings',
+      icon: Icons.settings_outlined,
+      selectedIcon: Icons.settings_rounded,
+      group: 'System',
+      builder: _settings,
+    ),
   ];
 
   /// Destinations surfaced in the mobile bottom navigation bar.
@@ -286,4 +297,5 @@ class AppDestinations {
   static Widget _employeesReport() => const EmployeesReportScreen();
   static Widget _locations() => const LocationsScreen();
   static Widget _employees() => const EmployeesScreen();
+  static Widget _settings() => const SettingsScreen();
 }

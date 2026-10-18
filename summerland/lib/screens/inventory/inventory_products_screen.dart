@@ -47,6 +47,22 @@ class _InventoryProductsScreenState extends State<InventoryProductsScreen> {
   bool _isSearching = false;
   String? _errorMessage;
 
+  static const int _pageSize = 10;
+  int _currentPage = 0;
+
+  List<Product> get _pageProducts {
+    final start = _currentPage * _pageSize;
+
+    if (start >= _products.length) return const [];
+
+    final end = start + _pageSize;
+
+    return _products.sublist(
+      start,
+      end > _products.length ? _products.length : end,
+    );
+  }
+
   bool get _hasActiveFilters {
     return _selectedSizeId != null ||
         _selectedColourId != null ||
@@ -75,6 +91,7 @@ class _InventoryProductsScreenState extends State<InventoryProductsScreen> {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
+      _currentPage = 0;
     });
 
     try {
@@ -119,6 +136,7 @@ class _InventoryProductsScreenState extends State<InventoryProductsScreen> {
     setState(() {
       _isSearching = true;
       _errorMessage = null;
+      _currentPage = 0;
     });
 
     try {
@@ -320,61 +338,81 @@ class _InventoryProductsScreenState extends State<InventoryProductsScreen> {
 
   Widget _buildProductsList() {
     return WideContent(
-      child: RefreshIndicator(
-        onRefresh: _search,
-        child: _products.isEmpty
-            ? ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                children: const [
-                  SizedBox(height: 120),
-                  EmptyState(
-                    icon: Icons.search_off_rounded,
-                    title: 'No products found',
-                    message: 'No products match in this category.',
-                  ),
-                ],
-              )
-            : ListView.separated(
-                padding: const EdgeInsets.all(16),
-                itemCount: _products.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 10),
-                itemBuilder: (context, index) {
-                  final product = _products[index];
+      child: Column(
+        children: [
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _search,
+              child: _products.isEmpty
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: const [
+                        SizedBox(height: 120),
+                        EmptyState(
+                          icon: Icons.search_off_rounded,
+                          title: 'No products found',
+                          message: 'No products match in this category.',
+                        ),
+                      ],
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _pageProducts.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 10),
+                      itemBuilder: (context, index) {
+                        final product = _pageProducts[index];
 
-                  return Card(
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 18,
-                        vertical: 8,
-                      ),
-                      leading: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primary
-                              .withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(
-                          Icons.inventory_2_rounded,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
-                      title: Text(
-                        product.name,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      subtitle: Text('Model: ${product.modelNumber}'),
-                      trailing: const Icon(
-                        Icons.chevron_right_rounded,
-                        size: 22,
-                      ),
-                      onTap: () => _openProduct(product),
+                        return Card(
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 18,
+                              vertical: 8,
+                            ),
+                            leading: Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.primary
+                                    .withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Icon(
+                                Icons.inventory_2_rounded,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                            title: Text(
+                              product.name,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            subtitle: Text('Model: ${product.modelNumber}'),
+                            trailing: const Icon(
+                              Icons.chevron_right_rounded,
+                              size: 22,
+                            ),
+                            onTap: () => _openProduct(product),
+                          ),
+                        );
+                      },
                     ),
-                  );
-                },
-              ),
+            ),
+          ),
+          PaginationBar(
+            page: _currentPage,
+            pageSize: _pageSize,
+            totalItems: _products.length,
+            onPageChanged: _goToPage,
+          ),
+        ],
       ),
     );
+  }
+
+  void _goToPage(int page) {
+    setState(() {
+      _currentPage = page;
+    });
   }
 }
