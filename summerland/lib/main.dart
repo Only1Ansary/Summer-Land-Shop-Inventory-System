@@ -5,9 +5,11 @@ import 'screens/home_screen.dart';
 import 'services/shop_profile_service.dart';
 import 'services/theme_service.dart';
 import 'ui/app_theme.dart';
+import 'utils/api_config.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await ApiConfig.load();
   ThemeService.instance.load();
   ShopProfileService.instance.load();
 

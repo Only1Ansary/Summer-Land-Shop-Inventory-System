@@ -80,64 +80,92 @@ class CategoryPieChart extends StatelessWidget {
     }
 
     const chartSize = 220.0;
+    const gap = 20.0;
+
+    // Side by side only when the donut and a readable legend both fit; a
+    // phone-width card stacks them instead of pushing the legend off-screen.
+    const legendMinWidth = 168.0;
 
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            SizedBox(
-              width: chartSize,
-              height: chartSize,
-              child: Stack(
-                alignment: Alignment.center,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final double available = constraints.maxWidth - 32; // card padding
+          final double box = math.min(chartSize, available);
+
+          final Widget chart = SizedBox(
+            width: box,
+            height: box,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                CustomPaint(
+                  size: Size.square(box),
+                  painter: _DonutPainter(slices: slices),
+                ),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Total',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      money(total),
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+
+          final Widget legendRows = Column(
+            children: [
+              for (var i = 0; i < entries.length; i++)
+                _LegendRow(
+                  color: _palette[i % _palette.length],
+                  name: entries[i].categoryName,
+                  percentLabel: slices[i].percentLabel,
+                  amount: entries[i].amount,
+                ),
+            ],
+          );
+
+          if (available >= chartSize + gap + legendMinWidth) {
+            return Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
                 children: [
-                  CustomPaint(
-                    size: Size.square(chartSize),
-                    painter: _DonutPainter(slices: slices),
-                  ),
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Total',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        money(total),
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
+                  chart,
+                  const SizedBox(width: gap),
+                  Expanded(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: chartSize),
+                      child: SingleChildScrollView(child: legendRows),
+                    ),
                   ),
                 ],
               ),
+            );
+          }
+
+          return Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(child: chart),
+                const SizedBox(height: 16),
+                legendRows,
+              ],
             ),
-            const SizedBox(width: 20),
-            Expanded(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: chartSize),
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      for (var i = 0; i < entries.length; i++)
-                        _LegendRow(
-                          color: _palette[i % _palette.length],
-                          name: entries[i].categoryName,
-                          percentLabel: slices[i].percentLabel,
-                          amount: entries[i].amount,
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

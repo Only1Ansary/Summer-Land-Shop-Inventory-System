@@ -529,22 +529,9 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   Widget _buildVariantResults() {
     if (_filteredVariants.isEmpty) {
       return Center(
-        child: Column(
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.search_rounded,
-              size: 48,
-              color: Theme.of(context).colorScheme.outline,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Search for a variant.',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
+          children: [Icon(Icons.search), Text('Search for a Variant.')],
         ),
       );
     }
@@ -616,8 +603,14 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     );
   }
 
-  Widget _buildInvoiceSummary() {
+  Widget _buildInvoiceSummary(double availableHeight) {
     final theme = Theme.of(context);
+
+    // Height the expanded panel may reach. The search bar, the toggle row
+    // and the create button are all fixed, so they are taken off the space
+    // first - otherwise the panel can push the bottom bar past the end of
+    // the screen (seen on phones as a black/yellow overflow strip).
+    final double panelMaxHeight = availableHeight - 300;
 
     return Container(
       decoration: BoxDecoration(
@@ -646,20 +639,25 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                     color: theme.colorScheme.primary,
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    'Items: ${_cart.length}',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.onSurfaceVariant,
+                  Flexible(
+                    child: Text(
+                      'Items: ${_cart.length}',
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
-                  const Spacer(),
-                  Text(
-                    'Total: ${money(_netTotal)}',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 20,
-                      color: amountColor(context, _netTotal),
+                  Spacer(),
+                  Expanded(
+                    child: Text(
+                      'Total: ${money(_netTotal)}',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: amountColor(context, _netTotal),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -671,11 +669,9 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
               ),
             ),
           ),
-          if (_isCartExpanded)
+          if (_isCartExpanded && panelMaxHeight > 0)
             ConstrainedBox(
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.sizeOf(context).height * 0.5,
-              ),
+              constraints: BoxConstraints(maxHeight: panelMaxHeight),
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 child: Column(
@@ -763,7 +759,10 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                     if (_itemDiscountTotal > 0)
                       Padding(
                         padding: const EdgeInsets.only(top: 6),
-                        child: Row(
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 2,
+                          crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
                             Text(
                               'Items ${money(_cartTotal)}',
@@ -773,7 +772,6 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                                 color: theme.colorScheme.outline,
                               ),
                             ),
-                            const SizedBox(width: 8),
                             Text(
                               'Item discounts -${money(_itemDiscountTotal)}',
                               style: TextStyle(
@@ -945,7 +943,10 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                                     color: theme.colorScheme.primary,
                                   ),
                                 ),
-                              Row(
+                              Wrap(
+                                spacing: 6,
+                                runSpacing: 4,
+                                crossAxisAlignment: WrapCrossAlignment.center,
                                 children: [
                                   SizedBox(
                                     width: 92,
@@ -970,7 +971,6 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(width: 6),
                                   ChoiceChip(
                                     label: const Text('EGP'),
                                     selected: !item.discountIsPercent,
@@ -984,7 +984,6 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                                       });
                                     },
                                   ),
-                                  const SizedBox(width: 4),
                                   ChoiceChip(
                                     label: const Text('%'),
                                     selected: item.discountIsPercent,
@@ -1013,37 +1012,52 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              item.discountTotal > 0
-                                  ? Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.end,
-                                      children: [
-                                        Text(
-                                          money(gross),
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            decoration:
-                                                TextDecoration.lineThrough,
-                                            color: theme.colorScheme.outline,
-                                          ),
-                                        ),
-                                        Text(
+                              ConstrainedBox(
+                                // Keeps a long figure from eating the row: the
+                                // amount shrinks instead of squeezing the item.
+                                constraints: const BoxConstraints(
+                                  maxWidth: 110,
+                                ),
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.centerRight,
+                                  child: item.discountTotal > 0
+                                      ? Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.end,
+                                          children: [
+                                            Text(
+                                              money(gross),
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                decoration:
+                                                    TextDecoration.lineThrough,
+                                                color:
+                                                    theme.colorScheme.outline,
+                                              ),
+                                            ),
+                                            Text(
+                                              money(net),
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                                color: amountColor(
+                                                  context,
+                                                  net,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        )
+                                      : Text(
                                           money(net),
                                           style: TextStyle(
                                             fontWeight: FontWeight.w600,
                                             color: amountColor(context, net),
                                           ),
                                         ),
-                                      ],
-                                    )
-                                  : Text(
-                                      money(net),
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        color: amountColor(context, net),
-                                      ),
-                                    ),
+                                ),
+                              ),
                               IconButton(
                                 onPressed: () => _removeCartItem(index),
                                 icon: const Icon(Icons.delete_outline),
@@ -1105,19 +1119,17 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       destinationId: 'sales',
       body: _isLoading
           ? const LoadingState()
-          : Column(
-              children: [
-                _buildHeader(),
-                const Divider(height: 1),
-                Expanded(
-                  child:
-                      _filteredVariants.isEmpty &&
-                          _searchController.text.trim().isEmpty
-                      ? _buildVariantResults()
-                      : _buildVariantResults(),
-                ),
-                _buildInvoiceSummary(),
-              ],
+          : LayoutBuilder(
+              builder: (context, constraints) {
+                return Column(
+                  children: [
+                    _buildHeader(),
+                    const Divider(height: 1),
+                    Expanded(child: _buildVariantResults()),
+                    _buildInvoiceSummary(constraints.maxHeight),
+                  ],
+                );
+              },
             ),
     );
   }
@@ -1324,12 +1336,18 @@ class _AddItemDialogState extends State<_AddItemDialog> {
                   style: TextStyle(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  money(variant.price),
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 17,
-                    color: amountColor(context, variant.price),
+                Expanded(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      money(variant.price),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 17,
+                        color: amountColor(context, variant.price),
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -1343,13 +1361,17 @@ class _AddItemDialogState extends State<_AddItemDialog> {
             DropdownButtonFormField<int>(
               key: ValueKey('stock-location-${_selectedStockLocation?.id}'),
               initialValue: _selectedStockLocation?.id,
-              decoration: const InputDecoration(
-                labelText: 'Choose stock location',
-              ),
+              isDense: true,
+              isExpanded: true,
+              decoration: const InputDecoration(hintText: 'Select'),
               items: widget.availableInventory.map((item) {
                 return DropdownMenuItem<int>(
                   value: item.locationId,
-                  child: Text('${item.locationName} (${item.quantity})'),
+                  child: Text(
+                    '${item.locationName} (${item.quantity})',
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
                 );
               }).toList(),
               onChanged: (value) {

@@ -92,18 +92,6 @@ const List<HomeModule> homeModules = [
     destinationId: 'categories',
   ),
   HomeModule(
-    title: 'Colours',
-    subtitle: 'Colour options',
-    icon: Icons.palette_rounded,
-    destinationId: 'colours',
-  ),
-  HomeModule(
-    title: 'Sizes',
-    subtitle: 'Size options',
-    icon: Icons.straighten_rounded,
-    destinationId: 'sizes',
-  ),
-  HomeModule(
     title: 'Locations',
     subtitle: 'Store locations',
     icon: Icons.location_on_rounded,

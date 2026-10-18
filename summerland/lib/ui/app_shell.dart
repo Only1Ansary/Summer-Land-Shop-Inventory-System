@@ -202,7 +202,7 @@ class _BrandHeader extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 14),
       child: ConstrainedBox(
         constraints: const BoxConstraints(minHeight: 48, maxHeight: 80),
-        child: Center(child: ShopLogo(radius: 10)),
+        child: Center(child: ShopLogo(radius: 10, constrain: false)),
       ),
     );
   }

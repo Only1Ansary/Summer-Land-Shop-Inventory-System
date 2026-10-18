@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:http/http.dart' as http;
 
 import '../utils/api_config.dart';
@@ -40,35 +41,66 @@ class ApiService {
 
   ApiService({String? baseUrl}) : baseUrl = baseUrl ?? ApiConfig.baseUrl;
 
+  /// Swapped in by tests so they can answer requests without a network.
+  @visibleForTesting
+  static http.Client? clientOverride;
+
+  /// Sends [request] through [clientOverride] when one is set, otherwise
+  /// through a one-shot client that is closed afterwards, exactly like the
+  /// top-level `http` helpers used before.
+  Future<http.Response> _sendRequest(
+    Future<http.Response> Function(http.Client client) request,
+  ) {
+    final override = clientOverride;
+
+    if (override != null) {
+      return request(override);
+    }
+
+    final client = http.Client();
+
+    return request(client).whenComplete(client.close);
+  }
+
   Future<dynamic> get(String endpoint) {
     return _send(
-      () => http.get(Uri.parse('$baseUrl$endpoint'), headers: _headers),
+      () => _sendRequest(
+        (client) =>
+            client.get(Uri.parse('$baseUrl$endpoint'), headers: _headers),
+      ),
     );
   }
 
   Future<dynamic> post(String endpoint, Map<String, dynamic> body) {
     return _send(
-      () => http.post(
-        Uri.parse('$baseUrl$endpoint'),
-        headers: _headers,
-        body: jsonEncode(body),
+      () => _sendRequest(
+        (client) => client.post(
+          Uri.parse('$baseUrl$endpoint'),
+          headers: _headers,
+          body: jsonEncode(body),
+        ),
       ),
     );
   }
 
   Future<dynamic> put(String endpoint, Map<String, dynamic> body) {
     return _send(
-      () => http.put(
-        Uri.parse('$baseUrl$endpoint'),
-        headers: _headers,
-        body: jsonEncode(body),
+      () => _sendRequest(
+        (client) => client.put(
+          Uri.parse('$baseUrl$endpoint'),
+          headers: _headers,
+          body: jsonEncode(body),
+        ),
       ),
     );
   }
 
   Future<dynamic> delete(String endpoint) {
     return _send(
-      () => http.delete(Uri.parse('$baseUrl$endpoint'), headers: _headers),
+      () => _sendRequest(
+        (client) =>
+            client.delete(Uri.parse('$baseUrl$endpoint'), headers: _headers),
+      ),
     );
   }
 

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../models/employee.dart';
 import '../../models/reports/employees_report.dart';
 import '../../services/api_service.dart';
 import '../../services/report_service.dart';
@@ -276,22 +275,6 @@ class _EmployeeReportTile extends StatefulWidget {
 class _EmployeeReportTileState extends State<_EmployeeReportTile> {
   bool _expanded = false;
 
-  String _bonusLabel() {
-    final item = widget.item;
-
-    if (item.bonus <= 0) {
-      return money(0);
-    }
-
-    return item.bonusType == BonusType.percentage
-        ? '${_percent(item.bonus)} of sales'
-        : money(item.bonus);
-  }
-
-  String _percent(double value) {
-    return value == value.roundToDouble() ? '${value.round()}%' : '$value%';
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -423,8 +406,7 @@ class _EmployeeReportTileState extends State<_EmployeeReportTile> {
                             width: width,
                             icon: Icons.card_giftcard_outlined,
                             label: 'Bonus',
-                            value:
-                                '${_bonusLabel()} = ${money(item.bonusAmount)}',
+                            value: '${money(item.bonusAmount)}',
                           ),
                           _StatChip(
                             width: width,

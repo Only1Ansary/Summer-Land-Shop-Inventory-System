@@ -7,7 +7,9 @@ plugins {
 android {
     namespace = "com.example.summerland"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = "28.2.13676358"
+    // Required by file_selector_android and shared_preferences_android (28.2.13676358).
+    // Using the highest installed NDK (29.0.13113456), which is backward compatible.
+    ndkVersion = "29.0.13113456"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

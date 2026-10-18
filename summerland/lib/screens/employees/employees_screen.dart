@@ -240,9 +240,11 @@ class _EmployeeCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Container(
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final double available = constraints.maxWidth;
+
+                final Widget avatar = Container(
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
@@ -253,19 +255,17 @@ class _EmployeeCard extends StatelessWidget {
                     Icons.person_rounded,
                     color: theme.colorScheme.primary,
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    employee.name,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+                );
+
+                final Widget name = Text(
+                  employee.name,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
                   ),
-                ),
-                const SizedBox(width: 8),
-                employee.reachedTarget
+                );
+
+                final Widget badge = employee.reachedTarget
                     ? const StatusBadge(
                         label: 'TARGET MET',
                         color: AppPalette.success,
@@ -275,38 +275,77 @@ class _EmployeeCard extends StatelessWidget {
                         label: 'BELOW TARGET',
                         color: theme.colorScheme.outline,
                         icon: Icons.remove_circle_outline,
+                      );
+
+                final List<Widget> actions = [
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    icon: const Icon(Icons.history),
+                    tooltip: 'Monthly history',
+                    onPressed: onHistory,
+                  ),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    icon: Icon(
+                      Icons.payments_outlined,
+                      color: theme.colorScheme.primary,
+                    ),
+                    tooltip: 'Record payment',
+                    onPressed: onPay,
+                  ),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    icon: const Icon(Icons.edit_outlined),
+                    tooltip: 'Edit',
+                    onPressed: onEdit,
+                  ),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    icon: Icon(
+                      Icons.delete_outline,
+                      color: theme.colorScheme.error,
+                    ),
+                    tooltip: 'Delete',
+                    onPressed: onDelete,
+                  ),
+                ];
+
+                // On phones the badge and the four action buttons do not fit
+                // beside the name, so the buttons take their own line instead
+                // of pushing the card past the screen edge.
+                if (available < 560) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          avatar,
+                          const SizedBox(width: 12),
+                          Expanded(child: name),
+                          const SizedBox(width: 8),
+                          badge,
+                        ],
                       ),
-                IconButton(
-                  visualDensity: VisualDensity.compact,
-                  icon: const Icon(Icons.history),
-                  tooltip: 'Monthly history',
-                  onPressed: onHistory,
-                ),
-                IconButton(
-                  visualDensity: VisualDensity.compact,
-                  icon: Icon(
-                    Icons.payments_outlined,
-                    color: theme.colorScheme.primary,
-                  ),
-                  tooltip: 'Record payment',
-                  onPressed: onPay,
-                ),
-                IconButton(
-                  visualDensity: VisualDensity.compact,
-                  icon: const Icon(Icons.edit_outlined),
-                  tooltip: 'Edit',
-                  onPressed: onEdit,
-                ),
-                IconButton(
-                  visualDensity: VisualDensity.compact,
-                  icon: Icon(
-                    Icons.delete_outline,
-                    color: theme.colorScheme.error,
-                  ),
-                  tooltip: 'Delete',
-                  onPressed: onDelete,
-                ),
-              ],
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: actions,
+                      ),
+                    ],
+                  );
+                }
+
+                return Row(
+                  children: [
+                    avatar,
+                    const SizedBox(width: 12),
+                    Expanded(child: name),
+                    const SizedBox(width: 8),
+                    badge,
+                    ...actions,
+                  ],
+                );
+              },
             ),
             const SizedBox(height: 12),
             Wrap(

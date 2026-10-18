@@ -133,7 +133,7 @@ class AppDestinations {
     // Purchases
     const AppNavigationItem(
       id: 'add-purchase',
-      title: 'New Purchase',
+      title: 'Purchase',
       icon: Icons.shopping_cart_checkout_outlined,
       selectedIcon: Icons.shopping_cart_checkout_rounded,
       group: 'Purchases',
@@ -240,7 +240,7 @@ class AppDestinations {
     'home',
     'products',
     'inventory',
-    'sales',
+    'add-purchase',
     'reports',
   ];
 

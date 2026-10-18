@@ -106,163 +106,165 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
                       onTo: () => _pickDate(false),
                     ),
                     const SizedBox(height: 16),
-                    const SectionHeader(
+                    CollapsibleSection(
                       title: 'Revenue',
                       subtitle: 'Money from sales in this period',
-                    ),
-                    const SizedBox(height: 8),
-                    StatGrid(
-                      stats: [
-                        StatData(
-                          label: 'Gross Sales',
-                          value: money(report!.grossSales),
-                          icon: Icons.attach_money_outlined,
-                          valueColor: amountColor(context, report.grossSales),
-                        ),
-                        StatData(
-                          label: 'Returns',
-                          value: moneyNegative(report.returnsAmount),
-                          icon: Icons.currency_exchange_rounded,
-                          color: AppPalette.danger,
-                          valueColor: amountColor(
-                            context,
-                            -report.returnsAmount,
+                      initiallyExpanded: false,
+                      child: StatGrid(
+                        stats: [
+                          StatData(
+                            label: 'Gross Sales',
+                            value: money(report!.grossSales),
+                            icon: Icons.attach_money_outlined,
+                            valueColor: amountColor(context, report.grossSales),
                           ),
-                        ),
-                        StatData(
-                          label: 'Net Revenue',
-                          value: money(report.netSales),
-                          icon: Icons.account_balance_wallet_outlined,
-                          valueColor: amountColor(context, report.netSales),
-                        ),
-                        StatData(
-                          label: 'Estimated Profit',
-                          value: money(report.profit),
-                          icon: Icons.trending_up_outlined,
-                          color: report.profit >= 0 ? null : AppPalette.danger,
-                          valueColor: amountColor(context, report.profit),
-                        ),
-                      ],
+                          StatData(
+                            label: 'Returns',
+                            value: moneyNegative(report.returnsAmount),
+                            icon: Icons.currency_exchange_rounded,
+                            color: AppPalette.danger,
+                            valueColor: amountColor(
+                              context,
+                              -report.returnsAmount,
+                            ),
+                          ),
+                          StatData(
+                            label: 'Net Revenue',
+                            value: money(report.netSales),
+                            icon: Icons.account_balance_wallet_outlined,
+                            valueColor: amountColor(context, report.netSales),
+                          ),
+                          StatData(
+                            label: 'Estimated Profit',
+                            value: money(report.profit),
+                            icon: Icons.trending_up_outlined,
+                            color: report.profit >= 0
+                                ? null
+                                : AppPalette.danger,
+                            valueColor: amountColor(context, report.profit),
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 16),
-                    const SectionHeader(
+                    CollapsibleSection(
                       title: 'Sales by Category',
                       subtitle: 'Share of net sales in this period',
+                      initiallyExpanded: false,
+                      child: CategoryPieChart(categories: report.categorySales),
                     ),
-                    const SizedBox(height: 8),
-                    CategoryPieChart(categories: report.categorySales),
                     const SizedBox(height: 16),
-                    const SectionHeader(
+                    CollapsibleSection(
                       title: 'Sales Activity',
                       subtitle: 'Invoices and units moved',
-                    ),
-                    const SizedBox(height: 8),
-                    StatGrid(
-                      stats: [
-                        StatData(
-                          label: 'Invoices',
-                          value: '${report.invoiceCount}',
-                          icon: Icons.receipt_long_outlined,
-                        ),
-                        StatData(
-                          label: 'Items Sold',
-                          value: '${report.itemsSold}',
-                          icon: Icons.shopping_cart_outlined,
-                        ),
-                        StatData(
-                          label: 'Items Returned',
-                          value: '${report.itemsReturned}',
-                          icon: Icons.assignment_return_outlined,
-                        ),
-                      ],
+                      initiallyExpanded: false,
+                      child: StatGrid(
+                        stats: [
+                          StatData(
+                            label: 'Invoices',
+                            value: '${report.invoiceCount}',
+                            icon: Icons.receipt_long_outlined,
+                          ),
+                          StatData(
+                            label: 'Items Sold',
+                            value: '${report.itemsSold}',
+                            icon: Icons.shopping_cart_outlined,
+                          ),
+                          StatData(
+                            label: 'Items Returned',
+                            value: '${report.itemsReturned}',
+                            icon: Icons.assignment_return_outlined,
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 16),
-                    const SectionHeader(
+                    CollapsibleSection(
                       title: 'Purchases & Cost',
                       subtitle: 'Stock bought in this period',
-                    ),
-                    const SizedBox(height: 8),
-                    StatGrid(
-                      stats: [
-                        StatData(
-                          label: 'Purchase Invoices',
-                          value: '${report.purchaseInvoiceCount}',
-                          icon: Icons.shopping_bag_outlined,
-                        ),
-                        StatData(
-                          label: 'Purchase Cost',
-                          value: money(report.purchaseTotalCost),
-                          icon: Icons.local_shipping_outlined,
-                        ),
-                        StatData(
-                          label: 'Purchase Paid',
-                          value: money(report.purchaseTotalPaid),
-                          icon: Icons.payments_outlined,
-                        ),
-                        StatData(
-                          label: 'Unpaid On Purchases',
-                          value: moneyNegative(report.purchaseDebt),
-                          icon: Icons.hourglass_empty_outlined,
-                          color: report.purchaseDebt > 0
-                              ? AppPalette.danger
-                              : null,
-                          valueColor: amountColor(
-                            context,
-                            -report.purchaseDebt,
+                      initiallyExpanded: false,
+                      child: StatGrid(
+                        stats: [
+                          StatData(
+                            label: 'Purchase Invoices',
+                            value: '${report.purchaseInvoiceCount}',
+                            icon: Icons.shopping_bag_outlined,
                           ),
-                        ),
-                      ],
+                          StatData(
+                            label: 'Purchase Cost',
+                            value: money(report.purchaseTotalCost),
+                            icon: Icons.local_shipping_outlined,
+                          ),
+                          StatData(
+                            label: 'Purchase Paid',
+                            value: money(report.purchaseTotalPaid),
+                            icon: Icons.payments_outlined,
+                          ),
+                          StatData(
+                            label: 'Unpaid On Purchases',
+                            value: moneyNegative(report.purchaseDebt),
+                            icon: Icons.hourglass_empty_outlined,
+                            color: report.purchaseDebt > 0
+                                ? AppPalette.danger
+                                : null,
+                            valueColor: amountColor(
+                              context,
+                              -report.purchaseDebt,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 16),
-                    const SectionHeader(
+                    CollapsibleSection(
                       title: 'Staff Payments',
                       subtitle: 'Salary and bonuses paid in this period',
-                    ),
-                    const SizedBox(height: 8),
-                    StatGrid(
-                      stats: [
-                        StatData(
-                          label: 'Payments',
-                          value: '${report.employeePaymentCount}',
-                          icon: Icons.people_outline,
-                        ),
-                        StatData(
-                          label: 'Total Paid',
-                          value: money(report.employeePaymentTotal),
-                          icon: Icons.payments_outlined,
-                          valueColor: amountColor(
-                            context,
-                            report.employeePaymentTotal,
+                      initiallyExpanded: false,
+                      child: StatGrid(
+                        stats: [
+                          StatData(
+                            label: 'Payments',
+                            value: '${report.employeePaymentCount}',
+                            icon: Icons.people_outline,
                           ),
-                        ),
-                      ],
+                          StatData(
+                            label: 'Total Paid',
+                            value: money(report.employeePaymentTotal),
+                            icon: Icons.payments_outlined,
+                            valueColor: amountColor(
+                              context,
+                              report.employeePaymentTotal,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 16),
-                    const SectionHeader(
+                    CollapsibleSection(
                       title: 'Debts & Suppliers',
                       subtitle: 'Current standing with suppliers',
-                    ),
-                    const SizedBox(height: 8),
-                    StatGrid(
-                      stats: [
-                        StatData(
-                          label: 'Suppliers',
-                          value: '${report.supplierCount}',
-                          icon: Icons.factory_outlined,
-                        ),
-                        StatData(
-                          label: 'Total Supplier Debt',
-                          value: moneyNegative(report.supplierDebtTotal),
-                          icon: Icons.balance_outlined,
-                          color: report.supplierDebtTotal > 0
-                              ? AppPalette.danger
-                              : null,
-                          valueColor: amountColor(
-                            context,
-                            -report.supplierDebtTotal,
+                      initiallyExpanded: false,
+                      child: StatGrid(
+                        stats: [
+                          StatData(
+                            label: 'Suppliers',
+                            value: '${report.supplierCount}',
+                            icon: Icons.factory_outlined,
                           ),
-                        ),
-                      ],
+                          StatData(
+                            label: 'Total Supplier Debt',
+                            value: moneyNegative(report.supplierDebtTotal),
+                            icon: Icons.balance_outlined,
+                            color: report.supplierDebtTotal > 0
+                                ? AppPalette.danger
+                                : null,
+                            valueColor: amountColor(
+                              context,
+                              -report.supplierDebtTotal,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
