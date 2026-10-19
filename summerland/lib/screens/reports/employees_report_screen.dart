@@ -7,6 +7,7 @@ import '../../services/report_service.dart';
 import '../../ui/app_shell.dart';
 import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
+import '../../ui/reconnect_reloader.dart';
 
 class EmployeesReportScreen extends StatefulWidget {
   const EmployeesReportScreen({super.key});
@@ -15,7 +16,8 @@ class EmployeesReportScreen extends StatefulWidget {
   State<EmployeesReportScreen> createState() => _EmployeesReportScreenState();
 }
 
-class _EmployeesReportScreenState extends State<EmployeesReportScreen> {
+class _EmployeesReportScreenState extends State<EmployeesReportScreen>
+    with ReconnectReloader<EmployeesReportScreen> {
   late final ReportService _reportService;
 
   EmployeesReport? _report;
@@ -54,6 +56,11 @@ class _EmployeesReportScreenState extends State<EmployeesReportScreen> {
         _loading = false;
       });
     }
+  }
+
+  @override
+  void onReconnected() {
+    _loadReport();
   }
 
   Future<void> _pickMonth() async {

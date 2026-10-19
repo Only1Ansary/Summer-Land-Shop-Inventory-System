@@ -8,6 +8,7 @@ import '../../ui/app_shell.dart';
 import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
 import '../../ui/category_pie_chart.dart';
+import '../../ui/reconnect_reloader.dart';
 
 class SalesReportScreen extends StatefulWidget {
   const SalesReportScreen({super.key});
@@ -16,7 +17,8 @@ class SalesReportScreen extends StatefulWidget {
   State<SalesReportScreen> createState() => _SalesReportScreenState();
 }
 
-class _SalesReportScreenState extends State<SalesReportScreen> {
+class _SalesReportScreenState extends State<SalesReportScreen>
+    with ReconnectReloader<SalesReportScreen> {
   late final ReportService _reportService;
 
   SalesReport? _report;
@@ -54,6 +56,11 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
         _loading = false;
       });
     }
+  }
+
+  @override
+  void onReconnected() {
+    _loadReport();
   }
 
   Future<void> _pickDate(bool isFrom) async {

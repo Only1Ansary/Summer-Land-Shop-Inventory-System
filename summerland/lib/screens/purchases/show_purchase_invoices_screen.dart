@@ -5,6 +5,7 @@ import '../../services/api_service.dart';
 import '../../services/purchase_invoice_service.dart';
 import '../../ui/app_shell.dart';
 import '../../ui/app_widgets.dart';
+import '../../ui/reconnect_reloader.dart';
 import 'purchase_invoice_tile.dart';
 import 'search_purchase_invoices_screen.dart';
 import 'show_purchase_invoice_screen.dart';
@@ -17,8 +18,8 @@ class ShowPurchaseInvoicesScreen extends StatefulWidget {
       _ShowPurchaseInvoicesScreenState();
 }
 
-class _ShowPurchaseInvoicesScreenState
-    extends State<ShowPurchaseInvoicesScreen> {
+class _ShowPurchaseInvoicesScreenState extends State<ShowPurchaseInvoicesScreen>
+    with ReconnectReloader<ShowPurchaseInvoicesScreen> {
   final PurchaseInvoiceService _purchaseInvoiceService = PurchaseInvoiceService(
     ApiService(),
   );
@@ -87,6 +88,11 @@ class _ShowPurchaseInvoicesScreenState
         });
       }
     }
+  }
+
+  @override
+  void onReconnected() {
+    _loadInvoices();
   }
 
   Future<void> _pickDate(bool isFrom) async {

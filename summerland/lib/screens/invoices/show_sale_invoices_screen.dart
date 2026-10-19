@@ -5,6 +5,7 @@ import '../../services/api_service.dart';
 import '../../services/invoice_service.dart';
 import '../../ui/app_shell.dart';
 import '../../ui/app_widgets.dart';
+import '../../ui/reconnect_reloader.dart';
 import 'create_invoice_screen.dart';
 import 'sale_invoice_tile.dart';
 import 'search_sale_invoices_screen.dart';
@@ -17,7 +18,8 @@ class ShowSaleInvoicesScreen extends StatefulWidget {
   State<ShowSaleInvoicesScreen> createState() => _ShowSaleInvoicesScreenState();
 }
 
-class _ShowSaleInvoicesScreenState extends State<ShowSaleInvoicesScreen> {
+class _ShowSaleInvoicesScreenState extends State<ShowSaleInvoicesScreen>
+    with ReconnectReloader<ShowSaleInvoicesScreen> {
   final InvoiceService _invoiceService = InvoiceService(ApiService());
 
   List<Invoice> _invoices = [];
@@ -81,6 +83,11 @@ class _ShowSaleInvoicesScreenState extends State<ShowSaleInvoicesScreen> {
         });
       }
     }
+  }
+
+  @override
+  void onReconnected() {
+    _loadInvoices();
   }
 
   Future<void> _pickDate(bool isFrom) async {

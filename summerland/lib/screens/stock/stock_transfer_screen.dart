@@ -6,6 +6,7 @@ import '../../services/stock_transfer_service.dart';
 
 import '../../ui/app_shell.dart';
 import '../../ui/app_widgets.dart';
+import '../../ui/reconnect_reloader.dart';
 
 import 'create_stock_transfer_screen.dart';
 
@@ -16,7 +17,8 @@ class StockTransfersScreen extends StatefulWidget {
   State<StockTransfersScreen> createState() => _StockTransfersScreenState();
 }
 
-class _StockTransfersScreenState extends State<StockTransfersScreen> {
+class _StockTransfersScreenState extends State<StockTransfersScreen>
+    with ReconnectReloader<StockTransfersScreen> {
   late final StockTransferService _service;
 
   List<StockTransfer> _transfers = [];
@@ -81,6 +83,11 @@ class _StockTransfersScreenState extends State<StockTransfersScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  @override
+  void onReconnected() {
+    _loadTransfers();
   }
 
   Future<void> _pickDate(bool isFrom) async {

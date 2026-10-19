@@ -6,6 +6,7 @@ import '../../services/category_service.dart';
 
 import '../../ui/app_shell.dart';
 import '../../ui/app_widgets.dart';
+import '../../ui/reconnect_reloader.dart';
 
 class CategoriesScreen extends StatefulWidget {
   const CategoriesScreen({super.key});
@@ -14,7 +15,8 @@ class CategoriesScreen extends StatefulWidget {
   State<CategoriesScreen> createState() => _CategoriesScreenState();
 }
 
-class _CategoriesScreenState extends State<CategoriesScreen> {
+class _CategoriesScreenState extends State<CategoriesScreen>
+    with ReconnectReloader<CategoriesScreen> {
   final CategoryService _categoryService = CategoryService(ApiService());
 
   List<Category> _categories = [];
@@ -145,6 +147,11 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
         });
       }
     }
+  }
+
+  @override
+  void onReconnected() {
+    _loadCategories();
   }
 
   @override

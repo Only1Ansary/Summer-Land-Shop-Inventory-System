@@ -13,6 +13,7 @@ import '../../services/size_service.dart';
 import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
 import '../../ui/barcode_view.dart';
+import '../../ui/reconnect_reloader.dart';
 
 import 'add_inventory_screen.dart';
 
@@ -26,7 +27,8 @@ class InventoryVariantsScreen extends StatefulWidget {
       _InventoryVariantsScreenState();
 }
 
-class _InventoryVariantsScreenState extends State<InventoryVariantsScreen> {
+class _InventoryVariantsScreenState extends State<InventoryVariantsScreen>
+    with ReconnectReloader<InventoryVariantsScreen> {
   final ApiService _apiService = ApiService();
 
   late final ProductVariantService _variantService;
@@ -120,6 +122,11 @@ class _InventoryVariantsScreenState extends State<InventoryVariantsScreen> {
         _errorMessage = friendlyError(e);
       });
     }
+  }
+
+  @override
+  void onReconnected() {
+    _loadData();
   }
 
   void _applyFilters() {

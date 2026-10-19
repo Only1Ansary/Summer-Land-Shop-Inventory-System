@@ -6,6 +6,7 @@ import '../../services/location_service.dart';
 
 import '../../ui/app_shell.dart';
 import '../../ui/app_widgets.dart';
+import '../../ui/reconnect_reloader.dart';
 
 class LocationsScreen extends StatefulWidget {
   const LocationsScreen({super.key});
@@ -14,7 +15,8 @@ class LocationsScreen extends StatefulWidget {
   State<LocationsScreen> createState() => _LocationsScreenState();
 }
 
-class _LocationsScreenState extends State<LocationsScreen> {
+class _LocationsScreenState extends State<LocationsScreen>
+    with ReconnectReloader<LocationsScreen> {
   final LocationService _service = LocationService(ApiService());
 
   List<Location> _locations = [];
@@ -52,6 +54,11 @@ class _LocationsScreenState extends State<LocationsScreen> {
         });
       }
     }
+  }
+
+  @override
+  void onReconnected() {
+    _loadLocations();
   }
 
   Future<void> _addLocation() async {

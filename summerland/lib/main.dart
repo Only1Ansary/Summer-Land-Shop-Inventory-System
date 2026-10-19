@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'screens/home_screen.dart';
+import 'services/cache_store.dart';
+import 'services/connectivity_service.dart';
+import 'services/prefetch_service.dart';
 import 'services/shop_profile_service.dart';
 import 'services/theme_service.dart';
 import 'ui/app_theme.dart';
@@ -10,8 +13,11 @@ import 'utils/api_config.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await ApiConfig.load();
+  await CacheStore.instance.load();
   ThemeService.instance.load();
   ShopProfileService.instance.load();
+  ConnectivityService.instance.start();
+  PrefetchService.instance.start();
 
   runApp(const SummerlandApp());
 }

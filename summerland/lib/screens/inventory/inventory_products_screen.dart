@@ -11,6 +11,7 @@ import '../../services/colour_service.dart';
 import '../../services/product_service.dart';
 import '../../services/size_service.dart';
 import '../../ui/app_widgets.dart';
+import '../../ui/reconnect_reloader.dart';
 import 'inventory_variants_screen.dart';
 
 class InventoryProductsScreen extends StatefulWidget {
@@ -23,7 +24,8 @@ class InventoryProductsScreen extends StatefulWidget {
       _InventoryProductsScreenState();
 }
 
-class _InventoryProductsScreenState extends State<InventoryProductsScreen> {
+class _InventoryProductsScreenState extends State<InventoryProductsScreen>
+    with ReconnectReloader<InventoryProductsScreen> {
   final ApiService _apiService = ApiService();
 
   late final ProductService _productService;
@@ -126,6 +128,11 @@ class _InventoryProductsScreenState extends State<InventoryProductsScreen> {
         });
       }
     }
+  }
+
+  @override
+  void onReconnected() {
+    _loadData();
   }
 
   Future<void> _search() async {

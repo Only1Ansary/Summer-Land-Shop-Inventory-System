@@ -10,6 +10,7 @@ import '../../ui/app_shell.dart';
 import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
 import '../../ui/barcode_view.dart';
+import '../../ui/reconnect_reloader.dart';
 
 class LowStockReportScreen extends StatefulWidget {
   const LowStockReportScreen({super.key});
@@ -18,7 +19,8 @@ class LowStockReportScreen extends StatefulWidget {
   State<LowStockReportScreen> createState() => _LowStockReportScreenState();
 }
 
-class _LowStockReportScreenState extends State<LowStockReportScreen> {
+class _LowStockReportScreenState extends State<LowStockReportScreen>
+    with ReconnectReloader<LowStockReportScreen> {
   late final ReportService _reportService;
   late final CategoryService _categoryService;
 
@@ -94,6 +96,11 @@ class _LowStockReportScreenState extends State<LowStockReportScreen> {
         _loading = false;
       });
     }
+  }
+
+  @override
+  void onReconnected() {
+    _loadReport();
   }
 
   String _variantLabel(LowStockItem item) {

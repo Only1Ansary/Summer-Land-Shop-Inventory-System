@@ -7,6 +7,7 @@ import '../../services/supplier_service.dart';
 import '../../ui/app_shell.dart';
 import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
+import '../../ui/reconnect_reloader.dart';
 import 'add_suppliers_screen.dart';
 
 class ShowSuppliersScreen extends StatefulWidget {
@@ -16,7 +17,8 @@ class ShowSuppliersScreen extends StatefulWidget {
   State<ShowSuppliersScreen> createState() => _ShowSuppliersScreenState();
 }
 
-class _ShowSuppliersScreenState extends State<ShowSuppliersScreen> {
+class _ShowSuppliersScreenState extends State<ShowSuppliersScreen>
+    with ReconnectReloader<ShowSuppliersScreen> {
   final SupplierService _supplierService = SupplierService(ApiService());
 
   List<Supplier> _suppliers = [];
@@ -75,6 +77,11 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen> {
         });
       }
     }
+  }
+
+  @override
+  void onReconnected() {
+    _loadSuppliers();
   }
 
   Future<void> _addSupplier() async {

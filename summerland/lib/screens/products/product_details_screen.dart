@@ -14,6 +14,7 @@ import '../../services/size_service.dart';
 import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
 import '../../ui/barcode_view.dart';
+import '../../ui/reconnect_reloader.dart';
 
 import 'product_form_screen.dart';
 import 'product_variant_form_screen.dart';
@@ -34,7 +35,8 @@ class ProductDetailsScreen extends StatefulWidget {
   State<ProductDetailsScreen> createState() => _ProductDetailsScreenState();
 }
 
-class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
+class _ProductDetailsScreenState extends State<ProductDetailsScreen>
+    with ReconnectReloader<ProductDetailsScreen> {
   final ProductVariantService _variantService = ProductVariantService(
     ApiService(),
   );
@@ -120,6 +122,11 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
         });
       }
     }
+  }
+
+  @override
+  void onReconnected() {
+    _loadVariants();
   }
 
   Future<void> _editProduct() async {

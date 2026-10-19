@@ -6,6 +6,7 @@ import '../../services/colour_service.dart';
 
 import '../../ui/app_shell.dart';
 import '../../ui/app_widgets.dart';
+import '../../ui/reconnect_reloader.dart';
 
 class ColoursScreen extends StatefulWidget {
   const ColoursScreen({super.key});
@@ -14,7 +15,8 @@ class ColoursScreen extends StatefulWidget {
   State<ColoursScreen> createState() => _ColoursScreenState();
 }
 
-class _ColoursScreenState extends State<ColoursScreen> {
+class _ColoursScreenState extends State<ColoursScreen>
+    with ReconnectReloader<ColoursScreen> {
   final ColourService _service = ColourService(ApiService());
 
   List<Colour> _colours = [];
@@ -52,6 +54,11 @@ class _ColoursScreenState extends State<ColoursScreen> {
         });
       }
     }
+  }
+
+  @override
+  void onReconnected() {
+    _loadColours();
   }
 
   Future<void> _addColour() async {

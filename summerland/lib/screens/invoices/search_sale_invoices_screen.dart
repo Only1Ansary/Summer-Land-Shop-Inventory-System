@@ -4,6 +4,7 @@ import '../../models/invoice.dart';
 import '../../services/api_service.dart';
 import '../../services/invoice_service.dart';
 import '../../ui/app_widgets.dart';
+import '../../ui/reconnect_reloader.dart';
 import 'sale_invoice_tile.dart';
 import 'show_sale_invoice_screen.dart';
 
@@ -15,7 +16,8 @@ class SearchSaleInvoicesScreen extends StatefulWidget {
       _SearchSaleInvoicesScreenState();
 }
 
-class _SearchSaleInvoicesScreenState extends State<SearchSaleInvoicesScreen> {
+class _SearchSaleInvoicesScreenState extends State<SearchSaleInvoicesScreen>
+    with ReconnectReloader<SearchSaleInvoicesScreen> {
   final InvoiceService _invoiceService = InvoiceService(ApiService());
 
   final TextEditingController _queryController = TextEditingController();
@@ -69,6 +71,11 @@ class _SearchSaleInvoicesScreenState extends State<SearchSaleInvoicesScreen> {
         });
       }
     }
+  }
+
+  @override
+  void onReconnected() {
+    _loadInvoices();
   }
 
   List<Invoice> get _results {

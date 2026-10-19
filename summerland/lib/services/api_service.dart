@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart' show visibleForTesting;
+import 'package:flutter/foundation.dart' show ValueNotifier, visibleForTesting;
 import 'package:http/http.dart' as http;
 
 import '../utils/api_config.dart';
+import 'cache_store.dart';
+import 'connectivity_service.dart';
 
 // Friendly wording for failures that carry no message of their own. Every
 // string here is what the user ends up reading in a snackbar or error card.
@@ -45,9 +47,26 @@ class ApiService {
   @visibleForTesting
   static http.Client? clientOverride;
 
+  /// Whether the last network read was served from the cache.
+  ///
+  /// Screens listen to this to show an "offline" hint without having to
+  /// catch anything themselves: it flips to true when a GET could not reach
+  /// the server but a saved copy existed, and back to false on the next
+  /// successful read.
+  static final ValueNotifier<bool> servingCachedData = ValueNotifier(false);
+
+  /// How long any request may take before it is treated as unreachable.
+  ///
+  /// Without this a dropped wifi leaves sockets hanging for minutes, so the
+  /// app neither fails over to the cache nor shows the offline banner.
+  static const Duration requestTimeout = Duration(seconds: 8);
+
   /// Sends [request] through [clientOverride] when one is set, otherwise
   /// through a one-shot client that is closed afterwards, exactly like the
   /// top-level `http` helpers used before.
+  ///
+  /// Every request is bounded by [requestTimeout] so an unreachable server
+  /// fails fast instead of hanging on the socket.
   Future<http.Response> _sendRequest(
     Future<http.Response> Function(http.Client client) request,
   ) {
@@ -59,16 +78,76 @@ class ApiService {
 
     final client = http.Client();
 
-    return request(client).whenComplete(client.close);
+    return request(client).timeout(requestTimeout).whenComplete(client.close);
   }
 
-  Future<dynamic> get(String endpoint) {
-    return _send(
-      () => _sendRequest(
-        (client) =>
-            client.get(Uri.parse('$baseUrl$endpoint'), headers: _headers),
-      ),
-    );
+  /// Reads [endpoint], falling back to the last cached copy when the server
+  /// cannot be reached.
+  ///
+  /// A successful response is cached before it is returned. A network
+  /// failure (timeout, unreachable host) returns the cached body and flags
+  /// [servingCachedData]; only when nothing is cached does the error surface.
+  ///
+  /// When the app already knows it is offline the network is skipped
+  /// entirely, so a cached screen opens instantly rather than waiting for a
+  /// doomed request to time out.
+  Future<dynamic> get(String endpoint) async {
+    if (!ConnectivityService.instance.online.value) {
+      final cached =
+          CacheStore.instance.read(endpoint) ??
+          CacheStore.instance.read(_withoutQuery(endpoint));
+
+      if (cached != null) {
+        servingCachedData.value = true;
+        return cached;
+      }
+    }
+
+    try {
+      final dynamic data = await _send(
+        () => _sendRequest(
+          (client) =>
+              client.get(Uri.parse('$baseUrl$endpoint'), headers: _headers),
+        ),
+      );
+
+      await CacheStore.instance.write(endpoint, data);
+      servingCachedData.value = false;
+
+      return data;
+    } on ApiException catch (error) {
+      if (error.statusCode != 0) rethrow;
+
+      final cached = CacheStore.instance.read(endpoint);
+
+      if (cached != null) {
+        servingCachedData.value = true;
+        return cached;
+      }
+
+      // Nothing cached for this exact URL. A date-ranged request can still be
+      // answered from the same endpoint's unfiltered copy, which is what the
+      // prefetch warmed, so the user sees data instead of an error.
+      final fallback = CacheStore.instance.read(_withoutQuery(endpoint));
+
+      if (fallback != null) {
+        servingCachedData.value = true;
+        return fallback;
+      }
+
+      // Mark offline so the very next read takes the fast path above.
+      ConnectivityService.instance.markOffline();
+
+      rethrow;
+    }
+  }
+
+  /// The endpoint with its query string removed, e.g.
+  /// `/api/SaleInvoices?from=...` -> `/api/SaleInvoices`.
+  static String _withoutQuery(String endpoint) {
+    final index = endpoint.indexOf('?');
+
+    return index < 0 ? endpoint : endpoint.substring(0, index);
   }
 
   Future<dynamic> post(String endpoint, Map<String, dynamic> body) {

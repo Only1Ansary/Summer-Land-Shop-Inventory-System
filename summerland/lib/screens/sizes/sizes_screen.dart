@@ -6,6 +6,7 @@ import '../../services/size_service.dart';
 
 import '../../ui/app_shell.dart';
 import '../../ui/app_widgets.dart';
+import '../../ui/reconnect_reloader.dart';
 
 class SizesScreen extends StatefulWidget {
   const SizesScreen({super.key});
@@ -14,7 +15,8 @@ class SizesScreen extends StatefulWidget {
   State<SizesScreen> createState() => _SizesScreenState();
 }
 
-class _SizesScreenState extends State<SizesScreen> {
+class _SizesScreenState extends State<SizesScreen>
+    with ReconnectReloader<SizesScreen> {
   final SizeService _service = SizeService(ApiService());
 
   List<SizeModel> _sizes = [];
@@ -52,6 +54,11 @@ class _SizesScreenState extends State<SizesScreen> {
         });
       }
     }
+  }
+
+  @override
+  void onReconnected() {
+    _loadSizeModels();
   }
 
   Future<void> _addSizeModel() async {

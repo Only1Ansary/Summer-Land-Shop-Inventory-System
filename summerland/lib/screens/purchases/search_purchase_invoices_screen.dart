@@ -4,6 +4,7 @@ import '../../models/purchase_invoice.dart';
 import '../../services/api_service.dart';
 import '../../services/purchase_invoice_service.dart';
 import '../../ui/app_widgets.dart';
+import '../../ui/reconnect_reloader.dart';
 import 'purchase_invoice_tile.dart';
 import 'show_purchase_invoice_screen.dart';
 
@@ -16,7 +17,8 @@ class SearchPurchaseInvoicesScreen extends StatefulWidget {
 }
 
 class _SearchPurchaseInvoicesScreenState
-    extends State<SearchPurchaseInvoicesScreen> {
+    extends State<SearchPurchaseInvoicesScreen>
+    with ReconnectReloader<SearchPurchaseInvoicesScreen> {
   final PurchaseInvoiceService _purchaseInvoiceService = PurchaseInvoiceService(
     ApiService(),
   );
@@ -72,6 +74,11 @@ class _SearchPurchaseInvoicesScreenState
         });
       }
     }
+  }
+
+  @override
+  void onReconnected() {
+    _loadInvoices();
   }
 
   List<PurchaseInvoice> get _results {

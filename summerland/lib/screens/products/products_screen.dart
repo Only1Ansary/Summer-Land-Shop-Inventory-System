@@ -15,6 +15,7 @@ import '../../services/size_service.dart';
 
 import '../../ui/app_shell.dart';
 import '../../ui/app_widgets.dart';
+import '../../ui/reconnect_reloader.dart';
 
 import 'product_details_screen.dart';
 import 'product_form_screen.dart';
@@ -26,7 +27,8 @@ class ProductsScreen extends StatefulWidget {
   State<ProductsScreen> createState() => _ProductsScreenState();
 }
 
-class _ProductsScreenState extends State<ProductsScreen> {
+class _ProductsScreenState extends State<ProductsScreen>
+    with ReconnectReloader<ProductsScreen> {
   final ProductService _productService = ProductService(ApiService());
 
   final CategoryService _categoryService = CategoryService(ApiService());
@@ -124,6 +126,11 @@ class _ProductsScreenState extends State<ProductsScreen> {
         });
       }
     }
+  }
+
+  @override
+  void onReconnected() {
+    _loadReferenceData();
   }
 
   /// Re-runs the current search after a product changes.

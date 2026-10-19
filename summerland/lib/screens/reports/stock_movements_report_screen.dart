@@ -9,6 +9,7 @@ import '../../services/report_service.dart';
 import '../../ui/app_shell.dart';
 import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
+import '../../ui/reconnect_reloader.dart';
 
 class StockMovementsReportScreen extends StatefulWidget {
   const StockMovementsReportScreen({super.key});
@@ -18,8 +19,8 @@ class StockMovementsReportScreen extends StatefulWidget {
       _StockMovementsReportScreenState();
 }
 
-class _StockMovementsReportScreenState
-    extends State<StockMovementsReportScreen> {
+class _StockMovementsReportScreenState extends State<StockMovementsReportScreen>
+    with ReconnectReloader<StockMovementsReportScreen> {
   late final ReportService _reportService;
   late final LocationService _locationService;
 
@@ -94,6 +95,11 @@ class _StockMovementsReportScreenState
         _loading = false;
       });
     }
+  }
+
+  @override
+  void onReconnected() {
+    _loadData();
   }
 
   Future<void> _pickDate(bool isFrom) async {

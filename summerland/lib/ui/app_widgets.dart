@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../services/connectivity_service.dart';
 import 'app_theme.dart';
 
 /// Renders a number as a two-decimal money string with the EGP currency.
@@ -65,6 +66,60 @@ class LoadingState extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// A thin bar that appears while the backend is unreachable, noting that
+/// the data on screen is the last copy the app managed to load.
+///
+/// It listens to [ConnectivityService.online] and hides itself the moment
+/// the server comes back, so it never takes space when all is well.
+class OfflineBanner extends StatelessWidget {
+  const OfflineBanner({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return ValueListenableBuilder<bool>(
+      valueListenable: ConnectivityService.instance.online,
+      builder: (context, online, _) {
+        return AnimatedSize(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+          alignment: Alignment.topCenter,
+          child: online
+              ? const SizedBox(width: double.infinity)
+              : Container(
+                  width: double.infinity,
+                  color: AppPalette.warning.withValues(alpha: 0.15),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.cloud_off_rounded,
+                        size: 18,
+                        color: AppPalette.warning,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'No connection to the server. Showing the last '
+                          'loaded data.',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurface,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+        );
+      },
     );
   }
 }

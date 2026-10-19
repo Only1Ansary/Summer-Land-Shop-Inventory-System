@@ -4,6 +4,7 @@ import '../screens/categories/categories_screen.dart';
 import '../screens/employees/employees_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/inventory/inventory_screen.dart';
+import '../screens/inventory/inventory_search_screen.dart';
 import '../screens/invoices/create_invoice_screen.dart';
 import '../screens/invoices/show_sale_invoices_screen.dart';
 import '../screens/locations/locations_screen.dart';
@@ -94,6 +95,14 @@ class AppDestinations {
       selectedIcon: Icons.warehouse_rounded,
       group: 'Stock',
       builder: _inventory,
+    ),
+    const AppNavigationItem(
+      id: 'inventory-search',
+      title: 'Inventory Search',
+      icon: Icons.search_rounded,
+      selectedIcon: Icons.manage_search_rounded,
+      group: 'Stock',
+      builder: _inventorySearch,
     ),
     const AppNavigationItem(
       id: 'transfers',
@@ -281,6 +290,7 @@ class AppDestinations {
   static Widget _products() => const ProductsScreen();
   static Widget _categories() => const CategoriesScreen();
   static Widget _inventory() => const InventoryScreen();
+  static Widget _inventorySearch() => const InventorySearchScreen();
   static Widget _transfers() => const StockTransfersScreen();
   static Widget _sales() => const CreateInvoiceScreen();
   static Widget _saleInvoices() => const ShowSaleInvoicesScreen();

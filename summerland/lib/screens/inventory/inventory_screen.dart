@@ -6,6 +6,7 @@ import '../../services/category_service.dart';
 
 import '../../ui/app_shell.dart';
 import '../../ui/app_widgets.dart';
+import '../../ui/reconnect_reloader.dart';
 
 import 'inventory_products_screen.dart';
 
@@ -16,7 +17,8 @@ class InventoryScreen extends StatefulWidget {
   State<InventoryScreen> createState() => _InventoryScreenState();
 }
 
-class _InventoryScreenState extends State<InventoryScreen> {
+class _InventoryScreenState extends State<InventoryScreen>
+    with ReconnectReloader<InventoryScreen> {
   final CategoryService _categoryService = CategoryService(ApiService());
 
   List<Category> _categories = [];
@@ -53,6 +55,11 @@ class _InventoryScreenState extends State<InventoryScreen> {
         _errorMessage = friendlyError(e);
       });
     }
+  }
+
+  @override
+  void onReconnected() {
+    _loadCategories();
   }
 
   void _openCategory(Category category) {

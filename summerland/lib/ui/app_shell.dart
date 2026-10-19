@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'app_destinations.dart';
+import 'app_widgets.dart';
 import 'shop_logo.dart';
 
 /// Persistent, app-wide navigation shell.
@@ -44,6 +45,7 @@ class AppShell extends StatelessWidget {
               child: Column(
                 children: [
                   AppBar(title: Text(title), actions: actions),
+                  const OfflineBanner(),
                   Expanded(child: body),
                 ],
               ),
@@ -67,7 +69,12 @@ class AppShell extends StatelessWidget {
       ),
       bottomNavigationBar: _AppBottomNav(selectedId: destinationId),
       floatingActionButton: floatingActionButton,
-      body: body,
+      body: Column(
+        children: [
+          const OfflineBanner(),
+          Expanded(child: body),
+        ],
+      ),
     );
   }
 }

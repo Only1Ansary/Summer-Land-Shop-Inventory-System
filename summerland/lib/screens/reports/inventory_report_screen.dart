@@ -7,7 +7,7 @@ import '../../models/reports/inventory_report.dart';
 import '../../ui/app_shell.dart';
 import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
-import '../../ui/barcode_view.dart';
+import '../../ui/reconnect_reloader.dart';
 
 class InventoryReportScreen extends StatefulWidget {
   const InventoryReportScreen({super.key});
@@ -16,7 +16,8 @@ class InventoryReportScreen extends StatefulWidget {
   State<InventoryReportScreen> createState() => _InventoryReportScreenState();
 }
 
-class _InventoryReportScreenState extends State<InventoryReportScreen> {
+class _InventoryReportScreenState extends State<InventoryReportScreen>
+    with ReconnectReloader<InventoryReportScreen> {
   late final ReportService _reportService;
 
   InventoryReport? _report;
@@ -71,28 +72,65 @@ class _InventoryReportScreenState extends State<InventoryReportScreen> {
     }
   }
 
-  String _variantLabel(InventoryReportItem item) {
-    final parts = <String>[];
+  @override
+  void onReconnected() {
+    _loadReport();
+  }
 
-    if (item.sizeName != null && item.sizeName!.isNotEmpty) {
-      parts.add(item.sizeName!);
+  /// Adds up the report's variant rows into one row per product.
+  ///
+  /// A product's quantity is the sum of every variant's stock, and the
+  /// per-location figures are merged the same way. Products with no stock
+  /// at all are left out.
+  List<_ProductStockRow> _groupByProduct(List<InventoryReportItem> items) {
+    final order = <String>[];
+    final names = <String, String>{};
+    final models = <String, String>{};
+    final quantities = <String, int>{};
+    final locations = <String, Map<int, InventoryLocation>>{};
+
+    for (final item in items) {
+      final key = '${item.modelNumber}:${item.productName}';
+
+      if (!quantities.containsKey(key)) {
+        order.add(key);
+        names[key] = item.productName;
+        models[key] = item.modelNumber;
+        quantities[key] = 0;
+        locations[key] = {};
+      }
+
+      quantities[key] = quantities[key]! + item.totalQuantity;
+
+      for (final location in item.locations) {
+        final existing = locations[key]![location.locationId];
+
+        locations[key]![location.locationId] = InventoryLocation(
+          locationId: location.locationId,
+          locationName: location.locationName,
+          quantity: (existing?.quantity ?? 0) + location.quantity,
+        );
+      }
     }
 
-    if (item.colourName != null && item.colourName!.isNotEmpty) {
-      parts.add(item.colourName!);
-    }
-
-    if (parts.isEmpty) {
-      return 'Variant #${item.productVariantId}';
-    }
-
-    return parts.join(' / ');
+    return order
+        .where((key) => quantities[key]! > 0)
+        .map(
+          (key) => _ProductStockRow(
+            productName: names[key]!,
+            modelNumber: models[key]!,
+            totalQuantity: quantities[key]!,
+            locations: locations[key]!.values.toList(),
+          ),
+        )
+        .toList();
   }
 
   @override
   Widget build(BuildContext context) {
     final report = _report;
     final items = report?.items ?? const <InventoryReportItem>[];
+    final products = _groupByProduct(items);
 
     return AppShell(
       title: 'Inventory Report',
@@ -114,13 +152,13 @@ class _InventoryReportScreenState extends State<InventoryReportScreen> {
                           StatGrid(
                             stats: [
                               StatData(
-                                label: 'Variants',
-                                value: '${report!.totalVariants}',
+                                label: 'Products',
+                                value: '${products.length}',
                                 icon: Icons.inventory_2_outlined,
                               ),
                               StatData(
                                 label: 'Total Quantity',
-                                value: '${report.totalQuantity}',
+                                value: '${report!.totalQuantity}',
                                 icon: Icons.numbers_rounded,
                               ),
                               StatData(
@@ -146,90 +184,18 @@ class _InventoryReportScreenState extends State<InventoryReportScreen> {
                             subtitle: 'Tap a product to see stock by location',
                           ),
                           const SizedBox(height: 8),
-                          ..._pageSlice(items).map(
-                            (item) => Card(
+                          ..._pageSlice(products).map((product) {
+                            return Card(
                               margin: const EdgeInsets.only(bottom: 10),
                               child: ExpansionTile(
-                                title: Text(item.productName),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      _variantLabel(item),
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .primary,
-                                      ),
-                                    ),
-                                    Text(
-                                      '${item.modelNumber} • Qty: '
-                                      '${item.totalQuantity}',
-                                    ),
-                                  ],
-                                ),
-                                trailing: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      money(item.price),
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        color: amountColor(context, item.price),
-                                      ),
-                                    ),
-                                    if (item.isLowStock) ...[
-                                      const SizedBox(height: 4),
-                                      const LowStockBadge(),
-                                    ],
-                                  ],
+                                title: Text(product.productName),
+                                subtitle: Text(
+                                  '${product.modelNumber} • Qty: '
+                                  '${product.totalQuantity}',
                                 ),
                                 children: [
-                                  ListTile(
-                                    leading: const Icon(
-                                      Icons.qr_code_2_outlined,
-                                      size: 20,
-                                    ),
-                                    title: const Text('Barcode'),
-                                    subtitle: Text(item.barcode),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.fromLTRB(
-                                      16,
-                                      0,
-                                      16,
-                                      8,
-                                    ),
-                                    child: BarcodeView(
-                                      item.barcode,
-                                      showText: false,
-                                    ),
-                                  ),
-                                  ListTile(
-                                    leading: const Icon(
-                                      Icons.attach_money_outlined,
-                                      size: 20,
-                                    ),
-                                    title: const Text('Price'),
-                                    subtitle: Text(
-                                      money(item.price),
-                                      style: TextStyle(
-                                        color: amountColor(context, item.price),
-                                      ),
-                                    ),
-                                  ),
-                                  ListTile(
-                                    leading: const Icon(
-                                      Icons.low_priority_rounded,
-                                      size: 20,
-                                    ),
-                                    title: const Text('Low Stock Threshold'),
-                                    subtitle: Text('${item.lowStockThreshold}'),
-                                  ),
                                   const Divider(height: 1),
-                                  ...item.locations.map(
+                                  ...product.locations.map(
                                     (location) => ListTile(
                                       title: Text(location.locationName),
                                       trailing: Text(
@@ -242,19 +208,19 @@ class _InventoryReportScreenState extends State<InventoryReportScreen> {
                                   ),
                                 ],
                               ),
-                            ),
-                          ),
+                            );
+                          }),
                         ],
                       ),
                     ),
                   ),
                 ),
-                if (items.isNotEmpty)
+                if (products.isNotEmpty)
                   WideContent(
                     child: PaginationBar(
                       page: _currentPage,
                       pageSize: _pageSize,
-                      totalItems: items.length,
+                      totalItems: products.length,
                       onPageChanged: _goToPage,
                     ),
                   ),
@@ -262,4 +228,19 @@ class _InventoryReportScreenState extends State<InventoryReportScreen> {
             ),
     );
   }
+}
+
+/// One product's stock, with every variant's quantity added together.
+class _ProductStockRow {
+  final String productName;
+  final String modelNumber;
+  final int totalQuantity;
+  final List<InventoryLocation> locations;
+
+  _ProductStockRow({
+    required this.productName,
+    required this.modelNumber,
+    required this.totalQuantity,
+    required this.locations,
+  });
 }

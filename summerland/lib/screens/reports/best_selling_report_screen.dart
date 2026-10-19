@@ -9,6 +9,7 @@ import '../../services/report_service.dart';
 import '../../ui/app_shell.dart';
 import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
+import '../../ui/reconnect_reloader.dart';
 
 class BestSellingReportScreen extends StatefulWidget {
   const BestSellingReportScreen({super.key});
@@ -18,7 +19,8 @@ class BestSellingReportScreen extends StatefulWidget {
       _BestSellingReportScreenState();
 }
 
-class _BestSellingReportScreenState extends State<BestSellingReportScreen> {
+class _BestSellingReportScreenState extends State<BestSellingReportScreen>
+    with ReconnectReloader<BestSellingReportScreen> {
   late final ReportService _reportService;
   late final LocationService _locationService;
 
@@ -86,6 +88,11 @@ class _BestSellingReportScreenState extends State<BestSellingReportScreen> {
         _loading = false;
       });
     }
+  }
+
+  @override
+  void onReconnected() {
+    _loadData();
   }
 
   Future<void> _pickDate(bool isFrom) async {

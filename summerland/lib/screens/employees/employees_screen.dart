@@ -7,6 +7,7 @@ import '../../services/employee_service.dart';
 import '../../ui/app_shell.dart';
 import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
+import '../../ui/reconnect_reloader.dart';
 import 'add_employee_screen.dart';
 import 'employee_history_screen.dart';
 
@@ -17,7 +18,8 @@ class EmployeesScreen extends StatefulWidget {
   State<EmployeesScreen> createState() => _EmployeesScreenState();
 }
 
-class _EmployeesScreenState extends State<EmployeesScreen> {
+class _EmployeesScreenState extends State<EmployeesScreen>
+    with ReconnectReloader<EmployeesScreen> {
   final EmployeeService _employeeService = EmployeeService(ApiService());
 
   List<Employee> _employees = [];
@@ -58,6 +60,11 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
         });
       }
     }
+  }
+
+  @override
+  void onReconnected() {
+    _loadEmployees();
   }
 
   Future<void> _addEmployee() async {
