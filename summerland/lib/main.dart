@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
+import 'localization/app_strings.dart';
 import 'screens/home_screen.dart';
 import 'services/cache_store.dart';
 import 'services/connectivity_service.dart';
+import 'services/language_service.dart';
 import 'services/prefetch_service.dart';
 import 'services/shop_profile_service.dart';
 import 'services/theme_service.dart';
@@ -15,6 +18,7 @@ Future<void> main() async {
   await ApiConfig.load();
   await CacheStore.instance.load();
   ThemeService.instance.load();
+  LanguageService.instance.load();
   ShopProfileService.instance.load();
   ConnectivityService.instance.start();
   PrefetchService.instance.start();
@@ -40,6 +44,7 @@ class SummerlandApp extends StatelessWidget {
     return AnimatedBuilder(
       animation: Listenable.merge([
         ThemeService.instance.mode,
+        LanguageService.instance.language,
         ShopProfileService.instance.profile,
       ]),
       builder: (context, _) => MaterialApp(
@@ -48,6 +53,14 @@ class SummerlandApp extends StatelessWidget {
         theme: AppTheme.light(),
         darkTheme: AppTheme.dark(),
         themeMode: ThemeService.instance.mode.value,
+        locale: LanguageService.instance.locale,
+        supportedLocales: const [Locale('en'), Locale('ar')],
+        localizationsDelegates: const [
+          AppStrings.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
         navigatorKey: key,
         home: const HomeScreen(),
         builder: (context, child) =>

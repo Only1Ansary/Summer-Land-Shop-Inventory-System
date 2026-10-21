@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/employee.dart';
 import '../../services/api_service.dart';
 import '../../services/employee_service.dart';
+import '../../localization/app_strings.dart';
 import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
 
@@ -72,36 +73,36 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
         : value.toString();
   }
 
-  String? _validateName(String? value) {
+  String? _validateName(BuildContext context, String? value) {
     if (value == null || value.trim().isEmpty) {
-      return 'Enter the employee name.';
+      return context.tr('Enter the employee name.');
     }
 
     return null;
   }
 
-  String? _validateMoney(String? value, String label) {
+  String? _validateMoney(BuildContext context, String? value, String label) {
     final text = value?.trim() ?? '';
 
     if (text.isEmpty) {
-      return 'Enter the $label.';
+      return context.tr('Enter the {0}.', [label]);
     }
 
     final parsed = double.tryParse(text);
 
     if (parsed == null) {
-      return 'Enter a valid $label.';
+      return context.tr('Enter a valid {0}.', [label]);
     }
 
     if (parsed < 0) {
-      return 'Enter a $label of 0 or more.';
+      return context.tr('Enter a {0} of 0 or more.', [label]);
     }
 
     return null;
   }
 
-  String? _validateBonus(String? value) {
-    final error = _validateMoney(value, 'bonus');
+  String? _validateBonus(BuildContext context, String? value) {
+    final error = _validateMoney(context, value, context.tr('bonus'));
 
     if (error != null) {
       return error;
@@ -109,7 +110,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
 
     if (_bonusType == BonusType.percentage &&
         double.parse(value!.trim()) > 100) {
-      return 'Enter a bonus percent between 0 and 100.';
+      return context.tr('Enter a bonus percent between 0 and 100.');
     }
 
     return null;
@@ -154,8 +155,9 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
         _isSaving = false;
       });
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(friendlyError(e))));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(context, e))));
     }
   }
 
@@ -163,7 +165,9 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditing ? 'Edit Employee' : 'Add Employee'),
+        title: Text(
+          _isEditing ? context.tr('Edit Employee') : context.tr('Add Employee'),
+        ),
       ),
       body: ResponsiveFormPage(
         child: Form(
@@ -174,11 +178,11 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
               TextFormField(
                 controller: _nameController,
                 textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(
-                  labelText: 'Employee Name',
-                  prefixIcon: Icon(Icons.person_outline),
+                decoration: InputDecoration(
+                  labelText: context.tr('Employee Name'),
+                  prefixIcon: const Icon(Icons.person_outline),
                 ),
-                validator: _validateName,
+                validator: (value) => _validateName(context, value),
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -186,12 +190,13 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
-                decoration: const InputDecoration(
-                  labelText: 'Salary',
-                  prefixIcon: Icon(Icons.payments_outlined),
+                decoration: InputDecoration(
+                  labelText: context.tr('Salary'),
+                  prefixIcon: const Icon(Icons.payments_outlined),
                   suffixText: 'EGP',
                 ),
-                validator: (value) => _validateMoney(value, 'salary'),
+                validator: (value) =>
+                    _validateMoney(context, value, context.tr('salary')),
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -199,13 +204,16 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
-                decoration: const InputDecoration(
-                  labelText: 'Target',
-                  prefixIcon: Icon(Icons.flag_outlined),
+                decoration: InputDecoration(
+                  labelText: context.tr('Target'),
+                  prefixIcon: const Icon(Icons.flag_outlined),
                   suffixText: 'EGP',
-                  helperText: 'Sales the employee is expected to reach.',
+                  helperText: context.tr(
+                    'Sales the employee is expected to reach.',
+                  ),
                 ),
-                validator: (value) => _validateMoney(value, 'target'),
+                validator: (value) =>
+                    _validateMoney(context, value, context.tr('target')),
               ),
 
               // The bonus starts at zero when an employee is added, so it
@@ -213,16 +221,16 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
               if (_isEditing) ...[
                 const SizedBox(height: 16),
                 SegmentedButton<BonusType>(
-                  segments: const [
+                  segments: [
                     ButtonSegment(
                       value: BonusType.fixed,
-                      label: Text('Fixed amount'),
-                      icon: Icon(Icons.payments_outlined),
+                      label: Text(context.tr('Fixed amount')),
+                      icon: const Icon(Icons.payments_outlined),
                     ),
                     ButtonSegment(
                       value: BonusType.percentage,
-                      label: Text('Percent of sales'),
-                      icon: Icon(Icons.percent),
+                      label: Text(context.tr('Percent of sales')),
+                      icon: const Icon(Icons.percent),
                     ),
                   ],
                   selected: {_bonusType},
@@ -240,15 +248,15 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                   ),
                   decoration: InputDecoration(
                     labelText: _bonusType == BonusType.fixed
-                        ? 'Bonus'
-                        : 'Bonus Percent',
+                        ? context.tr('Bonus')
+                        : context.tr('Bonus Percent'),
                     prefixIcon: const Icon(Icons.card_giftcard_outlined),
                     suffixText: _bonusType == BonusType.fixed ? 'EGP' : '%',
                     helperText: _bonusType == BonusType.fixed
-                        ? 'A one-off amount paid with the salary.'
-                        : 'Applied to the employee\'s total sales.',
+                        ? context.tr('A one-off amount paid with the salary.')
+                        : context.tr('Applied to the employee\'s total sales.'),
                   ),
-                  validator: _validateBonus,
+                  validator: (value) => _validateBonus(context, value),
                 ),
                 const SizedBox(height: 16),
                 _SalesRecord(employee: widget.employee!),
@@ -264,7 +272,11 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.check_rounded),
-                label: Text(_isEditing ? 'Save Changes' : 'Add Employee'),
+                label: Text(
+                  _isEditing
+                      ? context.tr('Save Changes')
+                      : context.tr('Add Employee'),
+                ),
               ),
             ],
           ),
@@ -302,7 +314,7 @@ class _SalesRecord extends StatelessWidget {
               ),
               const SizedBox(width: 6),
               Text(
-                'Recorded from sales (view only)',
+                context.tr('Recorded from sales (view only)'),
                 style: theme.textTheme.labelMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -310,14 +322,17 @@ class _SalesRecord extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 4),
-          InfoTile(label: 'Total Sales', value: money(employee.totalSales)),
+          InfoTile(
+            label: context.tr('Total Sales'),
+            value: money(employee.totalSales),
+          ),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 6),
             child: Row(
               children: [
                 Expanded(
                   child: Text(
-                    'Achieved target',
+                    context.tr('Achieved target'),
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -325,13 +340,13 @@ class _SalesRecord extends StatelessWidget {
                 ),
                 const SizedBox(width: 16),
                 employee.reachedTarget
-                    ? const StatusBadge(
-                        label: 'TARGET MET',
+                    ? StatusBadge(
+                        label: context.tr('TARGET MET'),
                         color: AppPalette.success,
                         icon: Icons.check_circle_outline,
                       )
                     : StatusBadge(
-                        label: 'BELOW TARGET',
+                        label: context.tr('BELOW TARGET'),
                         color: theme.colorScheme.outline,
                         icon: Icons.remove_circle_outline,
                       ),

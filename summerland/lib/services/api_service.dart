@@ -2,8 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart' show ValueNotifier, visibleForTesting;
+import 'package:flutter/widgets.dart' show BuildContext;
 import 'package:http/http.dart' as http;
 
+import '../localization/app_strings.dart';
 import '../utils/api_config.dart';
 import 'cache_store.dart';
 import 'connectivity_service.dart';
@@ -364,6 +366,14 @@ String friendlyError(Object error) {
 
   return _unknownMessage;
 }
+
+/// Like [friendlyError] but translated for the current language.
+///
+/// The English wording produced by [friendlyError] doubles as the lookup
+/// key, so known fallback sentences are shown in the user's language while
+/// server-provided messages pass through unchanged.
+String friendlyErrorMessage(BuildContext context, Object error) =>
+    AppStrings.of(context).translate(friendlyError(error));
 
 class ApiException implements Exception {
   final int statusCode;

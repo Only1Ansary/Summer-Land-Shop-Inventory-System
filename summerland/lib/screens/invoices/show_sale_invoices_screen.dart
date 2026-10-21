@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../localization/app_strings.dart';
 import '../../models/invoice.dart';
 import '../../services/api_service.dart';
 import '../../services/invoice_service.dart';
@@ -74,7 +75,7 @@ class _ShowSaleInvoicesScreenState extends State<ShowSaleInvoicesScreen>
       if (!mounted) return;
 
       setState(() {
-        _error = friendlyError(e);
+        _error = friendlyErrorMessage(context, e);
       });
     } finally {
       if (mounted) {
@@ -152,23 +153,23 @@ class _ShowSaleInvoicesScreenState extends State<ShowSaleInvoicesScreen>
   @override
   Widget build(BuildContext context) {
     return AppShell(
-      title: 'Sale Invoices',
+      title: context.tr('Sale Invoices'),
       destinationId: 'sale-invoices',
       actions: [
         IconButton(
           onPressed: _resetDates,
-          tooltip: 'Reset to today',
+          tooltip: context.tr('Reset to today'),
           icon: const Icon(Icons.today_outlined),
         ),
         IconButton(
           onPressed: _openSearch,
-          tooltip: 'Search invoices',
+          tooltip: context.tr('Search invoices'),
           icon: const Icon(Icons.search),
         ),
       ],
       floatingActionButton: FloatingActionButton(
         onPressed: _newSale,
-        tooltip: 'New sale',
+        tooltip: context.tr('New sale'),
         child: const Icon(Icons.add),
       ),
       body: _isLoading
@@ -186,8 +187,10 @@ class _ShowSaleInvoicesScreenState extends State<ShowSaleInvoicesScreen>
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
             child: DateFilterBar(
-              fromLabel: _from == null ? 'From' : _formatDate(_from!),
-              toLabel: _to == null ? 'To' : _formatDate(_to!),
+              fromLabel: _from == null
+                  ? context.tr('From')
+                  : _formatDate(_from!),
+              toLabel: _to == null ? context.tr('To') : _formatDate(_to!),
               onFrom: () => _pickDate(true),
               onTo: () => _pickDate(false),
             ),
@@ -204,9 +207,9 @@ class _ShowSaleInvoicesScreenState extends State<ShowSaleInvoicesScreen>
                         EmptyState(
                           icon: Icons.receipt_long_outlined,
                           title: _edited
-                              ? 'No invoices in this period'
-                              : 'No invoices today',
-                          message: 'Try changing the date range.',
+                              ? context.tr('No invoices in this period')
+                              : context.tr('No invoices today'),
+                          message: context.tr('Try changing the date range.'),
                         ),
                       ],
                     )

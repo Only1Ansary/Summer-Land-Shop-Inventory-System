@@ -4,6 +4,7 @@ import '../../services/api_service.dart';
 import '../../services/report_service.dart';
 import '../../models/reports/inventory_report.dart';
 
+import '../../localization/app_strings.dart';
 import '../../ui/app_shell.dart';
 import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
@@ -66,7 +67,7 @@ class _InventoryReportScreenState extends State<InventoryReportScreen>
       });
     } catch (e) {
       setState(() {
-        _error = friendlyError(e);
+        _error = friendlyErrorMessage(context, e);
         _loading = false;
       });
     }
@@ -133,7 +134,7 @@ class _InventoryReportScreenState extends State<InventoryReportScreen>
     final products = _groupByProduct(items);
 
     return AppShell(
-      title: 'Inventory Report',
+      title: context.tr('Inventory Report'),
       destinationId: 'report-inventory',
       body: _loading
           ? const LoadingState()
@@ -152,17 +153,17 @@ class _InventoryReportScreenState extends State<InventoryReportScreen>
                           StatGrid(
                             stats: [
                               StatData(
-                                label: 'Products',
+                                label: context.tr('Products'),
                                 value: '${products.length}',
                                 icon: Icons.inventory_2_outlined,
                               ),
                               StatData(
-                                label: 'Total Quantity',
+                                label: context.tr('Total Quantity'),
                                 value: '${report!.totalQuantity}',
                                 icon: Icons.numbers_rounded,
                               ),
                               StatData(
-                                label: 'Inventory Value',
+                                label: context.tr('Inventory Value'),
                                 value: money(report.totalInventoryValue),
                                 icon: Icons.payments_outlined,
                                 valueColor: amountColor(
@@ -171,7 +172,7 @@ class _InventoryReportScreenState extends State<InventoryReportScreen>
                                 ),
                               ),
                               StatData(
-                                label: 'Low Stock',
+                                label: context.tr('Low Stock'),
                                 value: '${report.lowStockVariants}',
                                 icon: Icons.warning_amber_rounded,
                                 color: AppPalette.warning,
@@ -179,9 +180,11 @@ class _InventoryReportScreenState extends State<InventoryReportScreen>
                             ],
                           ),
                           const SizedBox(height: 16),
-                          const SectionHeader(
-                            title: 'Product Quantities',
-                            subtitle: 'Tap a product to see stock by location',
+                          SectionHeader(
+                            title: context.tr('Product Quantities'),
+                            subtitle: context.tr(
+                              'Tap a product to see stock by location',
+                            ),
                           ),
                           const SizedBox(height: 8),
                           ..._pageSlice(products).map((product) {
@@ -190,8 +193,10 @@ class _InventoryReportScreenState extends State<InventoryReportScreen>
                               child: ExpansionTile(
                                 title: Text(product.productName),
                                 subtitle: Text(
-                                  '${product.modelNumber} • Qty: '
-                                  '${product.totalQuantity}',
+                                  context.tr('{0} • Qty: {1}', [
+                                    product.modelNumber,
+                                    product.totalQuantity,
+                                  ]),
                                 ),
                                 children: [
                                   const Divider(height: 1),

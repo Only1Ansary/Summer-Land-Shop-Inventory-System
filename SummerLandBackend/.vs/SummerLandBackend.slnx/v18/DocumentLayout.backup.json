@@ -3,6 +3,10 @@
   "WorkspaceRootPath": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\controllers\\reportscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:controllers\\reportscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|c:\\users\\pc\\source\\repos\\summerlandbackend\\controllers\\purchasereturnscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{14F5A62F-0AF2-324E-32A6-85BCE6A784F4}|SummerLandBackend.csproj|solutionrelative:controllers\\purchasereturnscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
@@ -51,19 +55,31 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
+              "Title": "ReportsController.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Controllers\\ReportsController.cs",
+              "RelativeDocumentMoniker": "Controllers\\ReportsController.cs",
+              "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Controllers\\ReportsController.cs",
+              "RelativeToolTip": "Controllers\\ReportsController.cs",
+              "ViewState": "AgIAAHAAAAAAAAAAAAD4v3kAAAAyAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-10-20T14:30:37.915Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
               "Title": "PurchaseReturnsController.cs",
               "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Controllers\\PurchaseReturnsController.cs",
               "RelativeDocumentMoniker": "Controllers\\PurchaseReturnsController.cs",
               "ToolTip": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Controllers\\PurchaseReturnsController.cs",
               "RelativeToolTip": "Controllers\\PurchaseReturnsController.cs",
-              "ViewState": "AgIAABgAAAAAAAAAAAAcwCUAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAABgAAAAAAAAAAAAcwBoAAAAeAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-09-28T03:08:17.211Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-09-28T03:08:17.211Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 3,
               "Title": "SupplierController.cs",
               "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Controllers\\SupplierController.cs",
               "RelativeDocumentMoniker": "Controllers\\SupplierController.cs",
@@ -75,7 +91,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 2,
               "Title": "PurchaseInvoicesController.cs",
               "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Controllers\\PurchaseInvoicesController.cs",
               "RelativeDocumentMoniker": "Controllers\\PurchaseInvoicesController.cs",
@@ -87,7 +103,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 5,
               "Title": "CategoriesController.cs",
               "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Controllers\\CategoriesController.cs",
               "RelativeDocumentMoniker": "Controllers\\CategoriesController.cs",
@@ -99,7 +115,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 4,
               "Title": "ProductVariantsController.cs",
               "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Controllers\\ProductVariantsController.cs",
               "RelativeDocumentMoniker": "Controllers\\ProductVariantsController.cs",
@@ -111,7 +127,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 6,
               "Title": "SaleInvoicesController.cs",
               "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Controllers\\SaleInvoicesController.cs",
               "RelativeDocumentMoniker": "Controllers\\SaleInvoicesController.cs",
@@ -123,7 +139,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 6,
+              "DocumentIndex": 7,
               "Title": "ShopDbContext.cs",
               "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\Data\\ShopDbContext.cs",
               "RelativeDocumentMoniker": "Data\\ShopDbContext.cs",
@@ -135,7 +151,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 7,
+              "DocumentIndex": 8,
               "Title": "SalesReportDto.cs",
               "DocumentMoniker": "C:\\Users\\PC\\source\\repos\\SummerLandBackend\\DTOs\\Reports\\SalesReportDto.cs",
               "RelativeDocumentMoniker": "DTOs\\Reports\\SalesReportDto.cs",

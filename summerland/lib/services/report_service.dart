@@ -107,7 +107,7 @@ class ReportService {
   Future<BestSellingReport> getBestSellingReport({
     DateTime? from,
     DateTime? to,
-    int? locationId,
+    int? categoryId,
   }) async {
     final query = <String>[];
 
@@ -119,8 +119,8 @@ class ReportService {
       query.add('to=${Uri.encodeComponent(_date(to))}');
     }
 
-    if (locationId != null) {
-      query.add('locationId=$locationId');
+    if (categoryId != null) {
+      query.add('categoryId=$categoryId');
     }
 
     final endpoint = query.isEmpty

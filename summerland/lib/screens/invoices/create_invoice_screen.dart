@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../localization/app_strings.dart';
 import '../../models/employee.dart';
 import '../../models/inventory.dart';
 import '../../models/invoice.dart';
@@ -106,7 +107,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         _isLoading = false;
       });
 
-      _showError(friendlyError(e));
+      _showError(friendlyErrorMessage(context, e));
     }
   }
 
@@ -139,7 +140,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     } catch (e) {
       if (!mounted) return;
 
-      _showError(friendlyError(e));
+      _showError(friendlyErrorMessage(context, e));
     }
   }
 
@@ -152,7 +153,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         .toList();
 
     if (availableInventory.isEmpty) {
-      _showError('This variant has no stock in any location.');
+      _showError(context.tr('This variant has no stock in any location.'));
       return;
     }
 
@@ -282,11 +283,15 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         return;
       }
 
-      _showError('No more stock available for ${item.variant.productName}.');
+      _showError(
+        context.tr('No more stock available for {0}.', [
+          item.variant.productName,
+        ]),
+      );
     } catch (e) {
       if (!mounted) return;
 
-      _showError(friendlyError(e));
+      _showError(friendlyErrorMessage(context, e));
     } finally {
       if (mounted) {
         setState(() {
@@ -381,19 +386,21 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     final missingEmployee = _selectedEmployee == null;
 
     if (missingLocation && missingEmployee) {
-      return 'Select a cashier location and an employee to create the invoice.';
+      return context.tr(
+        'Select a cashier location and an employee to create the invoice.',
+      );
     }
 
     if (missingLocation) {
-      return 'Select a cashier location to create the invoice.';
+      return context.tr('Select a cashier location to create the invoice.');
     }
 
     if (missingEmployee) {
-      return 'Select an employee to create the invoice.';
+      return context.tr('Select an employee to create the invoice.');
     }
 
     if (_cart.isEmpty) {
-      return 'Add at least one item to create the invoice.';
+      return context.tr('Add at least one item to create the invoice.');
     }
 
     return '';
@@ -401,43 +408,46 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
 
   Future<void> _createInvoice() async {
     if (_selectedCashierLocation == null) {
-      _showError('Please select the cashier location.');
+      _showError(context.tr('Please select the cashier location.'));
       return;
     }
 
     if (_selectedEmployee == null) {
-      _showError('Please select an employee.');
+      _showError(context.tr('Please select an employee.'));
       return;
     }
 
     if (_cart.isEmpty) {
-      _showError('Please add at least one item.');
+      _showError(context.tr('Please add at least one item.'));
       return;
     }
 
     if (_discountEntryInvalid) {
-      _showError('Invoice discount percentage cannot exceed 100.');
+      _showError(context.tr('Invoice discount percentage cannot exceed 100.'));
       return;
     }
 
     if (_discountEntry < 0) {
-      _showError('Discount cannot be negative.');
+      _showError(context.tr('Discount cannot be negative.'));
       return;
     }
 
     if (!_discountIsPercent && _discountEntry > _cartTotalAfterItemDiscounts) {
       _showError(
-        'Discount cannot exceed the items total of '
-        '${money(_cartTotalAfterItemDiscounts)}.',
+        context.tr('Discount cannot exceed the items total of {0}.', [
+          money(_cartTotalAfterItemDiscounts),
+        ]),
       );
       return;
     }
 
     for (final cartItem in _cart) {
-      final error = cartItem.discountError;
+      final error = cartItem.discountError(context);
 
       if (error != null) {
-        _showError('${cartItem.variant.productName}: $error');
+        _showError(
+          context.tr('{0}: {1}', [cartItem.variant.productName, error]),
+        );
         return;
       }
     }
@@ -491,7 +501,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         _isCreating = false;
       });
 
-      _showError(friendlyError(e));
+      _showError(friendlyErrorMessage(context, e));
     }
   }
 
@@ -509,7 +519,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
           controller: _searchController,
           onChanged: _searchVariants,
           decoration: InputDecoration(
-            labelText: 'Search Model / Name / Barcode',
+            labelText: context.tr('Search Model / Name / Barcode'),
             prefixIcon: const Icon(Icons.search),
             suffixIcon: _searchController.text.isEmpty
                 ? null
@@ -531,7 +541,10 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       return Center(
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [Icon(Icons.search), Text('Search for a Variant.')],
+          children: [
+            const Icon(Icons.search),
+            Text(context.tr('Search for a Variant.')),
+          ],
         ),
       );
     }
@@ -562,12 +575,12 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Model: ${variant.modelNumber}'),
+                  Text(context.tr('Model: {0}', [variant.modelNumber])),
                   if (variant.sizeName != null)
-                    Text('Size: ${variant.sizeName}'),
+                    Text(context.tr('Size: {0}', [variant.sizeName])),
                   if (variant.colourName != null)
-                    Text('Colour: ${variant.colourName}'),
-                  Text('Barcode: ${variant.barcode}'),
+                    Text(context.tr('Colour: {0}', [variant.colourName])),
+                  Text(context.tr('Barcode: {0}', [variant.barcode])),
                 ],
               ),
               trailing: Column(
@@ -585,7 +598,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
                       child: Text(
-                        'Qty: $cartQuantity',
+                        context.tr('Qty: {0}', [cartQuantity]),
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -641,7 +654,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                   const SizedBox(width: 8),
                   Flexible(
                     child: Text(
-                      'Items: ${_cart.length}',
+                      context.tr('Items: {0}', [_cart.length]),
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
@@ -649,10 +662,10 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                       ),
                     ),
                   ),
-                  Spacer(),
+                  const Spacer(),
                   Expanded(
                     child: Text(
-                      'Total: ${money(_netTotal)}',
+                      context.tr('Total: {0}', [money(_netTotal)]),
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -693,9 +706,11 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                                 initialValue: _selectedCashierLocation?.id,
                                 isDense: true,
                                 isExpanded: true,
-                                decoration: const InputDecoration(
-                                  labelText: 'Cashier Location',
-                                  prefixIcon: Icon(Icons.storefront_outlined),
+                                decoration: InputDecoration(
+                                  labelText: context.tr('Cashier Location'),
+                                  prefixIcon: const Icon(
+                                    Icons.storefront_outlined,
+                                  ),
                                 ),
                                 items: _locations.map((location) {
                                   return DropdownMenuItem<int>(
@@ -727,9 +742,9 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                                 initialValue: _selectedEmployee?.id,
                                 isDense: true,
                                 isExpanded: true,
-                                decoration: const InputDecoration(
-                                  labelText: 'Employee',
-                                  prefixIcon: Icon(Icons.badge_outlined),
+                                decoration: InputDecoration(
+                                  labelText: context.tr('Employee'),
+                                  prefixIcon: const Icon(Icons.badge_outlined),
                                 ),
                                 items: _employees.map((employee) {
                                   return DropdownMenuItem<int>(
@@ -765,7 +780,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                           crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
                             Text(
-                              'Items ${money(_cartTotal)}',
+                              context.tr('Items {0}', [money(_cartTotal)]),
                               style: TextStyle(
                                 fontSize: 13,
                                 decoration: TextDecoration.lineThrough,
@@ -773,7 +788,9 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                               ),
                             ),
                             Text(
-                              'Item discounts -${money(_itemDiscountTotal)}',
+                              context.tr('Item discounts -{0}', [
+                                money(_itemDiscountTotal),
+                              ]),
                               style: TextStyle(
                                 fontSize: 13,
                                 color: amountColor(
@@ -797,8 +814,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                             onChanged: (_) => setState(() {}),
                             decoration: InputDecoration(
                               labelText: _discountIsPercent
-                                  ? 'Invoice discount %'
-                                  : 'Invoice discount',
+                                  ? context.tr('Invoice discount %')
+                                  : context.tr('Invoice discount'),
                               prefixText: _discountIsPercent ? null : 'EGP ',
                               isDense: true,
                               suffixIcon: _discountController.text.isEmpty
@@ -846,13 +863,22 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                     const SizedBox(height: 6),
                     Text(
                       _discountEntryInvalid
-                          ? 'Enter a percentage up to 100.'
+                          ? context.tr('Enter a percentage up to 100.')
                           : _discount > 0
-                          ? 'Discount applied: -${money(_discount)} '
-                                '${_discountIsPercent ? '(${_discountController.text.trim()}% of '
-                                          '${money(_cartTotalAfterItemDiscounts)})' : '(items '
-                                          '${money(_cartTotalAfterItemDiscounts)})'}'
-                          : 'Invoice discount, applied after item discounts.',
+                          ? context.tr('Discount applied: -{0} {1}', [
+                              money(_discount),
+                              _discountIsPercent
+                                  ? context.tr('({0}% of {1})', [
+                                      _discountController.text.trim(),
+                                      money(_cartTotalAfterItemDiscounts),
+                                    ])
+                                  : context.tr('(items {0})', [
+                                      money(_cartTotalAfterItemDiscounts),
+                                    ]),
+                            ])
+                          : context.tr(
+                              'Invoice discount, applied after item discounts.',
+                            ),
                       style: TextStyle(
                         color: _discountEntryInvalid
                             ? theme.colorScheme.error
@@ -870,7 +896,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                         final item = _cart[index];
                         final gross = item.variant.price * item.totalQuantity;
                         final net = gross - item.discountTotal;
-                        final discountError = item.discountError;
+                        final discountError = item.discountError(context);
 
                         return ListTile(
                           dense: true,
@@ -897,7 +923,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                                       minWidth: 36,
                                       minHeight: 36,
                                     ),
-                                    tooltip: 'Decrease quantity',
+                                    tooltip: context.tr('Decrease quantity'),
                                     icon: const Icon(
                                       Icons.remove_circle_outline,
                                     ),
@@ -920,24 +946,38 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                                       minWidth: 36,
                                       minHeight: 36,
                                     ),
-                                    tooltip: 'Increase quantity',
+                                    tooltip: context.tr('Increase quantity'),
                                     icon: const Icon(Icons.add_circle_outline),
                                   ),
                                 ],
                               ),
                               ...item.allocations.map(
                                 (allocation) => Text(
-                                  '  ${allocation.location.name}: '
-                                  '${allocation.quantity}',
+                                  context.tr('  {0}: {1}', [
+                                    allocation.location.name,
+                                    allocation.quantity,
+                                  ]),
                                   style: const TextStyle(fontSize: 12),
                                 ),
                               ),
                               if (item.discountTotal > 0)
                                 Text(
-                                  '  Unit: ${money(item.variant.price)} → '
-                                  '${money(item.variant.price - (item.unitDiscount ?? 0))}'
-                                  '${item.discountIsPercent ? ' (-${item.discountController.text}%)' : ''}'
-                                  ' · line -${money(item.discountTotal)}',
+                                  context.tr(
+                                    '  Unit: {0} → {1}{2} · line -{3}',
+                                    [
+                                      money(item.variant.price),
+                                      money(
+                                        item.variant.price -
+                                            (item.unitDiscount ?? 0),
+                                      ),
+                                      item.discountIsPercent
+                                          ? context.tr(' (-{0}%)', [
+                                              item.discountController.text,
+                                            ])
+                                          : '',
+                                      money(item.discountTotal),
+                                    ],
+                                  ),
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: theme.colorScheme.primary,
@@ -961,8 +1001,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                                       decoration: InputDecoration(
                                         isDense: true,
                                         labelText: item.discountIsPercent
-                                            ? 'Discount %'
-                                            : 'Discount/unit',
+                                            ? context.tr('Discount %')
+                                            : context.tr('Discount/unit'),
                                         contentPadding:
                                             const EdgeInsets.symmetric(
                                               horizontal: 8,
@@ -1101,7 +1141,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.receipt_long_outlined),
-                    label: const Text('Create Invoice'),
+                    label: Text(context.tr('Create Invoice')),
                   ),
                 ),
               ],
@@ -1115,7 +1155,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   @override
   Widget build(BuildContext context) {
     return AppShell(
-      title: 'Sales',
+      title: context.tr('Sales'),
       destinationId: 'sales',
       body: _isLoading
           ? const LoadingState()
@@ -1177,21 +1217,21 @@ class _InvoiceCartItem {
 
   double get discountTotal => (unitDiscount ?? 0) * totalQuantity;
 
-  String? get discountError {
+  String? discountError(BuildContext context) {
     if (!hasEntry) return null;
 
     final value = entryValue;
 
     if (value == null || value < 0) {
-      return 'Enter 0 or more.';
+      return context.tr('Enter 0 or more.');
     }
 
     if (discountIsPercent && value > 100) {
-      return 'Enter a percentage up to 100.';
+      return context.tr('Enter a percentage up to 100.');
     }
 
     if (!discountIsPercent && value > variant.price) {
-      return 'Max ${money(variant.price)} per unit.';
+      return context.tr('Max {0} per unit.', [money(variant.price)]);
     }
 
     return null;
@@ -1268,7 +1308,7 @@ class _AddItemDialogState extends State<_AddItemDialog> {
 
     if (_selectedStockLocation == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please choose a stock location.')),
+        SnackBar(content: Text(context.tr('Please choose a stock location.'))),
       );
       return;
     }
@@ -1277,7 +1317,7 @@ class _AddItemDialogState extends State<_AddItemDialog> {
 
     if (value == null || value <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a valid quantity.')),
+        SnackBar(content: Text(context.tr('Please enter a valid quantity.'))),
       );
       return;
     }
@@ -1295,8 +1335,10 @@ class _AddItemDialogState extends State<_AddItemDialog> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Available stock at '
-            '${_selectedStockLocation!.name}: $available',
+            context.tr('Available stock at {0}: {1}', [
+              _selectedStockLocation!.name,
+              available,
+            ]),
           ),
         ),
       );
@@ -1313,7 +1355,7 @@ class _AddItemDialogState extends State<_AddItemDialog> {
     final variant = widget.variant;
 
     return AlertDialog(
-      title: const Text('Add Item'),
+      title: Text(context.tr('Add Item')),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1324,16 +1366,17 @@ class _AddItemDialogState extends State<_AddItemDialog> {
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
             ),
             const SizedBox(height: 8),
-            Text('Model: ${variant.modelNumber}'),
-            if (variant.sizeName != null) Text('Size: ${variant.sizeName}'),
+            Text(context.tr('Model: {0}', [variant.modelNumber])),
+            if (variant.sizeName != null)
+              Text(context.tr('Size: {0}', [variant.sizeName])),
             if (variant.colourName != null)
-              Text('Colour: ${variant.colourName}'),
+              Text(context.tr('Colour: {0}', [variant.colourName])),
             const SizedBox(height: 12),
             Row(
               children: [
-                const Text(
-                  'Price:',
-                  style: TextStyle(fontWeight: FontWeight.w600),
+                Text(
+                  context.tr('Price:'),
+                  style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -1353,9 +1396,9 @@ class _AddItemDialogState extends State<_AddItemDialog> {
               ],
             ),
             const SizedBox(height: 18),
-            const Text(
-              'Stock Location',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            Text(
+              context.tr('Stock Location'),
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             DropdownButtonFormField<int>(
@@ -1363,12 +1406,12 @@ class _AddItemDialogState extends State<_AddItemDialog> {
               initialValue: _selectedStockLocation?.id,
               isDense: true,
               isExpanded: true,
-              decoration: const InputDecoration(hintText: 'Select'),
+              decoration: InputDecoration(hintText: context.tr('Select')),
               items: widget.availableInventory.map((item) {
                 return DropdownMenuItem<int>(
                   value: item.locationId,
                   child: Text(
-                    '${item.locationName} (${item.quantity})',
+                    context.tr('{0} ({1})', [item.locationName, item.quantity]),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
                   ),
@@ -1388,15 +1431,16 @@ class _AddItemDialogState extends State<_AddItemDialog> {
               Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(
-                  'Available: '
-                  '${_availableAt(_selectedStockLocation!).quantity}',
+                  context.tr('Available: {0}', [
+                    _availableAt(_selectedStockLocation!).quantity,
+                  ]),
                 ),
               ),
             const SizedBox(height: 16),
             TextField(
               controller: _controller,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Quantity'),
+              decoration: InputDecoration(labelText: context.tr('Quantity')),
             ),
           ],
         ),
@@ -1404,9 +1448,9 @@ class _AddItemDialogState extends State<_AddItemDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(context.tr('Cancel')),
         ),
-        FilledButton(onPressed: _add, child: const Text('Add')),
+        FilledButton(onPressed: _add, child: Text(context.tr('Add'))),
       ],
     );
   }
@@ -1430,7 +1474,7 @@ class InvoiceDetailsScreen extends StatelessWidget {
         invoice.totalAmount + invoice.discountAmount + itemDiscountTotal;
 
     return Scaffold(
-      appBar: AppBar(title: Text('Invoice #${invoice.id}')),
+      appBar: AppBar(title: Text(context.tr('Invoice #{0}', [invoice.id]))),
       body: WideContent(
         child: ListView(
           padding: const EdgeInsets.all(16),
@@ -1442,7 +1486,7 @@ class InvoiceDetailsScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Invoice #${invoice.id}',
+                      context.tr('Invoice #{0}', [invoice.id]),
                       style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -1450,28 +1494,33 @@ class InvoiceDetailsScreen extends StatelessWidget {
                     ),
                     const Divider(height: 24),
                     InfoTile(
-                      label: 'Cashier Location',
+                      label: context.tr('Cashier Location'),
                       value: invoice.locationName,
                     ),
                     InfoTile(
-                      label: 'Employee',
-                      value: invoice.employeeName ?? 'None',
+                      label: context.tr('Employee'),
+                      value: invoice.employeeName ?? context.tr('None'),
                     ),
-                    InfoTile(label: 'Date', value: '${invoice.createdAt}'),
+                    InfoTile(
+                      label: context.tr('Date'),
+                      value: '${invoice.createdAt}',
+                    ),
                   ],
                 ),
               ),
             ),
             const SizedBox(height: 16),
-            const SectionHeader(
-              title: 'Items',
-              subtitle: 'Line items on this invoice',
+            SectionHeader(
+              title: context.tr('Items'),
+              subtitle: context.tr('Line items on this invoice'),
             ),
             const SizedBox(height: 8),
             ...invoice.items.map((item) {
               final variantDetails = [
-                if (item.sizeName != null) 'Size: ${item.sizeName}',
-                if (item.colourName != null) 'Colour: ${item.colourName}',
+                if (item.sizeName != null)
+                  context.tr('Size: {0}', [item.sizeName]),
+                if (item.colourName != null)
+                  context.tr('Colour: {0}', [item.colourName]),
               ].join(' • ');
 
               return Card(
@@ -1485,7 +1534,7 @@ class InvoiceDetailsScreen extends StatelessWidget {
                           text:
                               '${item.modelNumber}'
                               '${variantDetails.isEmpty ? '' : ' • $variantDetails'}\n'
-                              'Qty: ',
+                              '${context.tr('Qty: ')}',
                         ),
                         TextSpan(text: '${item.quantity}'),
                         const TextSpan(text: ' × '),
@@ -1516,10 +1565,12 @@ class InvoiceDetailsScreen extends StatelessWidget {
                             ),
                           ),
                           TextSpan(
-                            text:
-                                '\nDiscount: '
-                                '-${money(item.discountAmount)}/unit'
-                                '${item.discountPercent == null ? '' : ' (${percentLabel(item.discountPercent!)})'}',
+                            text: context.tr('\nDiscount: {0}/unit{1}', [
+                              '-${money(item.discountAmount)}',
+                              item.discountPercent == null
+                                  ? ''
+                                  : ' (${percentLabel(item.discountPercent!)})',
+                            ]),
                             style: TextStyle(
                               color: amountColor(context, -item.discountAmount),
                             ),
@@ -1561,16 +1612,16 @@ class InvoiceDetailsScreen extends StatelessWidget {
                 ),
               );
             }),
-            InfoTile(label: 'Subtotal', value: money(subtotal)),
+            InfoTile(label: context.tr('Subtotal'), value: money(subtotal)),
             if (itemDiscountTotal > 0)
               InfoTile(
-                label: 'Item discounts',
+                label: context.tr('Item discounts'),
                 value: moneyNegative(itemDiscountTotal),
                 valueStyle: amountStyle(context, -itemDiscountTotal),
               ),
             if (invoice.discountAmount > 0)
               InfoTile(
-                label: 'Discount',
+                label: context.tr('Discount'),
                 value: invoice.discountPercent == null
                     ? moneyNegative(invoice.discountAmount)
                     : '${moneyNegative(invoice.discountAmount)} '
@@ -1587,7 +1638,7 @@ class InvoiceDetailsScreen extends StatelessWidget {
               child: Row(
                 children: [
                   Text(
-                    'Total',
+                    context.tr('Total'),
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: Theme.of(context).colorScheme.onPrimaryContainer,

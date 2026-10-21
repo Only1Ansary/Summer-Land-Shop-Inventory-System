@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../localization/app_strings.dart';
 import '../../models/location.dart';
 import '../../models/reports/stock_movement_report.dart';
 import '../../services/api_service.dart';
@@ -91,7 +92,7 @@ class _StockMovementsReportScreenState extends State<StockMovementsReportScreen>
       });
     } catch (e) {
       setState(() {
-        _error = friendlyError(e);
+        _error = friendlyErrorMessage(context, e);
         _loading = false;
       });
     }
@@ -133,7 +134,7 @@ class _StockMovementsReportScreenState extends State<StockMovementsReportScreen>
     final items = report?.items ?? const <StockMovementReportItem>[];
 
     return AppShell(
-      title: 'Stock Movements',
+      title: context.tr('Stock Movements'),
       destinationId: 'report-movements',
       body: _loading
           ? const LoadingState()
@@ -151,9 +152,11 @@ class _StockMovementsReportScreenState extends State<StockMovementsReportScreen>
                         children: [
                           DateFilterBar(
                             fromLabel: _from == null
-                                ? 'From'
+                                ? context.tr('From')
                                 : _formatDate(_from!),
-                            toLabel: _to == null ? 'To' : _formatDate(_to!),
+                            toLabel: _to == null
+                                ? context.tr('To')
+                                : _formatDate(_to!),
                             onFrom: () => _pickDate(true),
                             onTo: () => _pickDate(false),
                           ),
@@ -161,14 +164,16 @@ class _StockMovementsReportScreenState extends State<StockMovementsReportScreen>
                           DropdownButtonFormField<int?>(
                             key: ValueKey('location-$_selectedLocationId'),
                             initialValue: _selectedLocationId,
-                            decoration: const InputDecoration(
-                              labelText: 'Location',
-                              prefixIcon: Icon(Icons.location_on_outlined),
+                            decoration: InputDecoration(
+                              labelText: context.tr('Location'),
+                              prefixIcon: const Icon(
+                                Icons.location_on_outlined,
+                              ),
                             ),
                             items: [
-                              const DropdownMenuItem<int?>(
+                              DropdownMenuItem<int?>(
                                 value: null,
-                                child: Text('All Locations'),
+                                child: Text(context.tr('All Locations')),
                               ),
                               ..._locations.map(
                                 (location) => DropdownMenuItem<int?>(
@@ -189,17 +194,18 @@ class _StockMovementsReportScreenState extends State<StockMovementsReportScreen>
                           StatGrid(
                             stats: [
                               StatData(
-                                label: 'Movements',
+                                label: context.tr('Movements'),
                                 value: '${report!.movementCount}',
                                 icon: Icons.swap_vert_rounded,
                               ),
                             ],
                           ),
                           const SizedBox(height: 16),
-                          const SectionHeader(
-                            title: 'Movement History',
-                            subtitle:
-                                'Quantity changes from transfers and refills',
+                          SectionHeader(
+                            title: context.tr('Movement History'),
+                            subtitle: context.tr(
+                              'Quantity changes from transfers and refills',
+                            ),
                           ),
                           const SizedBox(height: 8),
                           ..._pageSlice(items).map(
@@ -210,7 +216,7 @@ class _StockMovementsReportScreenState extends State<StockMovementsReportScreen>
                                 title: Text(item.productName),
                                 subtitle: Text(
                                   '${item.modelNumber}\n'
-                                  '${item.locationName} • ${item.reason}\n'
+                                  '${item.locationName} • ${context.tr(item.reason)}\n'
                                   '${item.createdAt}',
                                 ),
                                 trailing: StatusBadge(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/category.dart';
 import '../../models/product.dart';
+import '../../localization/app_strings.dart';
 import '../../services/api_service.dart';
 import '../../services/product_service.dart';
 
@@ -97,7 +98,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
 
     if (_selectedCategoryId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a category.')),
+        SnackBar(content: Text(context.tr('Please select a category.'))),
       );
       return;
     }
@@ -134,8 +135,9 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(friendlyError(e))));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(context, e))));
     } finally {
       if (mounted) {
         setState(() {
@@ -148,7 +150,11 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(isEditing ? 'Edit Product' : 'Add Product')),
+      appBar: AppBar(
+        title: Text(
+          isEditing ? context.tr('Edit Product') : context.tr('Add Product'),
+        ),
+      ),
       body: ResponsiveFormPage(
         child: Form(
           key: _formKey,
@@ -157,13 +163,13 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
             children: [
               TextFormField(
                 controller: _modelController,
-                decoration: const InputDecoration(
-                  labelText: 'Model Number',
-                  prefixIcon: Icon(Icons.tag),
+                decoration: InputDecoration(
+                  labelText: context.tr('Model Number'),
+                  prefixIcon: const Icon(Icons.tag),
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Model number is required.';
+                    return context.tr('Model number is required.');
                   }
 
                   return null;
@@ -174,9 +180,9 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
 
               TextFormField(
                 controller: _barcodeController,
-                decoration: const InputDecoration(
-                  labelText: 'Barcode (optional)',
-                  prefixIcon: Icon(Icons.qr_code_2),
+                decoration: InputDecoration(
+                  labelText: context.tr('Barcode (optional)'),
+                  prefixIcon: const Icon(Icons.qr_code_2),
                 ),
               ),
 
@@ -184,13 +190,13 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
 
               TextFormField(
                 controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Product Name',
-                  prefixIcon: Icon(Icons.inventory_2_outlined),
+                decoration: InputDecoration(
+                  labelText: context.tr('Product Name'),
+                  prefixIcon: const Icon(Icons.inventory_2_outlined),
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Product name is required.';
+                    return context.tr('Product name is required.');
                   }
 
                   return null;
@@ -202,21 +208,21 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
               TextFormField(
                 controller: _purchasePriceController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Purchase Price',
-                  prefixIcon: Icon(Icons.payments_outlined),
+                decoration: InputDecoration(
+                  labelText: context.tr('Purchase Price'),
+                  prefixIcon: const Icon(Icons.payments_outlined),
                   suffixText: '₦',
                 ),
                 onChanged: (_) => setState(() {}),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Purchase price is required.';
+                    return context.tr('Purchase price is required.');
                   }
 
                   final price = _parseInt(value);
 
                   if (price == null || price <= 0) {
-                    return 'Enter a positive whole number.';
+                    return context.tr('Enter a positive whole number.');
                   }
 
                   return null;
@@ -228,20 +234,20 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
               TextFormField(
                 controller: _profitMarginController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Profit Margin (%)',
-                  prefixIcon: Icon(Icons.percent),
+                decoration: InputDecoration(
+                  labelText: context.tr('Profit Margin (%)'),
+                  prefixIcon: const Icon(Icons.percent),
                 ),
                 onChanged: (_) => setState(() {}),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Profit margin is required.';
+                    return context.tr('Profit margin is required.');
                   }
 
                   final margin = _parseInt(value);
 
                   if (margin == null || margin <= 0) {
-                    return 'Enter a positive whole number.';
+                    return context.tr('Enter a positive whole number.');
                   }
 
                   return null;
@@ -254,9 +260,9 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.sell_outlined),
-                  title: const Text('Selling Price'),
-                  subtitle: const Text(
-                    'Purchase price plus your profit margin',
+                  title: Text(context.tr('Selling Price')),
+                  subtitle: Text(
+                    context.tr('Purchase price plus your profit margin'),
                   ),
                   trailing: Text(
                     money(_computedSellingPrice()),
@@ -273,9 +279,9 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
               DropdownButtonFormField<int>(
                 key: ValueKey('category-$_selectedCategoryId'),
                 initialValue: _selectedCategoryId,
-                decoration: const InputDecoration(
-                  labelText: 'Category',
-                  prefixIcon: Icon(Icons.category_outlined),
+                decoration: InputDecoration(
+                  labelText: context.tr('Category'),
+                  prefixIcon: const Icon(Icons.category_outlined),
                 ),
                 items: widget.categories.map((category) {
                   return DropdownMenuItem<int>(
@@ -290,7 +296,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                 },
                 validator: (value) {
                   if (value == null) {
-                    return 'Category is required.';
+                    return context.tr('Category is required.');
                   }
 
                   return null;
@@ -308,7 +314,9 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.save_outlined),
-                label: Text(isEditing ? 'Save' : 'Add Product'),
+                label: Text(
+                  isEditing ? context.tr('Save') : context.tr('Add Product'),
+                ),
               ),
             ],
           ),

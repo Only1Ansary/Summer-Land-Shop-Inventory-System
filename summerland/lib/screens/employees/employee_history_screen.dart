@@ -6,6 +6,7 @@ import '../../models/employee_payment.dart';
 import '../../services/api_service.dart';
 import '../../services/employee_service.dart';
 
+import '../../localization/app_strings.dart';
 import '../../ui/app_shell.dart';
 import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
@@ -60,7 +61,7 @@ class _EmployeeHistoryScreenState extends State<EmployeeHistoryScreen> {
       if (!mounted) return;
 
       setState(() {
-        _error = friendlyError(e);
+        _error = friendlyErrorMessage(context, e);
       });
     } finally {
       if (mounted) {
@@ -74,7 +75,7 @@ class _EmployeeHistoryScreenState extends State<EmployeeHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     return AppShell(
-      title: '${widget.employee.name} · History',
+      title: context.tr('{0} · History', [widget.employee.name]),
       destinationId: 'employees',
       body: _buildBody(),
     );
@@ -98,20 +99,21 @@ class _EmployeeHistoryScreenState extends State<EmployeeHistoryScreen> {
             _CurrentMonthCard(employee: widget.employee),
             const SizedBox(height: 20),
             _CollapsibleSection(
-              title: 'Monthly history',
-              subtitle: 'Recorded from sales, newest first',
+              title: context.tr('Monthly history'),
+              subtitle: context.tr('Recorded from sales, newest first'),
               icon: Icons.calendar_month_outlined,
               count: _months.length,
               children: [
                 if (_months.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.only(top: 40),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 40),
                     child: EmptyState(
                       icon: Icons.calendar_month_outlined,
-                      title: 'No monthly history yet',
-                      message:
-                          'Each month appears here once sales are recorded '
-                          'for this employee.',
+                      title: context.tr('No monthly history yet'),
+                      message: context.tr(
+                        'Each month appears here once sales are recorded '
+                        'for this employee.',
+                      ),
                     ),
                   )
                 else
@@ -126,20 +128,21 @@ class _EmployeeHistoryScreenState extends State<EmployeeHistoryScreen> {
             ),
             const SizedBox(height: 20),
             _CollapsibleSection(
-              title: 'Payments',
-              subtitle: 'Salary and bonus paid out, newest first',
+              title: context.tr('Payments'),
+              subtitle: context.tr('Salary and bonus paid out, newest first'),
               icon: Icons.payments_outlined,
               count: _payments.length,
               children: [
                 if (_payments.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.only(top: 40),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 40),
                     child: EmptyState(
                       icon: Icons.payments_outlined,
-                      title: 'No payments yet',
-                      message:
-                          'Tap the payments button on the Employees screen '
-                          'to record what was paid out.',
+                      title: context.tr('No payments yet'),
+                      message: context.tr(
+                        'Tap the payments button on the Employees screen '
+                        'to record what was paid out.',
+                      ),
                     ),
                   )
                 else
@@ -341,15 +344,24 @@ class _CurrentMonthCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'This month',
+              context.tr('This month'),
               style: theme.textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 8),
-            InfoTile(label: 'Total Sales', value: money(employee.totalSales)),
-            InfoTile(label: 'Target', value: money(employee.target)),
-            InfoTile(label: 'Bonus', value: money(employee.bonusAmount)),
+            InfoTile(
+              label: context.tr('Total Sales'),
+              value: money(employee.totalSales),
+            ),
+            InfoTile(
+              label: context.tr('Target'),
+              value: money(employee.target),
+            ),
+            InfoTile(
+              label: context.tr('Bonus'),
+              value: money(employee.bonusAmount),
+            ),
           ],
         ),
       ),
@@ -406,19 +418,19 @@ class EmployeeMonthTile extends StatelessWidget {
                 ),
                 if (record.isCurrentMonth) ...[
                   StatusBadge(
-                    label: 'THIS MONTH',
+                    label: context.tr('THIS MONTH'),
                     color: theme.colorScheme.primary,
                   ),
                   const SizedBox(width: 8),
                 ],
                 record.reachedTarget(target)
-                    ? const StatusBadge(
-                        label: 'TARGET MET',
+                    ? StatusBadge(
+                        label: context.tr('TARGET MET'),
                         color: AppPalette.success,
                         icon: Icons.check_circle_outline,
                       )
                     : StatusBadge(
-                        label: 'BELOW TARGET',
+                        label: context.tr('BELOW TARGET'),
                         color: theme.colorScheme.outline,
                         icon: Icons.remove_circle_outline,
                       ),
@@ -430,12 +442,12 @@ class EmployeeMonthTile extends StatelessWidget {
               runSpacing: 8,
               children: [
                 _MonthMetric(
-                  label: 'Total sales',
+                  label: context.tr('Total sales'),
                   value: money(record.totalSales),
                 ),
-                _MonthMetric(label: 'Target', value: money(target)),
+                _MonthMetric(label: context.tr('Target'), value: money(target)),
                 _MonthMetric(
-                  label: 'Bonus',
+                  label: context.tr('Bonus'),
                   value: money(record.bonusAmount(bonusType, bonusValue)),
                 ),
               ],

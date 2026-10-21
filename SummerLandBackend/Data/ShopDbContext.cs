@@ -12,6 +12,7 @@ public class ShopDbContext : DbContext
 
     public DbSet<Return> Returns { get; set; }
     public DbSet<StockTransfer> StockTransfers { get; set; }
+    public DbSet<StockTransferItem> StockTransferItems { get; set; }
     public DbSet<Category> Categories { get; set; }
     public DbSet<Product> Products { get; set; }
     public DbSet<ProductVariant> ProductVariants { get; set; }
@@ -148,12 +149,6 @@ public class ShopDbContext : DbContext
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<StockTransfer>()
-            .HasOne(s => s.ProductVariant)
-            .WithMany()
-            .HasForeignKey(s => s.ProductVariantId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        modelBuilder.Entity<StockTransfer>()
             .HasOne(s => s.FromLocation)
             .WithMany()
             .HasForeignKey(s => s.FromLocationId)
@@ -164,6 +159,18 @@ public class ShopDbContext : DbContext
             .WithMany()
             .HasForeignKey(s => s.ToLocationId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<StockTransferItem>()
+            .HasOne(i => i.StockTransfer)
+            .WithMany(s => s.Items)
+            .HasForeignKey(i => i.StockTransferId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<StockTransferItem>()
+            .HasOne(i => i.ProductVariant)
+            .WithMany()
+            .HasForeignKey(i => i.ProductVariantId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<Return>()
             .HasOne(r => r.Invoice)

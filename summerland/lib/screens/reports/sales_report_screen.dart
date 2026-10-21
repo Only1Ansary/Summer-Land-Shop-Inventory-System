@@ -4,6 +4,7 @@ import '../../services/api_service.dart';
 import '../../services/report_service.dart';
 import '../../models/reports/sales_report.dart';
 
+import '../../localization/app_strings.dart';
 import '../../ui/app_shell.dart';
 import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
@@ -52,7 +53,7 @@ class _SalesReportScreenState extends State<SalesReportScreen>
       });
     } catch (e) {
       setState(() {
-        _error = friendlyError(e);
+        _error = friendlyErrorMessage(context, e);
         _loading = false;
       });
     }
@@ -93,7 +94,7 @@ class _SalesReportScreenState extends State<SalesReportScreen>
     final report = _report;
 
     return AppShell(
-      title: 'Sales Report',
+      title: context.tr('Sales Report'),
       destinationId: 'report-sales',
       body: _loading
           ? const LoadingState()
@@ -107,26 +108,30 @@ class _SalesReportScreenState extends State<SalesReportScreen>
                   padding: const EdgeInsets.all(16),
                   children: [
                     DateFilterBar(
-                      fromLabel: _from == null ? 'From' : _formatDate(_from!),
-                      toLabel: _to == null ? 'To' : _formatDate(_to!),
+                      fromLabel: _from == null
+                          ? context.tr('From')
+                          : _formatDate(_from!),
+                      toLabel: _to == null
+                          ? context.tr('To')
+                          : _formatDate(_to!),
                       onFrom: () => _pickDate(true),
                       onTo: () => _pickDate(false),
                     ),
                     const SizedBox(height: 16),
                     CollapsibleSection(
-                      title: 'Revenue',
-                      subtitle: 'Money from sales in this period',
-                      initiallyExpanded: false,
+                      title: context.tr('Revenue'),
+                      subtitle: context.tr('Money from sales in this period'),
+                      initiallyExpanded: true,
                       child: StatGrid(
                         stats: [
                           StatData(
-                            label: 'Gross Sales',
+                            label: context.tr('Gross Sales'),
                             value: money(report!.grossSales),
                             icon: Icons.attach_money_outlined,
                             valueColor: amountColor(context, report.grossSales),
                           ),
                           StatData(
-                            label: 'Returns',
+                            label: context.tr('Returns'),
                             value: moneyNegative(report.returnsAmount),
                             icon: Icons.currency_exchange_rounded,
                             color: AppPalette.danger,
@@ -136,13 +141,13 @@ class _SalesReportScreenState extends State<SalesReportScreen>
                             ),
                           ),
                           StatData(
-                            label: 'Net Revenue',
+                            label: context.tr('Net Revenue'),
                             value: money(report.netSales),
                             icon: Icons.account_balance_wallet_outlined,
                             valueColor: amountColor(context, report.netSales),
                           ),
                           StatData(
-                            label: 'Estimated Profit',
+                            label: context.tr('Estimated Profit'),
                             value: money(report.profit),
                             icon: Icons.trending_up_outlined,
                             color: report.profit >= 0
@@ -155,30 +160,30 @@ class _SalesReportScreenState extends State<SalesReportScreen>
                     ),
                     const SizedBox(height: 16),
                     CollapsibleSection(
-                      title: 'Sales by Category',
-                      subtitle: 'Share of net sales in this period',
-                      initiallyExpanded: false,
+                      title: context.tr('Sales by Category'),
+                      subtitle: context.tr('Share of net sales in this period'),
+                      initiallyExpanded: true,
                       child: CategoryPieChart(categories: report.categorySales),
                     ),
                     const SizedBox(height: 16),
                     CollapsibleSection(
-                      title: 'Sales Activity',
-                      subtitle: 'Invoices and units moved',
-                      initiallyExpanded: false,
+                      title: context.tr('Sales Activity'),
+                      subtitle: context.tr('Invoices and units moved'),
+                      initiallyExpanded: true,
                       child: StatGrid(
                         stats: [
                           StatData(
-                            label: 'Invoices',
+                            label: context.tr('Invoices'),
                             value: '${report.invoiceCount}',
                             icon: Icons.receipt_long_outlined,
                           ),
                           StatData(
-                            label: 'Items Sold',
+                            label: context.tr('Items Sold'),
                             value: '${report.itemsSold}',
                             icon: Icons.shopping_cart_outlined,
                           ),
                           StatData(
-                            label: 'Items Returned',
+                            label: context.tr('Items Returned'),
                             value: '${report.itemsReturned}',
                             icon: Icons.assignment_return_outlined,
                           ),
@@ -187,28 +192,28 @@ class _SalesReportScreenState extends State<SalesReportScreen>
                     ),
                     const SizedBox(height: 16),
                     CollapsibleSection(
-                      title: 'Purchases & Cost',
-                      subtitle: 'Stock bought in this period',
-                      initiallyExpanded: false,
+                      title: context.tr('Purchases & Cost'),
+                      subtitle: context.tr('Stock bought in this period'),
+                      initiallyExpanded: true,
                       child: StatGrid(
                         stats: [
                           StatData(
-                            label: 'Purchase Invoices',
+                            label: context.tr('Purchase Invoices'),
                             value: '${report.purchaseInvoiceCount}',
                             icon: Icons.shopping_bag_outlined,
                           ),
                           StatData(
-                            label: 'Purchase Cost',
+                            label: context.tr('Purchase Cost'),
                             value: money(report.purchaseTotalCost),
                             icon: Icons.local_shipping_outlined,
                           ),
                           StatData(
-                            label: 'Purchase Paid',
+                            label: context.tr('Purchase Paid'),
                             value: money(report.purchaseTotalPaid),
                             icon: Icons.payments_outlined,
                           ),
                           StatData(
-                            label: 'Unpaid On Purchases',
+                            label: context.tr('Unpaid On Purchases'),
                             value: moneyNegative(report.purchaseDebt),
                             icon: Icons.hourglass_empty_outlined,
                             color: report.purchaseDebt > 0
@@ -224,18 +229,20 @@ class _SalesReportScreenState extends State<SalesReportScreen>
                     ),
                     const SizedBox(height: 16),
                     CollapsibleSection(
-                      title: 'Staff Payments',
-                      subtitle: 'Salary and bonuses paid in this period',
-                      initiallyExpanded: false,
+                      title: context.tr('Staff Payments'),
+                      subtitle: context.tr(
+                        'Salary and bonuses paid in this period',
+                      ),
+                      initiallyExpanded: true,
                       child: StatGrid(
                         stats: [
                           StatData(
-                            label: 'Payments',
+                            label: context.tr('Payments'),
                             value: '${report.employeePaymentCount}',
                             icon: Icons.people_outline,
                           ),
                           StatData(
-                            label: 'Total Paid',
+                            label: context.tr('Total Paid'),
                             value: money(report.employeePaymentTotal),
                             icon: Icons.payments_outlined,
                             valueColor: amountColor(
@@ -248,18 +255,18 @@ class _SalesReportScreenState extends State<SalesReportScreen>
                     ),
                     const SizedBox(height: 16),
                     CollapsibleSection(
-                      title: 'Debts & Suppliers',
-                      subtitle: 'Current standing with suppliers',
-                      initiallyExpanded: false,
+                      title: context.tr('Debts & Suppliers'),
+                      subtitle: context.tr('Current standing with suppliers'),
+                      initiallyExpanded: true,
                       child: StatGrid(
                         stats: [
                           StatData(
-                            label: 'Suppliers',
+                            label: context.tr('Suppliers'),
                             value: '${report.supplierCount}',
                             icon: Icons.factory_outlined,
                           ),
                           StatData(
-                            label: 'Total Supplier Debt',
+                            label: context.tr('Total Supplier Debt'),
                             value: moneyNegative(report.supplierDebtTotal),
                             icon: Icons.balance_outlined,
                             color: report.supplierDebtTotal > 0

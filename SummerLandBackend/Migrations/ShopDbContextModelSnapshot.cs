@@ -306,6 +306,9 @@ namespace SummerLandBackend.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("IsPaid")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("PurchaseInvoiceId")
                         .HasColumnType("INTEGER");
 
@@ -551,12 +554,6 @@ namespace SummerLandBackend.Migrations
                     b.Property<int>("FromLocationId")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("ProductVariantId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("Quantity")
-                        .HasColumnType("INTEGER");
-
                     b.Property<int>("ToLocationId")
                         .HasColumnType("INTEGER");
 
@@ -564,11 +561,33 @@ namespace SummerLandBackend.Migrations
 
                     b.HasIndex("FromLocationId");
 
-                    b.HasIndex("ProductVariantId");
-
                     b.HasIndex("ToLocationId");
 
                     b.ToTable("StockTransfers");
+                });
+
+            modelBuilder.Entity("SummerLandBackend.Models.StockTransferItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ProductVariantId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("StockTransferId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductVariantId");
+
+                    b.HasIndex("StockTransferId");
+
+                    b.ToTable("StockTransferItems");
                 });
 
             modelBuilder.Entity("SummerLandBackend.Models.Supplier", b =>
@@ -847,12 +866,6 @@ namespace SummerLandBackend.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("SummerLandBackend.Models.ProductVariant", "ProductVariant")
-                        .WithMany()
-                        .HasForeignKey("ProductVariantId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("SummerLandBackend.Models.Location", "ToLocation")
                         .WithMany()
                         .HasForeignKey("ToLocationId")
@@ -861,9 +874,26 @@ namespace SummerLandBackend.Migrations
 
                     b.Navigation("FromLocation");
 
+                    b.Navigation("ToLocation");
+                });
+
+            modelBuilder.Entity("SummerLandBackend.Models.StockTransferItem", b =>
+                {
+                    b.HasOne("SummerLandBackend.Models.ProductVariant", "ProductVariant")
+                        .WithMany()
+                        .HasForeignKey("ProductVariantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SummerLandBackend.Models.StockTransfer", "StockTransfer")
+                        .WithMany("Items")
+                        .HasForeignKey("StockTransferId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("ProductVariant");
 
-                    b.Navigation("ToLocation");
+                    b.Navigation("StockTransfer");
                 });
 
             modelBuilder.Entity("SummerLandBackend.Models.SupplierPayment", b =>
@@ -928,6 +958,11 @@ namespace SummerLandBackend.Migrations
             modelBuilder.Entity("SummerLandBackend.Models.Sizes", b =>
                 {
                     b.Navigation("ProductVariants");
+                });
+
+            modelBuilder.Entity("SummerLandBackend.Models.StockTransfer", b =>
+                {
+                    b.Navigation("Items");
                 });
 
             modelBuilder.Entity("SummerLandBackend.Models.Supplier", b =>

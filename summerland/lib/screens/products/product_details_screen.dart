@@ -5,6 +5,7 @@ import '../../models/product.dart';
 import '../../models/product_variant.dart';
 import '../../models/size_model.dart';
 
+import '../../localization/app_strings.dart';
 import '../../services/api_service.dart';
 import '../../services/category_service.dart';
 import '../../services/colour_service.dart';
@@ -18,18 +19,12 @@ import '../../ui/reconnect_reloader.dart';
 
 import 'product_form_screen.dart';
 import 'product_variant_form_screen.dart';
+import 'split_variant_screen.dart';
 
 class ProductDetailsScreen extends StatefulWidget {
   final Product product;
-  final List<SizeModel> sizes;
-  final List<Colour> colours;
 
-  const ProductDetailsScreen({
-    super.key,
-    required this.product,
-    required this.sizes,
-    required this.colours,
-  });
+  const ProductDetailsScreen({super.key, required this.product});
 
   @override
   State<ProductDetailsScreen> createState() => _ProductDetailsScreenState();
@@ -57,16 +52,34 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
 
   List<Colour> _colours = [];
 
+  int? _selectedSizeId;
+  int? _selectedColourId;
+
   bool _isLoading = false;
   String? _error;
+
+  /// The variants after the size and colour filters, which is what the
+  /// list renders. Filtering happens here so switching a filter is instant
+  /// and never re-fetches the variants.
+  List<ProductVariant> get _filteredVariants {
+    return _variants.where((variant) {
+      final matchesSize =
+          _selectedSizeId == null || variant.sizeId == _selectedSizeId;
+
+      final matchesColour =
+          _selectedColourId == null || variant.colourId == _selectedColourId;
+
+      return matchesSize && matchesColour;
+    }).toList();
+  }
+
+  bool get _hasFilters => _selectedSizeId != null || _selectedColourId != null;
 
   @override
   void initState() {
     super.initState();
 
     _product = widget.product;
-    _sizes = List.of(widget.sizes);
-    _colours = List.of(widget.colours);
 
     _loadVariants();
   }
@@ -113,7 +126,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
       if (!mounted) return;
 
       setState(() {
-        _error = friendlyError(e);
+        _error = friendlyErrorMessage(context, e);
       });
     } finally {
       if (mounted) {
@@ -175,8 +188,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
     } catch (e) {
       if (!mounted) return null;
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(friendlyError(e))));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(context, e))));
 
       return null;
     }
@@ -213,11 +227,37 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
     }
   }
 
+  /// A variant with no size and no colour: stock created by a purchase before
+  /// it was broken down into real size/colour combinations.
+  bool _isDefaultVariant(ProductVariant variant) {
+    return variant.sizeId == null && variant.colourId == null;
+  }
+
+  Future<void> _splitVariant(ProductVariant variant) async {
+    final result = await pushScreen(
+      context,
+      (_) => SplitVariantScreen(
+        product: _product,
+        sourceVariant: variant,
+        sizes: _sizes,
+        colours: _colours,
+      ),
+    );
+
+    if (result == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.tr('Variant split successfully.'))),
+      );
+
+      _loadVariants();
+    }
+  }
+
   Future<void> _deleteVariant(ProductVariant variant) async {
     final confirmed = await showAppConfirmDialog(
       context,
-      title: 'Delete Variant',
-      message: 'Are you sure you want to delete this variant?',
+      title: context.tr('Delete Variant'),
+      message: context.tr('Are you sure you want to delete this variant?'),
     );
 
     if (!confirmed) return;
@@ -228,15 +268,16 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Variant deleted successfully.')),
+        SnackBar(content: Text(context.tr('Variant deleted successfully.'))),
       );
 
       _loadVariants();
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(friendlyError(e))));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(context, e))));
     }
   }
 
@@ -244,10 +285,10 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Product Details'),
+        title: Text(context.tr('Product Details')),
         actions: [
           IconButton(
-            tooltip: 'Edit product',
+            tooltip: context.tr('Edit product'),
             onPressed: _editProduct,
             icon: const Icon(Icons.edit_outlined),
           ),
@@ -255,7 +296,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _addVariant,
-        tooltip: 'Add variant',
+        tooltip: context.tr('Add variant'),
         child: const Icon(Icons.add),
       ),
       body: RefreshIndicator(
@@ -266,10 +307,12 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
             children: [
               _buildProductInfo(),
               const SizedBox(height: 16),
-              const SectionHeader(
-                title: 'Variants',
-                subtitle: 'Size, colour and pricing combinations',
+              SectionHeader(
+                title: context.tr('Variants'),
+                subtitle: context.tr('Size, colour and pricing combinations'),
               ),
+              const SizedBox(height: 12),
+              _buildFilterBar(),
               const SizedBox(height: 4),
               _buildVariants(),
             ],
@@ -291,24 +334,29 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
               style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const Divider(height: 24),
-            InfoTile(label: 'Model', value: _product.modelNumber),
-            InfoTile(label: 'Category', value: _product.categoryName),
+            InfoTile(label: context.tr('Model'), value: _product.modelNumber),
             InfoTile(
-              label: 'Barcode',
-              value: _product.barcode.isEmpty ? 'N/A' : _product.barcode,
+              label: context.tr('Category'),
+              value: _product.categoryName,
+            ),
+            InfoTile(
+              label: context.tr('Barcode'),
+              value: _product.barcode.isEmpty
+                  ? context.tr('N/A')
+                  : _product.barcode,
             ),
             BarcodeView(_product.barcode, showText: false),
             InfoTile(
-              label: 'Purchase Price',
+              label: context.tr('Purchase Price'),
               value: money(_product.purchasePrice),
               valueStyle: amountStyle(context, _product.purchasePrice),
             ),
             InfoTile(
-              label: 'Profit Margin',
+              label: context.tr('Profit Margin'),
               value: '${_formatPercent(_product.profitMargin)}%',
             ),
             InfoTile(
-              label: 'Selling Price',
+              label: context.tr('Selling Price'),
               value: money(_product.sellingPrice),
               valueStyle: amountStyle(context, _product.sellingPrice),
             ),
@@ -326,6 +374,76 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
     return value.toString();
   }
 
+  Widget _buildFilterBar() {
+    if (_sizes.isEmpty && _colours.isEmpty) return const SizedBox.shrink();
+
+    final sizeDropdown = DropdownButtonFormField<int?>(
+      key: ValueKey('size-$_selectedSizeId'),
+      initialValue: _selectedSizeId,
+      decoration: InputDecoration(
+        labelText: context.tr('Size'),
+        prefixIcon: const Icon(Icons.straighten_outlined),
+      ),
+      items: [
+        DropdownMenuItem<int?>(value: null, child: Text(context.tr('All'))),
+        ..._sizes.map(
+          (size) =>
+              DropdownMenuItem<int?>(value: size.id, child: Text(size.name)),
+        ),
+      ],
+      onChanged: (value) {
+        setState(() {
+          _selectedSizeId = value;
+        });
+      },
+    );
+
+    final colourDropdown = DropdownButtonFormField<int?>(
+      key: ValueKey('colour-$_selectedColourId'),
+      initialValue: _selectedColourId,
+      decoration: InputDecoration(
+        labelText: context.tr('Colour'),
+        prefixIcon: const Icon(Icons.palette_outlined),
+      ),
+      items: [
+        DropdownMenuItem<int?>(value: null, child: Text(context.tr('All'))),
+        ..._colours.map(
+          (colour) => DropdownMenuItem<int?>(
+            value: colour.id,
+            child: Text(colour.name),
+          ),
+        ),
+      ],
+      onChanged: (value) {
+        setState(() {
+          _selectedColourId = value;
+        });
+      },
+    );
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: sizeDropdown),
+        const SizedBox(width: 10),
+        Expanded(child: colourDropdown),
+        if (_hasFilters) ...[
+          const SizedBox(width: 6),
+          IconButton(
+            tooltip: context.tr('Clear filters'),
+            onPressed: () {
+              setState(() {
+                _selectedSizeId = null;
+                _selectedColourId = null;
+              });
+            },
+            icon: const Icon(Icons.clear),
+          ),
+        ],
+      ],
+    );
+  }
+
   Widget _buildVariants() {
     if (_isLoading) {
       return const LoadingState();
@@ -340,11 +458,32 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
-            children: const [
+            children: [
               EmptyState(
                 icon: Icons.category_outlined,
-                title: 'No variants yet',
-                message: 'Add a variant to track stock and pricing for this product.',
+                title: context.tr('No variants yet'),
+                message: context.tr(
+                  'Add a variant to track stock and pricing for this product.',
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final variants = _filteredVariants;
+
+    if (variants.isEmpty) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            children: [
+              EmptyState(
+                icon: Icons.filter_alt_off_outlined,
+                title: context.tr('No matching variants'),
+                message: context.tr('Try a different size or colour.'),
               ),
             ],
           ),
@@ -353,7 +492,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
     }
 
     return Column(
-      children: _variants.map((variant) {
+      children: variants.map((variant) {
         return _buildVariantCard(variant);
       }).toList(),
     );
@@ -371,7 +510,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
               children: [
                 Expanded(
                   child: Text(
-                    'Variant #${variant.id}',
+                    context.tr('Variant #{0}', [variant.id]),
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
@@ -382,28 +521,43 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
               ],
             ),
             const Divider(height: 20),
-            InfoTile(label: 'Size', value: variant.sizeName ?? 'N/A'),
-            InfoTile(label: 'Colour', value: variant.colourName ?? 'N/A'),
             InfoTile(
-              label: 'Price',
+              label: context.tr('Size'),
+              value: variant.sizeName ?? context.tr('N/A'),
+            ),
+            InfoTile(
+              label: context.tr('Colour'),
+              value: variant.colourName ?? context.tr('N/A'),
+            ),
+            InfoTile(
+              label: context.tr('Price'),
               value: money(variant.price),
               valueStyle: amountStyle(context, variant.price),
             ),
-            InfoTile(label: 'Barcode', value: variant.barcode),
+            InfoTile(label: context.tr('Barcode'), value: variant.barcode),
             BarcodeView(variant.barcode, showText: false),
-            InfoTile(label: 'Total Stock', value: '${variant.totalQuantity}'),
             InfoTile(
-              label: 'Low Stock Threshold',
+              label: context.tr('Total Stock'),
+              value: '${variant.totalQuantity}',
+            ),
+            InfoTile(
+              label: context.tr('Low Stock Threshold'),
               value: '${variant.lowStockThreshold}',
             ),
             const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
+                if (_isDefaultVariant(variant) && variant.totalQuantity > 0)
+                  TextButton.icon(
+                    onPressed: () => _splitVariant(variant),
+                    icon: const Icon(Icons.call_split, size: 18),
+                    label: Text(context.tr('Split')),
+                  ),
                 TextButton.icon(
                   onPressed: () => _editVariant(variant),
                   icon: const Icon(Icons.edit_outlined, size: 18),
-                  label: const Text('Edit'),
+                  label: Text(context.tr('Edit')),
                 ),
                 TextButton.icon(
                   onPressed: () => _deleteVariant(variant),
@@ -411,7 +565,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
                   style: TextButton.styleFrom(
                     foregroundColor: Theme.of(context).colorScheme.error,
                   ),
-                  label: const Text('Delete'),
+                  label: Text(context.tr('Delete')),
                 ),
               ],
             ),

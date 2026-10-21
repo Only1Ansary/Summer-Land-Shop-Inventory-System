@@ -3,15 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../models/category.dart';
-import '../../models/colour.dart';
 import '../../models/product.dart';
-import '../../models/size_model.dart';
 
+import '../../localization/app_strings.dart';
 import '../../services/api_service.dart';
 import '../../services/category_service.dart';
-import '../../services/colour_service.dart';
 import '../../services/product_service.dart';
-import '../../services/size_service.dart';
 
 import '../../ui/app_shell.dart';
 import '../../ui/app_widgets.dart';
@@ -33,22 +30,14 @@ class _ProductsScreenState extends State<ProductsScreen>
 
   final CategoryService _categoryService = CategoryService(ApiService());
 
-  final SizeService _sizeService = SizeService(ApiService());
-
-  final ColourService _colourService = ColourService(ApiService());
-
   final TextEditingController _searchController = TextEditingController();
 
   Timer? _searchDebounce;
 
   List<Product> _products = [];
   List<Category> _categories = [];
-  List<SizeModel> _sizes = [];
-  List<Colour> _colours = [];
 
   int? _selectedCategoryId;
-  int? _selectedSizeId;
-  int? _selectedColourId;
 
   bool _isLoading = false;
   bool _isSearching = false;
@@ -75,8 +64,6 @@ class _ProductsScreenState extends State<ProductsScreen>
 
   bool get _hasActiveFilters {
     return _selectedCategoryId != null ||
-        _selectedSizeId != null ||
-        _selectedColourId != null ||
         _searchController.text.trim().isNotEmpty;
   }
 
@@ -100,24 +87,18 @@ class _ProductsScreenState extends State<ProductsScreen>
     });
 
     try {
-      final results = await Future.wait([
-        _categoryService.getCategories(),
-        _sizeService.getSizes(),
-        _colourService.getColours(),
-      ]);
+      final categories = await _categoryService.getCategories();
 
       if (!mounted) return;
 
       setState(() {
-        _categories = results[0] as List<Category>;
-        _sizes = results[1] as List<SizeModel>;
-        _colours = results[2] as List<Colour>;
+        _categories = categories;
       });
     } catch (e) {
       if (!mounted) return;
 
       setState(() {
-        _error = friendlyError(e);
+        _error = friendlyErrorMessage(context, e);
       });
     } finally {
       if (mounted) {
@@ -150,11 +131,7 @@ class _ProductsScreenState extends State<ProductsScreen>
 
     final query = _searchController.text.trim();
 
-    final hasFilters =
-        query.isNotEmpty ||
-        _selectedCategoryId != null ||
-        _selectedSizeId != null ||
-        _selectedColourId != null;
+    final hasFilters = query.isNotEmpty || _selectedCategoryId != null;
 
     if (!hasFilters) {
       // Nothing to search for - return to the "start searching" state
@@ -178,8 +155,6 @@ class _ProductsScreenState extends State<ProductsScreen>
       final products = await _productService.searchProducts(
         query: query.isEmpty ? null : query,
         categoryId: _selectedCategoryId,
-        sizeId: _selectedSizeId,
-        colourId: _selectedColourId,
       );
 
       if (!mounted) return;
@@ -192,7 +167,7 @@ class _ProductsScreenState extends State<ProductsScreen>
       if (!mounted) return;
 
       setState(() {
-        _error = friendlyError(e);
+        _error = friendlyErrorMessage(context, e);
       });
     } finally {
       if (mounted) {
@@ -218,30 +193,12 @@ class _ProductsScreenState extends State<ProductsScreen>
     _search();
   }
 
-  void _setSizeFilter(int? value) {
-    setState(() {
-      _selectedSizeId = value;
-    });
-
-    _search();
-  }
-
-  void _setColourFilter(int? value) {
-    setState(() {
-      _selectedColourId = value;
-    });
-
-    _search();
-  }
-
   void _clearFilters() {
     _searchDebounce?.cancel();
     _searchController.clear();
 
     setState(() {
       _selectedCategoryId = null;
-      _selectedSizeId = null;
-      _selectedColourId = null;
     });
 
     _search();
@@ -259,14 +216,7 @@ class _ProductsScreenState extends State<ProductsScreen>
   }
 
   Future<void> _openDetails(Product product) async {
-    await pushScreen(
-      context,
-      (_) => ProductDetailsScreen(
-        product: product,
-        sizes: _sizes,
-        colours: _colours,
-      ),
-    );
+    await pushScreen(context, (_) => ProductDetailsScreen(product: product));
 
     _refreshAfterChange();
   }
@@ -274,8 +224,10 @@ class _ProductsScreenState extends State<ProductsScreen>
   Future<void> _deleteProduct(Product product) async {
     final confirmed = await showAppConfirmDialog(
       context,
-      title: 'Delete Product',
-      message: 'Are you sure you want to delete "${product.name}"?',
+      title: context.tr('Delete Product'),
+      message: context.tr('Are you sure you want to delete "{0}"?', [
+        product.name,
+      ]),
     );
 
     if (!confirmed) return;
@@ -286,26 +238,27 @@ class _ProductsScreenState extends State<ProductsScreen>
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Product deleted successfully.')),
+        SnackBar(content: Text(context.tr('Product deleted successfully.'))),
       );
 
       _refreshAfterChange();
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(friendlyError(e))));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(context, e))));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return AppShell(
-      title: 'Products',
+      title: context.tr('Products'),
       destinationId: 'products',
       floatingActionButton: FloatingActionButton(
         onPressed: () => _openProductForm(),
-        tooltip: 'Add product',
+        tooltip: context.tr('Add product'),
         child: const Icon(Icons.add),
       ),
       body: Column(
@@ -335,12 +288,12 @@ class _ProductsScreenState extends State<ProductsScreen>
                       onChanged: _onQueryChanged,
                       onSubmitted: (_) => _search(),
                       decoration: InputDecoration(
-                        labelText: 'Search',
-                        hintText: 'Model, name or barcode',
+                        labelText: context.tr('Search'),
+                        hintText: context.tr('Model, name or barcode'),
                         prefixIcon: const Icon(Icons.search),
                         suffixIcon: _searchController.text.isNotEmpty
                             ? IconButton(
-                                tooltip: 'Clear',
+                                tooltip: context.tr('Clear'),
                                 onPressed: _clearFilters,
                                 icon: const Icon(Icons.clear),
                               )
@@ -364,13 +317,17 @@ class _ProductsScreenState extends State<ProductsScreen>
                       });
                     },
                     icon: Icon(_showFilters ? Icons.expand_less : Icons.tune),
-                    label: Text(_showFilters ? 'Hide Filters' : 'Filters'),
+                    label: Text(
+                      _showFilters
+                          ? context.tr('Hide Filters')
+                          : context.tr('Filters'),
+                    ),
                   ),
                   const Spacer(),
                   if (_hasActiveFilters)
                     TextButton(
                       onPressed: _clearFilters,
-                      child: const Text('Clear filters'),
+                      child: Text(context.tr('Clear filters')),
                     ),
                 ],
               ),
@@ -383,12 +340,12 @@ class _ProductsScreenState extends State<ProductsScreen>
   }
 
   Widget _buildFilterPanel() {
-    final categoryDropdown = DropdownButtonFormField<int?>(
+    return DropdownButtonFormField<int?>(
       key: ValueKey('category-$_selectedCategoryId'),
       initialValue: _selectedCategoryId,
-      decoration: const InputDecoration(labelText: 'Category'),
+      decoration: InputDecoration(labelText: context.tr('Category')),
       items: [
-        const DropdownMenuItem<int?>(value: null, child: Text('All')),
+        DropdownMenuItem<int?>(value: null, child: Text(context.tr('All'))),
         ..._categories.map(
           (category) => DropdownMenuItem<int?>(
             value: category.id,
@@ -397,62 +354,6 @@ class _ProductsScreenState extends State<ProductsScreen>
         ),
       ],
       onChanged: _setCategoryFilter,
-    );
-
-    final sizeDropdown = DropdownButtonFormField<int?>(
-      key: ValueKey('size-$_selectedSizeId'),
-      initialValue: _selectedSizeId,
-      decoration: const InputDecoration(labelText: 'Size'),
-      items: [
-        const DropdownMenuItem<int?>(value: null, child: Text('All')),
-        ..._sizes.map(
-          (size) =>
-              DropdownMenuItem<int?>(value: size.id, child: Text(size.name)),
-        ),
-      ],
-      onChanged: _setSizeFilter,
-    );
-
-    final colourDropdown = DropdownButtonFormField<int?>(
-      key: ValueKey('colour-$_selectedColourId'),
-      initialValue: _selectedColourId,
-      decoration: const InputDecoration(labelText: 'Colour'),
-      items: [
-        const DropdownMenuItem<int?>(value: null, child: Text('All')),
-        ..._colours.map(
-          (colour) => DropdownMenuItem<int?>(
-            value: colour.id,
-            child: Text(colour.name),
-          ),
-        ),
-      ],
-      onChanged: _setColourFilter,
-    );
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth >= 640) {
-          return Row(
-            children: [
-              Expanded(child: categoryDropdown),
-              const SizedBox(width: 10),
-              Expanded(child: sizeDropdown),
-              const SizedBox(width: 10),
-              Expanded(child: colourDropdown),
-            ],
-          );
-        }
-
-        return Column(
-          children: [
-            categoryDropdown,
-            const SizedBox(height: 10),
-            sizeDropdown,
-            const SizedBox(height: 10),
-            colourDropdown,
-          ],
-        );
-      },
     );
   }
 
@@ -469,28 +370,31 @@ class _ProductsScreenState extends State<ProductsScreen>
     }
 
     if (!_hasSearched) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(24),
+          padding: const EdgeInsets.all(24),
           child: EmptyState(
             icon: Icons.search,
-            title: 'Search for products',
-            message:
-                'Enter a model, name or barcode, or use the filters, '
-                'to find products.',
+            title: context.tr('Search for products'),
+            message: context.tr(
+              'Enter a model, name or barcode, or use the filters, '
+              'to find products.',
+            ),
           ),
         ),
       );
     }
 
     if (_products.isEmpty) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(24),
+          padding: const EdgeInsets.all(24),
           child: EmptyState(
             icon: Icons.inventory_2_outlined,
-            title: 'No products found',
-            message: 'Try adjusting your search or add a new product.',
+            title: context.tr('No products found'),
+            message: context.tr(
+              'Try adjusting your search or add a new product.',
+            ),
           ),
         ),
       );
@@ -529,8 +433,10 @@ class _ProductsScreenState extends State<ProductsScreen>
                         style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
                       subtitle: Text(
-                        'Model: ${product.modelNumber}\n'
-                        'Category: ${product.categoryName}',
+                        context.tr('Model: {0}\nCategory: {1}', [
+                          product.modelNumber,
+                          product.categoryName,
+                        ]),
                       ),
                       isThreeLine: true,
                       onTap: () => _openDetails(product),
@@ -544,13 +450,19 @@ class _ProductsScreenState extends State<ProductsScreen>
                             _deleteProduct(product);
                           }
                         },
-                        itemBuilder: (_) => const [
+                        itemBuilder: (_) => [
                           PopupMenuItem(
                             value: 'details',
-                            child: Text('Details'),
+                            child: Text(context.tr('Details')),
                           ),
-                          PopupMenuItem(value: 'edit', child: Text('Edit')),
-                          PopupMenuItem(value: 'delete', child: Text('Delete')),
+                          PopupMenuItem(
+                            value: 'edit',
+                            child: Text(context.tr('Edit')),
+                          ),
+                          PopupMenuItem(
+                            value: 'delete',
+                            child: Text(context.tr('Delete')),
+                          ),
                         ],
                       ),
                     ),

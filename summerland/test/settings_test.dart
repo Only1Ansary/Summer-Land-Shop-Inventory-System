@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:summerland/main.dart';
 import 'package:summerland/screens/settings/settings_screen.dart';
+import 'package:summerland/services/language_service.dart';
 import 'package:summerland/services/shop_profile_service.dart';
 import 'package:summerland/services/theme_service.dart';
 import 'package:summerland/ui/home_modules.dart';
@@ -106,6 +107,44 @@ void main() {
     final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
     expect(app.themeMode, ThemeMode.dark);
     expect(app.darkTheme, isNotNull);
+  });
+
+  testWidgets('language can be switched to Arabic and persists', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    LanguageService.instance.language.value = AppLanguage.english;
+
+    await pumpSettings(tester);
+
+    await tester.tap(find.text('العربية'));
+    await tester.pumpAndSettle();
+
+    expect(LanguageService.instance.language.value, AppLanguage.arabic);
+
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('settings.language'), 'ar');
+  });
+
+  testWidgets('app root applies the selected locale and delegates', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    LanguageService.instance.language.value = AppLanguage.arabic;
+
+    tester.view.physicalSize = const Size(800, 2000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(const SummerlandApp());
+    await tester.pump();
+
+    final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
+    expect(app.locale, const Locale('ar'));
+    expect(app.supportedLocales, contains(const Locale('ar')));
+    expect(app.localizationsDelegates, isNotNull);
+
+    LanguageService.instance.language.value = AppLanguage.english;
   });
 
   test('shop logo is persisted and reloaded', () async {

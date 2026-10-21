@@ -501,7 +501,7 @@ public class ReportsController : ControllerBase
     public async Task<ActionResult<BestSellingProductsReportDto>> GetBestSellingProductsReport(
     [FromQuery] DateTime? from,
     [FromQuery] DateTime? to,
-    [FromQuery] int? locationId)
+    [FromQuery] int? categoryId)
     {
         var fromDate = QueryDateRange.Start(from);
 
@@ -522,10 +522,10 @@ public class ReportsController : ControllerBase
                 i.Invoice.CreatedAt <= toDate)
             .AsQueryable();
 
-        if (locationId.HasValue)
+        if (categoryId.HasValue)
         {
             query = query.Where(i =>
-                i.Invoice.LocationId == locationId.Value);
+                i.ProductVariant.Product.CategoryId == categoryId.Value);
         }
 
         var items = await query

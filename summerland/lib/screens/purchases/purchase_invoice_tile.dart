@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../localization/app_strings.dart';
 import '../../models/purchase_invoice.dart';
 import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
@@ -40,10 +41,11 @@ class PurchaseInvoiceTile extends StatelessWidget {
           TextSpan(
             children: [
               TextSpan(
-                text:
-                    '${_formatDate(invoice.date)} · '
-                    '${invoice.items.length} '
-                    'item${invoice.items.length == 1 ? '' : 's'} · ',
+                text: context.tr('{0} · {1} item{2} · ', [
+                  _formatDate(invoice.date),
+                  invoice.items.length,
+                  invoice.items.length == 1 ? '' : 's',
+                ]),
               ),
               TextSpan(
                 text: money(invoice.totalCost),

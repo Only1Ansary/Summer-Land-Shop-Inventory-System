@@ -66,4 +66,19 @@ class ProductVariantService {
   Future<void> deleteVariant(int id) async {
     await _apiService.delete('/api/ProductVariants/$id');
   }
+
+  /// Splits the stock of a default variant (no size, no colour) across new
+  /// size/colour variants. [splits] maps each target combination to a quantity;
+  /// the quantities must total the source variant's stock.
+  Future<List<ProductVariant>> splitVariant({
+    required int sourceVariantId,
+    required List<Map<String, dynamic>> splits,
+  }) async {
+    final data = await _apiService.post('/api/ProductVariants/split', {
+      'sourceVariantId': sourceVariantId,
+      'splits': splits,
+    });
+
+    return (data as List).map((json) => ProductVariant.fromJson(json)).toList();
+  }
 }

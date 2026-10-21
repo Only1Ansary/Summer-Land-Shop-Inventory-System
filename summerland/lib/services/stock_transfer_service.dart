@@ -1,22 +1,38 @@
 import '../models/stock_transfer.dart';
 import 'api_service.dart';
 
+/// One line of a stock transfer request: which variant and how many.
+class StockTransferLine {
+  final int productVariantId;
+  final int quantity;
+
+  const StockTransferLine({
+    required this.productVariantId,
+    required this.quantity,
+  });
+}
+
 class StockTransferService {
   final ApiService _apiService;
 
   StockTransferService(this._apiService);
 
   Future<StockTransfer> createTransfer({
-    required int productVariantId,
     required int fromLocationId,
     required int toLocationId,
-    required int quantity,
+    required List<StockTransferLine> items,
   }) async {
     final data = await _apiService.post('/api/StockTransfers', {
-      'productVariantId': productVariantId,
       'fromLocationId': fromLocationId,
       'toLocationId': toLocationId,
-      'quantity': quantity,
+      'items': items
+          .map(
+            (item) => {
+              'productVariantId': item.productVariantId,
+              'quantity': item.quantity,
+            },
+          )
+          .toList(),
     });
 
     return StockTransfer.fromJson(data);

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../localization/app_strings.dart';
 import '../../models/supplier.dart';
 import '../../services/api_service.dart';
 import '../../services/supplier_service.dart';
@@ -68,7 +69,7 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen>
       if (!mounted) return;
 
       setState(() {
-        _error = friendlyError(e);
+        _error = friendlyErrorMessage(context, e);
       });
     } finally {
       if (mounted) {
@@ -109,8 +110,8 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen>
   Future<void> _deleteSupplier(Supplier supplier) async {
     final confirmed = await showAppConfirmDialog(
       context,
-      title: 'Delete supplier',
-      message: 'Delete "${supplier.supplierName}"?',
+      title: context.tr('Delete supplier'),
+      message: context.tr('Delete "{0}"?', [supplier.supplierName]),
     );
 
     if (!confirmed) return;
@@ -121,15 +122,18 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen>
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${supplier.supplierName} deleted.')),
+        SnackBar(
+          content: Text(context.tr('{0} deleted.', [supplier.supplierName])),
+        ),
       );
 
       _loadSuppliers();
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(friendlyError(e))));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(context, e))));
     }
   }
 
@@ -138,11 +142,11 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen>
 
     final amountText = await showAppAmountDialog(
       context,
-      title: 'Pay Debt',
-      label: 'Amount',
+      title: context.tr('Pay Debt'),
+      label: context.tr('Amount'),
       initialValue: remaining.toStringAsFixed(2),
-      helperText: 'Remaining debt: ${money(remaining)}',
-      confirmLabel: 'Pay',
+      helperText: context.tr('Remaining debt: {0}', [money(remaining)]),
+      confirmLabel: context.tr('Pay'),
     );
 
     if (amountText == null || !mounted) return;
@@ -151,7 +155,7 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen>
 
     if (amount == null || amount <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter a valid payment amount.')),
+        SnackBar(content: Text(context.tr('Enter a valid payment amount.'))),
       );
       return;
     }
@@ -160,8 +164,9 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Payment cannot exceed the remaining debt of '
-            '${money(remaining)}.',
+            context.tr('Payment cannot exceed the remaining debt of {0}.', [
+              money(remaining),
+            ]),
           ),
         ),
       );
@@ -173,16 +178,17 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen>
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Debt payment recorded.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.tr('Debt payment recorded.'))),
+      );
 
       _loadSuppliers();
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(friendlyError(e))));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(context, e))));
     }
   }
 
@@ -208,11 +214,11 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen>
   @override
   Widget build(BuildContext context) {
     return AppShell(
-      title: 'Suppliers',
+      title: context.tr('Suppliers'),
       destinationId: 'suppliers',
       floatingActionButton: FloatingActionButton(
         onPressed: _addSupplier,
-        tooltip: 'Add supplier',
+        tooltip: context.tr('Add supplier'),
         child: const Icon(Icons.add),
       ),
       body: _buildBody(),
@@ -237,14 +243,15 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen>
               child: _suppliers.isEmpty
                   ? ListView(
                       physics: const AlwaysScrollableScrollPhysics(),
-                      children: const [
-                        SizedBox(height: 120),
+                      children: [
+                        const SizedBox(height: 120),
                         EmptyState(
                           icon: Icons.factory_outlined,
-                          title: 'No suppliers yet',
-                          message:
-                              'Suppliers are created automatically when you '
-                              'save a purchase invoice, or by tapping + below.',
+                          title: context.tr('No suppliers yet'),
+                          message: context.tr(
+                            'Suppliers are created automatically when you '
+                            'save a purchase invoice, or by tapping + below.',
+                          ),
                         ),
                       ],
                     )
@@ -279,7 +286,7 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen>
                                 subtitle: Text.rich(
                                   TextSpan(
                                     children: [
-                                      const TextSpan(text: 'Debt: '),
+                                      TextSpan(text: context.tr('Debt: ')),
                                       TextSpan(
                                         text: moneyNegative(supplier.debt),
                                         style: TextStyle(
@@ -291,9 +298,12 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen>
                                         ),
                                       ),
                                       TextSpan(
-                                        text:
-                                            '  ·  ${supplier.invoiceCount} '
-                                            'invoice${supplier.invoiceCount == 1 ? '' : 's'}',
+                                        text: context.tr('  ·  {0} {1}', [
+                                          supplier.invoiceCount,
+                                          supplier.invoiceCount == 1
+                                              ? context.tr('invoice')
+                                              : context.tr('invoices'),
+                                        ]),
                                       ),
                                     ],
                                   ),
@@ -307,27 +317,27 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen>
                                         icon: const Icon(
                                           Icons.payments_outlined,
                                         ),
-                                        tooltip: 'Pay debt',
+                                        tooltip: context.tr('Pay debt'),
                                         onPressed: () =>
                                             _paySupplierDebt(supplier),
                                       ),
                                     IconButton(
                                       visualDensity: VisualDensity.compact,
                                       icon: const Icon(Icons.history),
-                                      tooltip: 'Payment history',
+                                      tooltip: context.tr('Payment history'),
                                       onPressed: () =>
                                           _showPaymentHistory(supplier),
                                     ),
                                     IconButton(
                                       visualDensity: VisualDensity.compact,
                                       icon: const Icon(Icons.edit_outlined),
-                                      tooltip: 'Edit',
+                                      tooltip: context.tr('Edit'),
                                       onPressed: () => _editSupplier(supplier),
                                     ),
                                     IconButton(
                                       visualDensity: VisualDensity.compact,
                                       icon: const Icon(Icons.delete_outline),
-                                      tooltip: 'Delete',
+                                      tooltip: context.tr('Delete'),
                                       onPressed: () =>
                                           _deleteSupplier(supplier),
                                     ),
@@ -374,7 +384,7 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen>
         child: Align(
           alignment: Alignment.centerLeft,
           child: Text(
-            'No purchase invoices recorded for this supplier.',
+            context.tr('No purchase invoices recorded for this supplier.'),
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ),
@@ -455,7 +465,7 @@ class _PaymentHistorySheetState extends State<_PaymentHistorySheet> {
       if (!mounted) return;
 
       setState(() {
-        _error = friendlyError(e);
+        _error = friendlyErrorMessage(context, e);
       });
     }
   }
@@ -463,7 +473,7 @@ class _PaymentHistorySheetState extends State<_PaymentHistorySheet> {
   String _formatDateTime(DateTime date) {
     final h = date.hour % 12 == 0 ? 12 : date.hour % 12;
     final minute = date.minute.toString().padLeft(2, '0');
-    final amPm = date.hour < 12 ? 'AM' : 'PM';
+    final amPm = date.hour < 12 ? context.tr('AM') : context.tr('PM');
 
     return '${date.day}/${date.month}/${date.year}  $h:$minute $amPm';
   }
@@ -491,7 +501,7 @@ class _PaymentHistorySheetState extends State<_PaymentHistorySheet> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Payment History',
+                          context.tr('Payment History'),
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
@@ -509,7 +519,7 @@ class _PaymentHistorySheetState extends State<_PaymentHistorySheet> {
                   IconButton(
                     visualDensity: VisualDensity.compact,
                     icon: const Icon(Icons.close),
-                    tooltip: 'Close',
+                    tooltip: context.tr('Close'),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
@@ -522,12 +532,13 @@ class _PaymentHistorySheetState extends State<_PaymentHistorySheet> {
                   : payments == null
                   ? const LoadingState()
                   : payments.isEmpty
-                  ? const EmptyState(
+                  ? EmptyState(
                       icon: Icons.history,
-                      title: 'No payments recorded yet',
-                      message:
-                          'Payments appear here when you pay a '
-                          'purchase invoice or supplier debt.',
+                      title: context.tr('No payments recorded yet'),
+                      message: context.tr(
+                        'Payments appear here when you pay a '
+                        'purchase invoice or supplier debt.',
+                      ),
                     )
                   : ListView.builder(
                       controller: scrollController,
@@ -538,7 +549,9 @@ class _PaymentHistorySheetState extends State<_PaymentHistorySheet> {
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 8),
                             child: Text(
-                              'Total paid: ${money(totalPaid!)}',
+                              context.tr('Total paid: {0}', [
+                                money(totalPaid!),
+                              ]),
                               style: theme.textTheme.titleSmall!.copyWith(
                                 fontWeight: FontWeight.w700,
                               ),
@@ -562,7 +575,9 @@ class _PaymentHistorySheetState extends State<_PaymentHistorySheet> {
                           trailing: payment.purchaseInvoiceId == null
                               ? null
                               : Text(
-                                  'Invoice #${payment.purchaseInvoiceId}',
+                                  context.tr('Invoice #{0}', [
+                                    payment.purchaseInvoiceId,
+                                  ]),
                                   style: theme.textTheme.bodySmall?.copyWith(
                                     color: theme.colorScheme.onSurfaceVariant,
                                   ),

@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using SummerLandBackend.Data;
 using SummerLandBackend.DTOs.ProductVariants;
 using SummerLandBackend.Models;
-using SummerLandBackend.Services;
 
 namespace ShopSystem.API.Controllers;
 
@@ -12,14 +11,10 @@ namespace ShopSystem.API.Controllers;
 public class ProductVariantsController : ControllerBase
 {
     private readonly ShopDbContext _context;
-    private readonly BarcodeService _barcodeService;
 
-    public ProductVariantsController(
-        ShopDbContext context,
-        BarcodeService barcodeService)
+    public ProductVariantsController(ShopDbContext context)
     {
         _context = context;
-        _barcodeService = barcodeService;
     }
 
     [HttpGet]
@@ -388,5 +383,259 @@ public class ProductVariantsController : ControllerBase
         await _context.SaveChangesAsync();
 
         return NoContent();
+    }
+
+    /// <summary>
+    /// Splits the stock held by the auto-created default variant (no size, no
+    /// colour) into one or more new size/colour variants. All of the source
+    /// variant's stock must be distributed across the splits; the source variant
+    /// is deleted once emptied.
+    /// </summary>
+    [HttpPost("split")]
+    public async Task<ActionResult<IEnumerable<ProductVariantResponseDto>>>
+        SplitVariant(SplitProductVariantDto dto)
+    {
+        if (dto.Splits == null || dto.Splits.Count == 0)
+        {
+            return BadRequest("Provide at least one split.");
+        }
+
+        var source = await _context.ProductVariants
+            .Include(v => v.Inventory)
+            .Include(v => v.Product)
+            .FirstOrDefaultAsync(v => v.Id == dto.SourceVariantId);
+
+        if (source == null)
+        {
+            return NotFound("Product variant not found.");
+        }
+
+        if (source.SizeId != null || source.ColourId != null)
+        {
+            return BadRequest(
+                "Only a default variant (no size or colour) can be split.");
+        }
+
+        var hasSales = await _context.InvoiceItems
+            .AnyAsync(i => i.ProductVariantId == source.Id);
+
+        if (hasSales)
+        {
+            return BadRequest(
+                "This variant has sales history and cannot be split.");
+        }
+
+        // Validate each split line.
+        var seen = new HashSet<(int? Size, int? Colour)>();
+
+        foreach (var line in dto.Splits)
+        {
+            if (line.Quantity <= 0)
+            {
+                return BadRequest(
+                    "Every split quantity must be greater than zero.");
+            }
+
+            if (line.LowStockThreshold.HasValue &&
+                line.LowStockThreshold.Value < 0)
+            {
+                return BadRequest(
+                    "Low stock threshold cannot be negative.");
+            }
+
+            if (!seen.Add((line.SizeId, line.ColourId)))
+            {
+                return BadRequest(
+                    "Each split must target a different size and colour.");
+            }
+
+            if (line.SizeId.HasValue)
+            {
+                var sizeExists = await _context.Sizes
+                    .AnyAsync(s => s.Id == line.SizeId.Value);
+
+                if (!sizeExists)
+                {
+                    return BadRequest("Size does not exist.");
+                }
+            }
+
+            if (line.ColourId.HasValue)
+            {
+                var colourExists = await _context.Colours
+                    .AnyAsync(c => c.Id == line.ColourId.Value);
+
+                if (!colourExists)
+                {
+                    return BadRequest("Colour does not exist.");
+                }
+            }
+
+            var duplicate = await _context.ProductVariants
+                .AnyAsync(v =>
+                    v.ProductId == source.ProductId &&
+                    v.SizeId == line.SizeId &&
+                    v.ColourId == line.ColourId);
+
+            if (duplicate)
+            {
+                return Conflict(
+                    "A product variant with the same size and colour already exists.");
+            }
+        }
+
+        var sourceQuantity = source.Inventory.Sum(i => i.Quantity);
+        var splitQuantity = dto.Splits.Sum(l => l.Quantity);
+
+        if (splitQuantity != sourceQuantity)
+        {
+            return BadRequest(
+                $"Split quantities total {splitQuantity} but the variant holds {sourceQuantity}. Distribute all stock.");
+        }
+
+        // Snapshot the source locations so we can redistribute stock across them.
+        var sourceLocations = source.Inventory
+            .Where(i => i.Quantity > 0)
+            .Select(i => (i.LocationId, i.Quantity))
+            .ToList();
+
+        var createdVariants = new List<ProductVariant>();
+
+        var locationIndex = 0;
+        var locationRemaining = sourceLocations.Count > 0
+            ? sourceLocations[0].Quantity
+            : 0;
+
+        // Barcodes follow the same scheme as the normal variant-creation path:
+        // the product barcode plus an incrementing suffix (e.g. 1001, 1002).
+        var baseBarcode = source.Product.Barcode;
+        var barcodeSuffix = 1;
+
+        foreach (var line in dto.Splits)
+        {
+            string variantBarcode;
+
+            while (true)
+            {
+                var candidateBarcode = $"{baseBarcode}{barcodeSuffix}";
+
+                var exists = await _context.ProductVariants
+                    .AnyAsync(v => v.Barcode == candidateBarcode);
+
+                if (!exists)
+                {
+                    variantBarcode = candidateBarcode;
+                    barcodeSuffix++;
+                    break;
+                }
+
+                barcodeSuffix++;
+            }
+
+            var variant = new ProductVariant
+            {
+                ProductId = source.ProductId,
+                SizeId = line.SizeId,
+                ColourId = line.ColourId,
+                BarcodeType = BarcodeType.Internal,
+                Barcode = variantBarcode,
+                Price = source.Price,
+                LowStockThreshold = line.LowStockThreshold ?? source.LowStockThreshold
+            };
+
+            _context.ProductVariants.Add(variant);
+            await _context.SaveChangesAsync();
+
+            createdVariants.Add(variant);
+
+            // Redistribute this split's quantity across the source locations,
+            // preserving per-location totals as much as possible.
+            var remaining = line.Quantity;
+
+            while (remaining > 0 && locationIndex < sourceLocations.Count)
+            {
+                if (locationRemaining == 0)
+                {
+                    locationIndex++;
+                    locationRemaining = locationIndex < sourceLocations.Count
+                        ? sourceLocations[locationIndex].Quantity
+                        : 0;
+                    continue;
+                }
+
+                var take = Math.Min(remaining, locationRemaining);
+                var locationId = sourceLocations[locationIndex].LocationId;
+
+                var inventory = await _context.Inventory
+                    .FirstOrDefaultAsync(i =>
+                        i.ProductVariantId == variant.Id &&
+                        i.LocationId == locationId);
+
+                if (inventory == null)
+                {
+                    inventory = new Inventory
+                    {
+                        ProductVariantId = variant.Id,
+                        LocationId = locationId,
+                        Quantity = take
+                    };
+
+                    _context.Inventory.Add(inventory);
+                }
+                else
+                {
+                    inventory.Quantity += take;
+                }
+
+                _context.StockMovements.Add(new StockMovement
+                {
+                    ProductVariantId = variant.Id,
+                    LocationId = locationId,
+                    QuantityChange = take,
+                    Reason = "Variant Split",
+                    CreatedAt = DateTime.UtcNow
+                });
+
+                remaining -= take;
+                locationRemaining -= take;
+            }
+
+            await _context.SaveChangesAsync();
+        }
+
+        // The source is now fully drained: remove it (and its inventory and
+        // purchase/initial-stock movements cascade away).
+        _context.ProductVariants.Remove(source);
+        await _context.SaveChangesAsync();
+
+        var createdIds = createdVariants.Select(v => v.Id).ToList();
+
+        var response = await _context.ProductVariants
+            .Include(v => v.Product)
+            .Include(v => v.Size)
+            .Include(v => v.Colour)
+            .Include(v => v.Inventory)
+            .Where(v => createdIds.Contains(v.Id))
+            .Select(v => new ProductVariantResponseDto
+            {
+                Id = v.Id,
+                ProductId = v.ProductId,
+                ModelNumber = v.Product.ModelNumber,
+                ProductName = v.Product.Name,
+                SizeId = v.SizeId,
+                SizeName = v.Size != null ? v.Size.Name : null,
+                ColourId = v.ColourId,
+                ColourName = v.Colour != null ? v.Colour.Name : null,
+                BarcodeType = v.BarcodeType,
+                Barcode = v.Barcode,
+                Price = v.Price,
+                LowStockThreshold = v.LowStockThreshold,
+                TotalQuantity = v.Inventory.Sum(i => i.Quantity),
+                IsLowStock = v.Inventory.Sum(i => i.Quantity)
+                               <= v.LowStockThreshold
+            })
+            .ToListAsync();
+
+        return Ok(response);
     }
 }

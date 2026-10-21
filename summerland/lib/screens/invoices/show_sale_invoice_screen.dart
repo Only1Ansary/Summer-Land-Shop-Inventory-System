@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../localization/app_strings.dart';
 import '../../models/invoice.dart';
 import '../../services/api_service.dart';
 import '../../services/invoice_service.dart';
@@ -53,7 +54,7 @@ class _ShowSaleInvoiceScreenState extends State<ShowSaleInvoiceScreen> {
       if (!mounted) return;
 
       setState(() {
-        _error = friendlyError(e);
+        _error = friendlyErrorMessage(context, e);
       });
     } finally {
       if (mounted) {
@@ -71,7 +72,9 @@ class _ShowSaleInvoiceScreenState extends State<ShowSaleInvoiceScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          invoice == null ? 'Sale Invoice' : 'Sale Invoice #${invoice.id}',
+          invoice == null
+              ? context.tr('Sale Invoice')
+              : context.tr('Sale Invoice #{0}', [invoice.id]),
         ),
       ),
       body: _buildBody(invoice),
@@ -103,7 +106,7 @@ class _ShowSaleInvoiceScreenState extends State<ShowSaleInvoiceScreen> {
     }
 
     if (invoice == null) {
-      return const EmptyState(title: 'No sale invoice');
+      return EmptyState(title: context.tr('No sale invoice'));
     }
 
     final theme = Theme.of(context);
@@ -119,51 +122,63 @@ class _ShowSaleInvoiceScreenState extends State<ShowSaleInvoiceScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Sale Invoice #${invoice.id}',
+                    context.tr('Sale Invoice #{0}', [invoice.id]),
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const Divider(height: 24),
-                  InfoTile(label: 'Date', value: '${invoice.createdAt}'),
-                  InfoTile(label: 'Location', value: invoice.locationName),
                   InfoTile(
-                    label: 'Employee',
-                    value: invoice.employeeName ?? 'None',
+                    label: context.tr('Date'),
+                    value: '${invoice.createdAt}',
+                  ),
+                  InfoTile(
+                    label: context.tr('Location'),
+                    value: invoice.locationName,
+                  ),
+                  InfoTile(
+                    label: context.tr('Employee'),
+                    value: invoice.employeeName ?? context.tr('None'),
                   ),
                 ],
               ),
             ),
           ),
           const SizedBox(height: 16),
-          const SectionHeader(
-            title: 'Items',
-            subtitle: 'Products sold on this invoice',
+          SectionHeader(
+            title: context.tr('Items'),
+            subtitle: context.tr('Products sold on this invoice'),
           ),
           const SizedBox(height: 8),
           if (invoice.items.isEmpty)
-            const Card(
+            Card(
               child: Padding(
-                padding: EdgeInsets.all(24),
+                padding: const EdgeInsets.all(24),
                 child: EmptyState(
                   icon: Icons.assignment_return_outlined,
-                  title: 'Fully returned',
-                  message: 'Every item on this invoice was returned.',
+                  title: context.tr('Fully returned'),
+                  message: context.tr(
+                    'Every item on this invoice was returned.',
+                  ),
                 ),
               ),
             )
           else
             ...invoice.items.map((item) {
               final variant = [
-                if (item.sizeName != null) 'Size: ${item.sizeName}',
-                if (item.colourName != null) 'Colour: ${item.colourName}',
+                if (item.sizeName != null)
+                  context.tr('Size: {0}', [item.sizeName]),
+                if (item.colourName != null)
+                  context.tr('Colour: {0}', [item.colourName]),
               ].join(', ');
 
               final discountLabel = item.discountPercent == null
-                  ? '-${money(item.discountAmount)}/unit'
-                  : '-${money(item.discountAmount)}/unit '
-                        '(${percentLabel(item.discountPercent!)})';
+                  ? context.tr('-{0}/unit', [money(item.discountAmount)])
+                  : context.tr('-{0}/unit ({1})', [
+                      money(item.discountAmount),
+                      percentLabel(item.discountPercent!),
+                    ]);
 
               return Card(
                 margin: const EdgeInsets.only(bottom: 8),
@@ -175,7 +190,7 @@ class _ShowSaleInvoiceScreenState extends State<ShowSaleInvoiceScreen> {
                         TextSpan(
                           text:
                               '${item.modelNumber}${variant.isEmpty ? '' : ' · $variant'}\n'
-                              'Qty: ',
+                              '${context.tr('Qty: ')}',
                         ),
                         TextSpan(text: '${item.quantity}'),
                         const TextSpan(text: ' × '),
@@ -206,7 +221,9 @@ class _ShowSaleInvoiceScreenState extends State<ShowSaleInvoiceScreen> {
                             ),
                           ),
                           TextSpan(
-                            text: '\nDiscount: $discountLabel',
+                            text: context.tr('\nDiscount: {0}', [
+                              discountLabel,
+                            ]),
                             style: TextStyle(
                               color: amountColor(context, -item.discountAmount),
                             ),
@@ -257,10 +274,13 @@ class _ShowSaleInvoiceScreenState extends State<ShowSaleInvoiceScreen> {
             ),
             child: Column(
               children: [
-                InfoTile(label: 'Subtotal', value: money(_subtotal(invoice))),
+                InfoTile(
+                  label: context.tr('Subtotal'),
+                  value: money(_subtotal(invoice)),
+                ),
                 if (_itemDiscountTotal(invoice) > 0)
                   InfoTile(
-                    label: 'Item discounts',
+                    label: context.tr('Item discounts'),
                     value: moneyNegative(_itemDiscountTotal(invoice)),
                     valueStyle: amountStyle(
                       context,
@@ -269,7 +289,7 @@ class _ShowSaleInvoiceScreenState extends State<ShowSaleInvoiceScreen> {
                   ),
                 if (invoice.discountAmount > 0)
                   InfoTile(
-                    label: 'Discount',
+                    label: context.tr('Discount'),
                     value: invoice.discountPercent == null
                         ? moneyNegative(invoice.discountAmount)
                         : '${moneyNegative(invoice.discountAmount)} '
@@ -277,7 +297,7 @@ class _ShowSaleInvoiceScreenState extends State<ShowSaleInvoiceScreen> {
                     valueStyle: amountStyle(context, -invoice.discountAmount),
                   ),
                 InfoTile(
-                  label: 'Total Amount',
+                  label: context.tr('Total Amount'),
                   value: money(invoice.totalAmount),
                   valueStyle: amountStyle(context, invoice.totalAmount),
                 ),

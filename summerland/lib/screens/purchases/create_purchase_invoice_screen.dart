@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../localization/app_strings.dart';
 import '../../models/category.dart';
 import '../../services/api_service.dart';
 import '../../services/category_service.dart';
@@ -74,7 +75,7 @@ class _CreatePurchaseInvoiceScreenState
         _isLoading = false;
       });
 
-      _showError(friendlyError(e));
+      _showError(friendlyErrorMessage(context, e));
     }
   }
 
@@ -92,15 +93,25 @@ class _CreatePurchaseInvoiceScreenState
   double get _totalAfterDiscount =>
       (_totalCost - _discount).clamp(0, double.infinity);
 
-  double get _feesTotal {
-    return _fees.fold(0, (total, fee) => total + fee.amount);
+  double get _paidFeesTotal {
+    return _fees
+        .where((fee) => fee.isPaid)
+        .fold(0, (total, fee) => total + fee.amount);
   }
 
-  /// Goods after discount. Extra fees are excluded: they are a real cost but
-  /// are never owed to the supplier.
-  double get _payableTotal => _totalAfterDiscount;
+  double get _unpaidFeesTotal {
+    return _fees
+        .where((fee) => !fee.isPaid)
+        .fold(0, (total, fee) => total + fee.amount);
+  }
 
-  double get _grandTotal => _payableTotal + _feesTotal;
+  /// The goods after discount plus the fees that were already paid. Unpaid fees
+  /// are not part of the cost: they show up as debt instead.
+  double get _grandTotal => _totalAfterDiscount + _paidFeesTotal;
+
+  /// What the supplier can be paid against: the goods only. Unpaid fees are
+  /// settled through the debt balance, not the "total paid" field.
+  double get _payableTotal => _totalAfterDiscount;
 
   Future<void> _pickDate() async {
     final now = DateTime.now();
@@ -131,6 +142,8 @@ class _CreatePurchaseInvoiceScreenState
           _PurchaseItemDialog(categories: _categories, item: existing),
     );
 
+    if (!mounted) return;
+
     if (item == null) return;
 
     final modelDuplicate = _items.any(
@@ -140,7 +153,7 @@ class _CreatePurchaseInvoiceScreenState
     );
 
     if (!_isEditingReplace(existing) && modelDuplicate) {
-      _showError('A model number cannot appear more than once.');
+      _showError(context.tr('A model number cannot appear more than once.'));
       return;
     }
 
@@ -151,7 +164,7 @@ class _CreatePurchaseInvoiceScreenState
     );
 
     if (!_isEditingReplace(existing) && barcodeDuplicate) {
-      _showError('A product barcode cannot appear more than once.');
+      _showError(context.tr('A product barcode cannot appear more than once.'));
       return;
     }
 
@@ -215,19 +228,23 @@ class _CreatePurchaseInvoiceScreenState
     final supplierName = _supplierNameController.text.trim();
 
     if (supplierName.isEmpty) {
-      _showError('Supplier name is required.');
+      _showError(context.tr('Supplier name is required.'));
       return;
     }
 
-    if (_items.isEmpty) {
-      _showError('Purchase invoice must contain at least one item.');
+    if (_items.isEmpty && _fees.isEmpty) {
+      _showError(
+        context.tr(
+          'A purchase invoice needs at least one item or one extra fee.',
+        ),
+      );
       return;
     }
 
     final totalPaid = double.tryParse(_totalPaidController.text.trim());
 
     if (totalPaid == null || totalPaid < 0) {
-      _showError('Total paid must be a non-negative amount.');
+      _showError(context.tr('Total paid must be a non-negative amount.'));
       return;
     }
 
@@ -235,29 +252,37 @@ class _CreatePurchaseInvoiceScreenState
     final discount = discountText.isEmpty ? 0.0 : double.tryParse(discountText);
 
     if (discount == null || discount < 0) {
-      _showError('Discount must be a non-negative amount.');
+      _showError(context.tr('Discount must be a non-negative amount.'));
       return;
     }
 
     if (discount > _totalCost) {
-      _showError('Discount cannot exceed the total cost.');
+      _showError(context.tr('Discount cannot exceed the total cost.'));
       return;
     }
 
     if (totalPaid > _payableTotal) {
-      _showError('Total paid cannot exceed the cost of the purchased items.');
+      _showError(
+        _items.isEmpty
+            ? context.tr('Total paid cannot exceed the extra fees.')
+            : context.tr(
+                'Total paid cannot exceed the cost of the purchased items.',
+              ),
+      );
       return;
     }
 
     for (final fee in _fees) {
       if (fee.description.trim().isEmpty) {
-        _showError('Every extra fee needs a description.');
+        _showError(context.tr('Every extra fee needs a description.'));
         return;
       }
 
       if (fee.amount <= 0) {
         _showError(
-          'The amount for "${fee.description.trim()}" must be greater than zero.',
+          context.tr('The amount for "{0}" must be greater than zero.', [
+            fee.description.trim(),
+          ]),
         );
         return;
       }
@@ -285,6 +310,7 @@ class _CreatePurchaseInvoiceScreenState
             (fee) => {
               'description': fee.description.trim(),
               'amount': fee.amount,
+              'isPaid': fee.isPaid,
             },
           )
           .toList();
@@ -325,7 +351,7 @@ class _CreatePurchaseInvoiceScreenState
         _isCreating = false;
       });
 
-      _showError(friendlyError(e));
+      _showError(friendlyErrorMessage(context, e));
     }
   }
 
@@ -348,18 +374,20 @@ class _CreatePurchaseInvoiceScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SectionHeader(
-              title: '1. Supplier',
-              subtitle: 'Who you are purchasing from',
+            SectionHeader(
+              title: context.tr('1. Supplier'),
+              subtitle: context.tr('Who you are purchasing from'),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _supplierNameController,
               textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(
-                labelText: 'Supplier Name',
-                prefixIcon: Icon(Icons.factory_outlined),
-                helperText: 'New supplier names are registered automatically.',
+              decoration: InputDecoration(
+                labelText: context.tr('Supplier Name'),
+                prefixIcon: const Icon(Icons.factory_outlined),
+                helperText: context.tr(
+                  'New supplier names are registered automatically.',
+                ),
               ),
             ),
             const SizedBox(height: 16),
@@ -379,8 +407,8 @@ class _CreatePurchaseInvoiceScreenState
                     keyboardType: const TextInputType.numberWithOptions(
                       decimal: true,
                     ),
-                    decoration: const InputDecoration(
-                      labelText: 'Total Paid',
+                    decoration: InputDecoration(
+                      labelText: context.tr('Total Paid'),
                       prefixText: '\u20a6 ',
                     ),
                     onChanged: (_) => setState(() {}),
@@ -394,10 +422,10 @@ class _CreatePurchaseInvoiceScreenState
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
-              decoration: const InputDecoration(
-                labelText: 'Discount',
+              decoration: InputDecoration(
+                labelText: context.tr('Discount'),
                 prefixText: '\u20a6 ',
-                helperText: 'Subtracted from the total cost.',
+                helperText: context.tr('Subtracted from the total cost.'),
               ),
               onChanged: (_) => setState(() {}),
             ),
@@ -424,8 +452,8 @@ class _CreatePurchaseInvoiceScreenState
                 });
               },
               child: SectionHeader(
-                title: '2. Items',
-                subtitle: 'Products being purchased',
+                title: context.tr('2. Items'),
+                subtitle: context.tr('Products being purchased'),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -461,15 +489,21 @@ class _CreatePurchaseInvoiceScreenState
                           child: OutlinedButton.icon(
                             onPressed: () => _addItem(),
                             icon: const Icon(Icons.add),
-                            label: const Text('Add Item'),
+                            label: Text(context.tr('Add Item')),
                           ),
                         ),
                         const SizedBox(height: 12),
                         if (_items.isEmpty)
-                          const EmptyState(
+                          EmptyState(
                             icon: Icons.production_quantity_limits_outlined,
-                            title: 'No items yet',
-                            message: 'Add at least one product to create the invoice.',
+                            title: context.tr('No items yet'),
+                            message: _fees.isEmpty
+                                ? context.tr(
+                                    'Add at least one product, or an extra fee below.',
+                                  )
+                                : context.tr(
+                                    'No products on this invoice. It has extra fees only.',
+                                  ),
                           )
                         else
                           ..._items.asMap().entries.map((entry) {
@@ -490,7 +524,8 @@ class _CreatePurchaseInvoiceScreenState
                                       TextSpan(
                                         text:
                                             '${item.modelNumber} • '
-                                            '${item.barcode}\nQty: ',
+                                            '${item.barcode}\n'
+                                            '${context.tr('Qty: ')}',
                                       ),
                                       TextSpan(text: '${item.quantity}'),
                                       const TextSpan(text: ' × '),
@@ -512,12 +547,12 @@ class _CreatePurchaseInvoiceScreenState
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     IconButton(
-                                      tooltip: 'Edit',
+                                      tooltip: context.tr('Edit'),
                                       icon: const Icon(Icons.edit_outlined),
                                       onPressed: () => _addItem(existing: item),
                                     ),
                                     IconButton(
-                                      tooltip: 'Remove',
+                                      tooltip: context.tr('Remove'),
                                       icon: const Icon(Icons.delete_outline),
                                       onPressed: () => _removeItem(index),
                                     ),
@@ -543,9 +578,13 @@ class _CreatePurchaseInvoiceScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SectionHeader(
-              title: '3. Extra Fees',
-              subtitle: 'Shipping, customs, handling and other charges. Added to the total cost but not owed to the supplier.',
+            SectionHeader(
+              title: context.tr('3. Extra Fees'),
+              subtitle: context.tr(
+                'Shipping, customs, handling and other charges. Mark a fee '
+                'as paid to add it to the total cost, or leave it unpaid to '
+                'add it to the supplier debt.',
+              ),
             ),
             const SizedBox(height: 12),
             SizedBox(
@@ -553,15 +592,17 @@ class _CreatePurchaseInvoiceScreenState
               child: OutlinedButton.icon(
                 onPressed: () => _addFee(),
                 icon: const Icon(Icons.add),
-                label: const Text('Add Fee'),
+                label: Text(context.tr('Add Fee')),
               ),
             ),
             const SizedBox(height: 12),
             if (_fees.isEmpty)
-              const EmptyState(
+              EmptyState(
                 icon: Icons.local_shipping_outlined,
-                title: 'No extra fees',
-                message: 'Add shipping or other charges if they apply to this purchase.',
+                title: context.tr('No extra fees'),
+                message: context.tr(
+                  'Add shipping or other charges if they apply to this purchase.',
+                ),
               )
             else
               ..._fees.asMap().entries.map((entry) {
@@ -572,8 +613,12 @@ class _CreatePurchaseInvoiceScreenState
                   margin: const EdgeInsets.only(bottom: 8),
                   child: ListTile(
                     leading: Icon(
-                      Icons.local_shipping_outlined,
-                      color: Theme.of(context).colorScheme.primary,
+                      fee.isPaid
+                          ? Icons.check_circle_outline
+                          : Icons.local_shipping_outlined,
+                      color: fee.isPaid
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).colorScheme.error,
                     ),
                     title: Text(fee.description),
                     subtitle: Text.rich(
@@ -586,7 +631,11 @@ class _CreatePurchaseInvoiceScreenState
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          const TextSpan(text: '  •  not payable to supplier'),
+                          TextSpan(
+                            text: fee.isPaid
+                                ? context.tr('  •  paid (total cost)')
+                                : context.tr('  •  unpaid (debt)'),
+                          ),
                         ],
                       ),
                     ),
@@ -594,12 +643,12 @@ class _CreatePurchaseInvoiceScreenState
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         IconButton(
-                          tooltip: 'Edit',
+                          tooltip: context.tr('Edit'),
                           icon: const Icon(Icons.edit_outlined),
                           onPressed: () => _addFee(existing: fee),
                         ),
                         IconButton(
-                          tooltip: 'Remove',
+                          tooltip: context.tr('Remove'),
                           icon: const Icon(Icons.delete_outline),
                           onPressed: () => _removeFee(index),
                         ),
@@ -619,11 +668,13 @@ class _CreatePurchaseInvoiceScreenState
     final totalCost = _totalCost;
     final discount = _discount;
     final payable = _payableTotal;
-    final fees = _feesTotal;
+    final paidFees = _paidFeesTotal;
+    final unpaidFees = _unpaidFeesTotal;
     final totalPaidText = _totalPaidController.text.trim();
     final totalPaid = double.tryParse(totalPaidText) ?? 0;
 
-    final debt = (payable - totalPaid).clamp(0, double.infinity);
+    final goodsDebt = (payable - totalPaid).clamp(0, double.infinity);
+    final debt = goodsDebt + unpaidFees;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -638,7 +689,7 @@ class _CreatePurchaseInvoiceScreenState
           Row(
             children: [
               Text(
-                'Items: ${_items.length}',
+                context.tr('Items: {0}', [_items.length]),
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
                   color: theme.colorScheme.onSurfaceVariant,
@@ -646,7 +697,7 @@ class _CreatePurchaseInvoiceScreenState
               ),
               const Spacer(),
               Text(
-                'Total (items): ${money(totalCost)}',
+                context.tr('Total (items): {0}', [money(totalCost)]),
                 style: TextStyle(color: amountColor(context, totalCost)),
               ),
             ],
@@ -658,25 +709,46 @@ class _CreatePurchaseInvoiceScreenState
                 children: [
                   const Spacer(),
                   Text(
-                    'Discount: ${moneyNegative(discount)}',
+                    context.tr('Discount: {0}', [moneyNegative(discount)]),
                     style: TextStyle(color: amountColor(context, -discount)),
                   ),
                 ],
               ),
             ),
-          if (fees > 0)
+          if (paidFees > 0)
             Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Row(
                 children: [
                   Text(
-                    'Extra Fees: ${_fees.length}',
+                    context.tr('Fees paid: {0}', [
+                      _fees.where((f) => f.isPaid).length,
+                    ]),
                     style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
                   ),
                   const Spacer(),
                   Text(
-                    '+${money(fees)}',
-                    style: TextStyle(color: amountColor(context, fees)),
+                    '+${money(paidFees)}',
+                    style: TextStyle(color: amountColor(context, paidFees)),
+                  ),
+                ],
+              ),
+            ),
+          if (unpaidFees > 0)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Row(
+                children: [
+                  Text(
+                    context.tr('Fees unpaid: {0}', [
+                      _fees.where((f) => !f.isPaid).length,
+                    ]),
+                    style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+                  ),
+                  const Spacer(),
+                  Text(
+                    context.tr('+{0} (debt)', [money(unpaidFees)]),
+                    style: TextStyle(color: amountColor(context, unpaidFees)),
                   ),
                 ],
               ),
@@ -687,7 +759,7 @@ class _CreatePurchaseInvoiceScreenState
               children: [
                 const Spacer(),
                 Text(
-                  'Total Cost: ${money(_grandTotal)}',
+                  context.tr('Total Cost: {0}', [money(_grandTotal)]),
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
@@ -704,7 +776,7 @@ class _CreatePurchaseInvoiceScreenState
                 children: [
                   const Spacer(),
                   Text(
-                    'Remaining Debt: ${moneyNegative(debt)}',
+                    context.tr('Remaining Debt: {0}', [moneyNegative(debt)]),
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       color: amountColor(context, -debt),
@@ -725,7 +797,7 @@ class _CreatePurchaseInvoiceScreenState
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.shopping_bag_outlined),
-              label: const Text('Create Purchase Invoice'),
+              label: Text(context.tr('Create Purchase Invoice')),
             ),
           ),
         ],
@@ -736,7 +808,7 @@ class _CreatePurchaseInvoiceScreenState
   @override
   Widget build(BuildContext context) {
     return AppShell(
-      title: 'New Purchase',
+      title: context.tr('New Purchase'),
       destinationId: 'add-purchase',
       body: _isLoading
           ? const LoadingState()
@@ -754,7 +826,7 @@ class _CreatePurchaseInvoiceScreenState
                     ],
                   ),
                 ),
-                if (_items.isNotEmpty) _buildTotalsBar(),
+                if (_items.isNotEmpty || _fees.isNotEmpty) _buildTotalsBar(),
               ],
             ),
     );
@@ -787,11 +859,13 @@ class _PurchaseFee {
   final int id;
   final String description;
   final double amount;
+  final bool isPaid;
 
   _PurchaseFee({
     required this.id,
     required this.description,
     required this.amount,
+    this.isPaid = false,
   });
 }
 
@@ -808,6 +882,8 @@ class _PurchaseFeeDialogState extends State<_PurchaseFeeDialog> {
   late final TextEditingController _descriptionController;
   late final TextEditingController _amountController;
 
+  bool _isPaid = false;
+
   @override
   void initState() {
     super.initState();
@@ -820,6 +896,7 @@ class _PurchaseFeeDialogState extends State<_PurchaseFeeDialog> {
     _amountController = TextEditingController(
       text: fee == null ? '' : fee.amount.toStringAsFixed(2),
     );
+    _isPaid = fee?.isPaid ?? false;
   }
 
   @override
@@ -835,14 +912,14 @@ class _PurchaseFeeDialogState extends State<_PurchaseFeeDialog> {
     final description = _descriptionController.text.trim();
 
     if (description.isEmpty) {
-      _showError('Describe what the fee is for.');
+      _showError(context.tr('Describe what the fee is for.'));
       return;
     }
 
     final amount = double.tryParse(_amountController.text.trim());
 
     if (amount == null || amount <= 0) {
-      _showError('The fee amount must be greater than zero.');
+      _showError(context.tr('The fee amount must be greater than zero.'));
       return;
     }
 
@@ -851,6 +928,7 @@ class _PurchaseFeeDialogState extends State<_PurchaseFeeDialog> {
         id: widget.fee?.id ?? DateTime.now().microsecondsSinceEpoch,
         description: description,
         amount: amount,
+        isPaid: _isPaid,
       ),
     );
   }
@@ -863,7 +941,9 @@ class _PurchaseFeeDialogState extends State<_PurchaseFeeDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.fee == null ? 'Add Fee' : 'Edit Fee'),
+      title: Text(
+        widget.fee == null ? context.tr('Add Fee') : context.tr('Edit Fee'),
+      ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -871,35 +951,50 @@ class _PurchaseFeeDialogState extends State<_PurchaseFeeDialog> {
           TextField(
             controller: _descriptionController,
             textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(
-              labelText: 'Description',
-              hintText: 'Shipping, customs, handling...',
+            decoration: InputDecoration(
+              labelText: context.tr('Description'),
+              hintText: context.tr('Shipping, customs, handling...'),
             ),
           ),
           const SizedBox(height: 12),
           TextField(
             controller: _amountController,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(
-              labelText: 'Amount',
+            decoration: InputDecoration(
+              labelText: context.tr('Amount'),
               prefixText: '₦ ',
             ),
           ),
-          const SizedBox(height: 12),
-          const Text(
-            'Added to the total cost, but not owed to the supplier.',
-            style: TextStyle(fontSize: 12),
+          const SizedBox(height: 4),
+          CheckboxListTile(
+            value: _isPaid,
+            onChanged: (value) {
+              setState(() {
+                _isPaid = value ?? false;
+              });
+            },
+            contentPadding: EdgeInsets.zero,
+            controlAffinity: ListTileControlAffinity.leading,
+            title: Text(context.tr('Already paid')),
+            subtitle: Text(
+              _isPaid
+                  ? context.tr('Added to the total cost.')
+                  : context.tr('Added to the supplier debt.'),
+              style: const TextStyle(fontSize: 12),
+            ),
           ),
         ],
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(context.tr('Cancel')),
         ),
         FilledButton(
           onPressed: _add,
-          child: Text(widget.fee == null ? 'Add' : 'Save'),
+          child: Text(
+            widget.fee == null ? context.tr('Add') : context.tr('Save'),
+          ),
         ),
       ],
     );
@@ -966,35 +1061,37 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
     final barcode = _barcodeController.text.trim();
 
     if (name.isEmpty || modelNumber.isEmpty || barcode.isEmpty) {
-      _showError('Every item must have a name, model number, and barcode.');
+      _showError(
+        context.tr('Every item must have a name, model number, and barcode.'),
+      );
       return;
     }
 
     final purchasePrice = double.tryParse(_priceController.text.trim());
 
     if (purchasePrice == null || purchasePrice < 0) {
-      _showError('Purchase price must be a non-negative amount.');
+      _showError(context.tr('Purchase price must be a non-negative amount.'));
       return;
     }
 
     final quantity = int.tryParse(_quantityController.text.trim());
 
     if (quantity == null || quantity <= 0) {
-      _showError('Quantity must be greater than zero.');
+      _showError(context.tr('Quantity must be greater than zero.'));
       return;
     }
 
     final profitMargin = double.tryParse(_marginController.text.trim());
 
     if (profitMargin == null || profitMargin < 0) {
-      _showError('Profit margin must be a non-negative amount.');
+      _showError(context.tr('Profit margin must be a non-negative amount.'));
       return;
     }
 
     final categoryId = _selectedCategoryId;
 
     if (categoryId == null || categoryId <= 0) {
-      _showError('Please choose a category.');
+      _showError(context.tr('Please choose a category.'));
       return;
     }
 
@@ -1020,7 +1117,9 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.item == null ? 'Add Item' : 'Edit Item'),
+      title: Text(
+        widget.item == null ? context.tr('Add Item') : context.tr('Edit Item'),
+      ),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1029,23 +1128,27 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
             TextField(
               controller: _nameController,
               textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(labelText: 'Product Name'),
+              decoration: InputDecoration(
+                labelText: context.tr('Product Name'),
+              ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _modelController,
-              decoration: const InputDecoration(labelText: 'Model Number'),
+              decoration: InputDecoration(
+                labelText: context.tr('Model Number'),
+              ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _barcodeController,
-              decoration: const InputDecoration(labelText: 'Barcode'),
+              decoration: InputDecoration(labelText: context.tr('Barcode')),
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<int>(
               key: ValueKey('category-$_selectedCategoryId'),
               initialValue: _selectedCategoryId,
-              decoration: const InputDecoration(labelText: 'Category'),
+              decoration: InputDecoration(labelText: context.tr('Category')),
               items: widget.categories.map((category) {
                 return DropdownMenuItem<int>(
                   value: category.id,
@@ -1067,8 +1170,8 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
                     keyboardType: const TextInputType.numberWithOptions(
                       decimal: true,
                     ),
-                    decoration: const InputDecoration(
-                      labelText: 'Purchase Price',
+                    decoration: InputDecoration(
+                      labelText: context.tr('Purchase Price'),
                       prefixText: '\u20a6 ',
                     ),
                   ),
@@ -1078,7 +1181,9 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
                   child: TextField(
                     controller: _quantityController,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Quantity'),
+                    decoration: InputDecoration(
+                      labelText: context.tr('Quantity'),
+                    ),
                   ),
                 ),
               ],
@@ -1089,7 +1194,9 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
-              decoration: const InputDecoration(labelText: 'Profit Margin'),
+              decoration: InputDecoration(
+                labelText: context.tr('Profit Margin'),
+              ),
             ),
           ],
         ),
@@ -1097,11 +1204,13 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(context.tr('Cancel')),
         ),
         FilledButton(
           onPressed: _add,
-          child: Text(widget.item == null ? 'Add' : 'Save'),
+          child: Text(
+            widget.item == null ? context.tr('Add') : context.tr('Save'),
+          ),
         ),
       ],
     );

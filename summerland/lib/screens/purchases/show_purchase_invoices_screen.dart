@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../localization/app_strings.dart';
 import '../../models/purchase_invoice.dart';
 import '../../services/api_service.dart';
 import '../../services/purchase_invoice_service.dart';
@@ -79,7 +80,7 @@ class _ShowPurchaseInvoicesScreenState extends State<ShowPurchaseInvoicesScreen>
       if (!mounted) return;
 
       setState(() {
-        _error = friendlyError(e);
+        _error = friendlyErrorMessage(context, e);
       });
     } finally {
       if (mounted) {
@@ -154,17 +155,17 @@ class _ShowPurchaseInvoicesScreenState extends State<ShowPurchaseInvoicesScreen>
   @override
   Widget build(BuildContext context) {
     return AppShell(
-      title: 'Purchase Invoices',
+      title: context.tr('Purchase Invoices'),
       destinationId: 'purchase-invoices',
       actions: [
         IconButton(
           onPressed: _resetDates,
-          tooltip: 'Reset to today',
+          tooltip: context.tr('Reset to today'),
           icon: const Icon(Icons.today_outlined),
         ),
         IconButton(
           onPressed: _openSearch,
-          tooltip: 'Search invoices',
+          tooltip: context.tr('Search invoices'),
           icon: const Icon(Icons.search),
         ),
       ],
@@ -183,8 +184,10 @@ class _ShowPurchaseInvoicesScreenState extends State<ShowPurchaseInvoicesScreen>
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
             child: DateFilterBar(
-              fromLabel: _from == null ? 'From' : _formatDate(_from!),
-              toLabel: _to == null ? 'To' : _formatDate(_to!),
+              fromLabel: _from == null
+                  ? context.tr('From')
+                  : _formatDate(_from!),
+              toLabel: _to == null ? context.tr('To') : _formatDate(_to!),
               onFrom: () => _pickDate(true),
               onTo: () => _pickDate(false),
             ),
@@ -201,9 +204,9 @@ class _ShowPurchaseInvoicesScreenState extends State<ShowPurchaseInvoicesScreen>
                         EmptyState(
                           icon: Icons.receipt_long_outlined,
                           title: _edited
-                              ? 'No invoices in this period'
-                              : 'No invoices today',
-                          message: 'Try changing the date range.',
+                              ? context.tr('No invoices in this period')
+                              : context.tr('No invoices today'),
+                          message: context.tr('Try changing the date range.'),
                         ),
                       ],
                     )

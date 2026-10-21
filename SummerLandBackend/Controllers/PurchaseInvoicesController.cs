@@ -28,8 +28,13 @@ public class PurchaseInvoicesController : ControllerBase
         if (string.IsNullOrWhiteSpace(dto.SupplierName))
             return BadRequest("Supplier name is required.");
 
-        if (dto.Items == null || dto.Items.Count == 0)
-            return BadRequest("Purchase invoice must contain at least one item.");
+        var hasItems = dto.Items != null && dto.Items.Count > 0;
+        var hasFees = dto.Fees != null && dto.Fees.Count > 0;
+
+        if (!hasItems && !hasFees)
+            return BadRequest(
+                "A purchase invoice must contain at least one item or one "
+                + "extra fee.");
 
         if (dto.TotalPaid < 0)
             return BadRequest("TotalPaid cannot be negative.");
@@ -100,9 +105,10 @@ public class PurchaseInvoicesController : ControllerBase
         if (dto.Discount > itemsTotal)
             return BadRequest("Discount cannot exceed the total cost.");
 
-        // Extra fees (shipping, customs, handling...). They are part of what the
-        // goods actually cost, so they are added to TotalCost, but they are not
-        // owed to the supplier, so they are excluded from Debt.
+        // Extra fees (shipping, customs, handling...). Each fee is either paid
+        // or not: paid fees are part of what the goods cost (added to
+        // TotalCost); unpaid fees are still owed to the supplier, so they are
+        // added to the supplier debt instead.
         var fees = new List<PurchaseInvoiceFee>();
 
         foreach (var feeDto in dto.Fees)
@@ -119,16 +125,21 @@ public class PurchaseInvoicesController : ControllerBase
             fees.Add(new PurchaseInvoiceFee
             {
                 Description = description,
-                Amount = feeDto.Amount
+                Amount = feeDto.Amount,
+                IsPaid = feeDto.IsPaid
             });
         }
 
-        var feesTotal = fees.Sum(f => f.Amount);
-
         var goodsTotal = itemsTotal - dto.Discount;
 
-        var totalCost = goodsTotal + feesTotal;
+        var paidFeesTotal = fees.Where(f => f.IsPaid).Sum(f => f.Amount);
+        var unpaidFeesTotal = fees.Where(f => !f.IsPaid).Sum(f => f.Amount);
 
+        // Paid fees are part of the cost of the purchase; unpaid fees are only
+        // reflected in debt.
+        var totalCost = goodsTotal + paidFeesTotal;
+
+        // The user-paid amount only settles the goods. Unpaid fees become debt.
         if (dto.TotalPaid > goodsTotal)
             return BadRequest("TotalPaid cannot exceed the cost of the purchased items.");
 
@@ -155,7 +166,7 @@ public class PurchaseInvoicesController : ControllerBase
                 await _context.SaveChangesAsync();
             }
 
-            var invoiceDebt = goodsTotal - dto.TotalPaid;
+            var invoiceDebt = goodsTotal - dto.TotalPaid + unpaidFeesTotal;
 
             var invoice = new PurchaseInvoice
             {
@@ -163,7 +174,7 @@ public class PurchaseInvoicesController : ControllerBase
                 Date = dto.Date,
                 CreatedAt = DateTime.UtcNow,
                 TotalCost = totalCost,
-                TotalPaid = dto.TotalPaid,
+                TotalPaid = dto.TotalPaid + paidFeesTotal,
                 Debt = invoiceDebt
             };
 
@@ -325,13 +336,14 @@ public class PurchaseInvoicesController : ControllerBase
                 invoice.TotalPaid,
                 InvoiceDebt = invoice.Debt,
                 SupplierTotalDebt = supplier.Debt,
-                FeesTotal = feesTotal,
+                FeesTotal = fees.Sum(f => f.Amount),
                 ItemsTotal = itemsTotal,
                 Fees = invoice.Fees.Select(f => new
                 {
                     f.Id,
                     f.Description,
-                    f.Amount
+                    f.Amount,
+                    f.IsPaid
                 }),
                 Items = invoice.Items.Select(i => new
                 {
@@ -394,7 +406,8 @@ public class PurchaseInvoicesController : ControllerBase
                 {
                     f.Id,
                     f.Description,
-                    f.Amount
+                    f.Amount,
+                    f.IsPaid
                 }),
                 Items = i.Items.Select(item => new
                 {
@@ -438,7 +451,8 @@ public class PurchaseInvoicesController : ControllerBase
             {
                 f.Id,
                 f.Description,
-                f.Amount
+                f.Amount,
+                f.IsPaid
             }),
             Items = invoice.Items.Select(i => new
             {

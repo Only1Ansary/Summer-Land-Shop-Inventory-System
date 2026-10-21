@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../localization/app_strings.dart';
 import '../../ui/app_destinations.dart';
 import '../../ui/app_shell.dart';
 import '../../ui/app_widgets.dart';
@@ -10,16 +11,32 @@ class ReportsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final reports = <(String, IconData, String)>[
-      ('Sales Report', Icons.point_of_sale_rounded, 'report-sales'),
-      ('Inventory Report', Icons.inventory_2_rounded, 'report-inventory'),
-      ('Low Stock Report', Icons.warning_amber_rounded, 'report-low-stock'),
-      ('Stock Movements', Icons.swap_vert_rounded, 'report-movements'),
-      ('Best Selling', Icons.trending_up_rounded, 'report-best-selling'),
-      ('Employees Report', Icons.badge_rounded, 'report-employees'),
+      (context.tr('Sales Report'), Icons.point_of_sale_rounded, 'report-sales'),
+      (
+        context.tr('Inventory Report'),
+        Icons.inventory_2_rounded,
+        'report-inventory',
+      ),
+      (
+        context.tr('Low Stock Report'),
+        Icons.warning_amber_rounded,
+        'report-low-stock',
+      ),
+      (
+        context.tr('Stock Movements'),
+        Icons.swap_vert_rounded,
+        'report-movements',
+      ),
+      (
+        context.tr('Best Selling'),
+        Icons.trending_up_rounded,
+        'report-best-selling',
+      ),
+      (context.tr('Employees Report'), Icons.badge_rounded, 'report-employees'),
     ];
 
     return AppShell(
-      title: 'Reports',
+      title: context.tr('Reports'),
       destinationId: 'reports',
       body: WideContent(
         child: LayoutBuilder(

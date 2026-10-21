@@ -1312,6 +1312,63 @@
         }
       }
     },
+    "/api/ProductVariants/split": {
+      "post": {
+        "tags": [
+          "ProductVariants"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SplitProductVariantDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SplitProductVariantDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SplitProductVariantDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProductVariantResponseDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProductVariantResponseDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProductVariantResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/PurchaseInvoices": {
       "post": {
         "tags": [
@@ -1715,7 +1772,7 @@
             }
           },
           {
-            "name": "locationId",
+            "name": "categoryId",
             "in": "query",
             "schema": {
               "type": "integer",
@@ -2989,6 +3046,9 @@
           "amount": {
             "type": "number",
             "format": "double"
+          },
+          "isPaid": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -3121,15 +3181,28 @@
       "CreateStockTransferDto": {
         "type": "object",
         "properties": {
-          "productVariantId": {
-            "type": "integer",
-            "format": "int32"
-          },
           "fromLocationId": {
             "type": "integer",
             "format": "int32"
           },
           "toLocationId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreateStockTransferItemDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateStockTransferItemDto": {
+        "type": "object",
+        "properties": {
+          "productVariantId": {
             "type": "integer",
             "format": "int32"
           },
@@ -4278,6 +4351,9 @@
           "amount": {
             "type": "number",
             "format": "double"
+          },
+          "isPaid": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -4620,6 +4696,48 @@
         },
         "additionalProperties": false
       },
+      "SplitProductVariantDto": {
+        "type": "object",
+        "properties": {
+          "sourceVariantId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "splits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SplitProductVariantLineDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "SplitProductVariantLineDto": {
+        "type": "object",
+        "properties": {
+          "sizeId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "colourId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "quantity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "lowStockThreshold": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "StockMovementReportDto": {
         "type": "object",
         "properties": {
@@ -4737,13 +4855,9 @@
         },
         "additionalProperties": false
       },
-      "StockTransferResponseDto": {
+      "StockTransferItemResponseDto": {
         "type": "object",
         "properties": {
-          "id": {
-            "type": "integer",
-            "format": "int32"
-          },
           "productVariantId": {
             "type": "integer",
             "format": "int32"
@@ -4764,6 +4878,20 @@
             "type": "string",
             "nullable": true
           },
+          "quantity": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "StockTransferResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
           "fromLocationId": {
             "type": "integer",
             "format": "int32"
@@ -4780,13 +4908,20 @@
             "type": "string",
             "nullable": true
           },
-          "quantity": {
+          "totalQuantity": {
             "type": "integer",
             "format": "int32"
           },
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StockTransferItemResponseDto"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../localization/app_strings.dart';
 import '../../models/purchase_invoice.dart';
 import '../../services/api_service.dart';
 import '../../services/purchase_invoice_service.dart';
@@ -65,7 +66,7 @@ class _SearchPurchaseInvoicesScreenState
       if (!mounted) return;
 
       setState(() {
-        _error = friendlyError(e);
+        _error = friendlyErrorMessage(context, e);
       });
     } finally {
       if (mounted) {
@@ -171,7 +172,7 @@ class _SearchPurchaseInvoicesScreenState
     final results = _results;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Search Invoices')),
+      appBar: AppBar(title: Text(context.tr('Search Invoices'))),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -193,12 +194,12 @@ class _SearchPurchaseInvoicesScreenState
             controller: _nameController,
             textCapitalization: TextCapitalization.words,
             decoration: InputDecoration(
-              labelText: 'Supplier name',
+              labelText: context.tr('Supplier name'),
               prefixIcon: const Icon(Icons.factory_outlined),
               suffixIcon: _nameController.text.isNotEmpty
                   ? IconButton(
                       icon: const Icon(Icons.clear),
-                      tooltip: 'Clear name',
+                      tooltip: context.tr('Clear name'),
                       onPressed: () {
                         _nameController.clear();
                         setState(() {});
@@ -216,7 +217,9 @@ class _SearchPurchaseInvoicesScreenState
                   onPressed: _pickFromDate,
                   icon: const Icon(Icons.event_outlined),
                   label: Text(
-                    _fromDate == null ? 'From date' : _formatDate(_fromDate!),
+                    _fromDate == null
+                        ? context.tr('From date')
+                        : _formatDate(_fromDate!),
                   ),
                 ),
               ),
@@ -226,7 +229,9 @@ class _SearchPurchaseInvoicesScreenState
                   onPressed: _pickToDate,
                   icon: const Icon(Icons.event_outlined),
                   label: Text(
-                    _toDate == null ? 'To date' : _formatDate(_toDate!),
+                    _toDate == null
+                        ? context.tr('To date')
+                        : _formatDate(_toDate!),
                   ),
                 ),
               ),
@@ -239,7 +244,7 @@ class _SearchPurchaseInvoicesScreenState
               child: TextButton.icon(
                 onPressed: _clearFilters,
                 icon: const Icon(Icons.clear),
-                label: const Text('Clear filters'),
+                label: Text(context.tr('Clear filters')),
               ),
             ),
           ],
@@ -258,10 +263,12 @@ class _SearchPurchaseInvoicesScreenState
     }
 
     if (results.isEmpty) {
-      return const EmptyState(
+      return EmptyState(
         icon: Icons.search_off_rounded,
-        title: 'No matches',
-        message: 'Try adjusting the supplier name or the date range.',
+        title: context.tr('No matches'),
+        message: context.tr(
+          'Try adjusting the supplier name or the date range.',
+        ),
       );
     }
 

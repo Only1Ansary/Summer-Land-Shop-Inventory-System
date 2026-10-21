@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../localization/app_strings.dart';
 import '../../models/purchase_invoice.dart';
 import '../../models/purchase_invoice_item.dart';
 import '../../services/api_service.dart';
@@ -106,7 +107,7 @@ class _ReturnPurchaseItemsScreenState extends State<ReturnPurchaseItemsScreen> {
         _isSubmitting = false;
       });
 
-      _showError(friendlyError(e));
+      _showError(friendlyErrorMessage(context, e));
     }
   }
 
@@ -120,7 +121,7 @@ class _ReturnPurchaseItemsScreenState extends State<ReturnPurchaseItemsScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Return Items')),
+      appBar: AppBar(title: Text(context.tr('Return Items'))),
       body: Column(
         children: [
           Expanded(
@@ -133,19 +134,22 @@ class _ReturnPurchaseItemsScreenState extends State<ReturnPurchaseItemsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const SectionHeader(
-                          title: 'Return / Credit',
-                          subtitle:
-                              'Value is applied to unpaid debt first, '
-                              'then to the invoice total cost.',
+                        SectionHeader(
+                          title: context.tr('Return / Credit'),
+                          subtitle: context.tr(
+                            'Value is applied to unpaid debt first, '
+                            'then to the invoice total cost.',
+                          ),
                         ),
                         const SizedBox(height: 12),
                         TextField(
                           controller: _reasonController,
-                          decoration: const InputDecoration(
-                            labelText: 'Return Reason',
-                            prefixIcon: Icon(Icons.notes_outlined),
-                            helperText: 'Optional, e.g. damaged goods.',
+                          decoration: InputDecoration(
+                            labelText: context.tr('Return Reason'),
+                            prefixIcon: const Icon(Icons.notes_outlined),
+                            helperText: context.tr(
+                              'Optional, e.g. damaged goods.',
+                            ),
                           ),
                         ),
                       ],
@@ -191,7 +195,7 @@ class _ReturnPurchaseItemsScreenState extends State<ReturnPurchaseItemsScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           IconButton(
-                            tooltip: 'Return one',
+                            tooltip: context.tr('Return one'),
                             icon: const Icon(Icons.remove_circle_outline),
                             onPressed: qty <= 0
                                 ? null
@@ -211,7 +215,7 @@ class _ReturnPurchaseItemsScreenState extends State<ReturnPurchaseItemsScreen> {
                             ),
                           ),
                           IconButton(
-                            tooltip: 'Return one more',
+                            tooltip: context.tr('Return one more'),
                             icon: const Icon(Icons.add_circle_outline),
                             onPressed: qty >= item.quantity
                                 ? null
@@ -239,7 +243,7 @@ class _ReturnPurchaseItemsScreenState extends State<ReturnPurchaseItemsScreen> {
                   Row(
                     children: [
                       Text(
-                        'Returning: $_returnedCount',
+                        context.tr('Returning: {0}', ['$_returnedCount']),
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
                           color: theme.colorScheme.onSurfaceVariant,
@@ -247,7 +251,7 @@ class _ReturnPurchaseItemsScreenState extends State<ReturnPurchaseItemsScreen> {
                       ),
                       const Spacer(),
                       Text(
-                        'Credit: ${money(_returnedValue)}',
+                        context.tr('Credit: {0}', [money(_returnedValue)]),
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 18,
@@ -268,7 +272,7 @@ class _ReturnPurchaseItemsScreenState extends State<ReturnPurchaseItemsScreen> {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Icon(Icons.assignment_return_outlined),
-                      label: const Text('Create Return'),
+                      label: Text(context.tr('Create Return')),
                     ),
                   ),
                 ],

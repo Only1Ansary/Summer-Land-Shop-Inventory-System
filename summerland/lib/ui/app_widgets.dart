@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../localization/app_strings.dart';
 import '../services/connectivity_service.dart';
 import 'app_theme.dart';
 
@@ -44,9 +45,9 @@ Future<T?> pushScreen<T>(BuildContext context, WidgetBuilder builder) {
 
 /// Loading state used consistently across all screens.
 class LoadingState extends StatelessWidget {
-  const LoadingState({super.key, this.message = 'Loading\u2026'});
+  const LoadingState({super.key, this.message});
 
-  final String message;
+  final String? message;
 
   @override
   Widget build(BuildContext context) {
@@ -59,7 +60,7 @@ class LoadingState extends StatelessWidget {
           const CircularProgressIndicator(),
           const SizedBox(height: 16),
           Text(
-            message,
+            context.tr(message ?? 'Loading…'),
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -108,8 +109,10 @@ class OfflineBanner extends StatelessWidget {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          'No connection to the server. Showing the last '
-                          'loaded data.',
+                          context.tr(
+                            'No connection to the server. Showing the last '
+                            'loaded data.',
+                          ),
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurface,
                           ),
@@ -215,7 +218,7 @@ class ErrorState extends StatelessWidget {
               FilledButton.icon(
                 onPressed: onRetry,
                 icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Retry'),
+                label: Text(context.tr('Retry')),
               ),
             ],
           ],
@@ -310,6 +313,33 @@ class CollapsibleSection extends StatefulWidget {
 class _CollapsibleSectionState extends State<CollapsibleSection> {
   late bool _expanded = widget.initiallyExpanded;
 
+  /// The key under which this section remembers whether it is open.
+  ///
+  /// A list view disposes its off-screen children, so without this a section
+  /// scrolled out of view would spring back to [initiallyExpanded] when the
+  /// user scrolls back to it. Persisting the choice in the route's
+  /// [PageStorage] keeps open sections open while scrolling.
+  String get _storageKey => 'collapsible.${widget.title}';
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    final stored = PageStorage.maybeOf(context)
+        ?.readState(context, identifier: _storageKey);
+
+    if (stored is bool) _expanded = stored;
+  }
+
+  void _toggle() {
+    final next = !_expanded;
+
+    setState(() => _expanded = next);
+
+    PageStorage.maybeOf(context)
+        ?.writeState(context, next, identifier: _storageKey);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -323,7 +353,7 @@ class _CollapsibleSectionState extends State<CollapsibleSection> {
           label: widget.title,
           child: InkWell(
             borderRadius: BorderRadius.circular(8),
-            onTap: () => setState(() => _expanded = !_expanded),
+            onTap: _toggle,
             child: SectionHeader(
               title: widget.title,
               subtitle: widget.subtitle,
@@ -602,13 +632,13 @@ class _MonthPickerDialogState extends State<_MonthPickerDialog> {
           IconButton(
             onPressed: () => setState(() => _year--),
             icon: const Icon(Icons.chevron_left),
-            tooltip: 'Previous year',
+            tooltip: context.tr('Previous year'),
           ),
           Text('$_year', style: theme.textTheme.titleMedium),
           IconButton(
             onPressed: () => setState(() => _year++),
             icon: const Icon(Icons.chevron_right),
-            tooltip: 'Next year',
+            tooltip: context.tr('Next year'),
           ),
         ],
       ),
@@ -624,7 +654,7 @@ class _MonthPickerDialogState extends State<_MonthPickerDialog> {
           children: [
             for (var month = 1; month <= 12; month++)
               _MonthCell(
-                label: monthNames[month - 1].substring(0, 3),
+                label: context.tr(monthNames[month - 1]),
                 selected: month == selectedMonth,
                 onTap: () => Navigator.of(context).pop(DateTime(_year, month)),
               ),
@@ -702,8 +732,8 @@ class LowStockBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const StatusBadge(
-      label: 'LOW STOCK',
+    return StatusBadge(
+      label: context.tr('LOW STOCK'),
       color: AppPalette.warning,
       icon: Icons.warning_amber_rounded,
     );
@@ -754,7 +784,7 @@ class PaginationBar extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            'Showing ${start + 1}-$end of $totalItems',
+            context.tr('Showing {0}-{1} of {2}', [start + 1, end, totalItems]),
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -764,19 +794,19 @@ class PaginationBar extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               IconButton(
-                tooltip: 'Previous page',
+                tooltip: context.tr('Previous page'),
                 onPressed: page > 0 ? () => onPageChanged(page - 1) : null,
                 icon: const Icon(Icons.chevron_left),
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: Text(
-                  'Page ${page + 1} of $_pageCount',
+                  context.tr('Page {0} of {1}', [page + 1, _pageCount]),
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
               ),
               IconButton(
-                tooltip: 'Next page',
+                tooltip: context.tr('Next page'),
                 onPressed: page < _pageCount - 1
                     ? () => onPageChanged(page + 1)
                     : null,
@@ -890,8 +920,8 @@ Future<bool> showAppConfirmDialog(
   BuildContext context, {
   required String title,
   required String message,
-  String confirmLabel = 'Delete',
-  String cancelLabel = 'Cancel',
+  String? confirmLabel,
+  String? cancelLabel,
 }) async {
   final confirmed = await showDialog<bool>(
     context: context,
@@ -902,7 +932,7 @@ Future<bool> showAppConfirmDialog(
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(cancelLabel),
+            child: Text(ctx.tr(cancelLabel ?? 'Cancel')),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
@@ -910,7 +940,7 @@ Future<bool> showAppConfirmDialog(
               foregroundColor: Colors.white,
             ),
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text(confirmLabel),
+            child: Text(ctx.tr(confirmLabel ?? 'Delete')),
           ),
         ],
       );
@@ -926,7 +956,7 @@ Future<String?> showAppNameDialog(
   required String title,
   required String label,
   String initialValue = '',
-  String confirmLabel = 'Save',
+  String? confirmLabel,
 }) {
   return showDialog<String>(
     context: context,
@@ -934,7 +964,7 @@ Future<String?> showAppNameDialog(
       title: title,
       label: label,
       initialValue: initialValue,
-      confirmLabel: confirmLabel,
+      confirmLabel: confirmLabel ?? ctx.tr('Save'),
     ),
   );
 }
@@ -946,7 +976,7 @@ Future<String?> showAppAmountDialog(
   required String label,
   String initialValue = '',
   String helperText = '',
-  String confirmLabel = 'Pay',
+  String? confirmLabel,
 }) {
   return showDialog<String>(
     context: context,
@@ -955,7 +985,7 @@ Future<String?> showAppAmountDialog(
       label: label,
       initialValue: initialValue,
       helperText: helperText,
-      confirmLabel: confirmLabel,
+      confirmLabel: confirmLabel ?? ctx.tr('Pay'),
     ),
   );
 }
@@ -1017,7 +1047,7 @@ class _AppAmountDialogState extends State<_AppAmountDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(context.tr('Cancel')),
         ),
         FilledButton(onPressed: _submit, child: Text(widget.confirmLabel)),
       ],
@@ -1079,7 +1109,7 @@ class _AppNameDialogState extends State<_AppNameDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(context.tr('Cancel')),
         ),
         FilledButton(onPressed: _submit, child: Text(widget.confirmLabel)),
       ],

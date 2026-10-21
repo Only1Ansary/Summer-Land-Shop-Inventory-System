@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../localization/app_strings.dart';
 import '../../models/colour.dart';
 import '../../services/api_service.dart';
 import '../../services/colour_service.dart';
@@ -45,8 +46,9 @@ class _ColoursScreenState extends State<ColoursScreen>
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(friendlyError(e))));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(context, e))));
     } finally {
       if (mounted) {
         setState(() {
@@ -64,9 +66,9 @@ class _ColoursScreenState extends State<ColoursScreen>
   Future<void> _addColour() async {
     final name = await showAppNameDialog(
       context,
-      title: 'Add Colour',
-      label: 'Colour Name',
-      confirmLabel: 'Add',
+      title: context.tr('Add Colour'),
+      label: context.tr('Colour Name'),
+      confirmLabel: context.tr('Add'),
     );
 
     if (name == null || name.isEmpty) {
@@ -79,18 +81,19 @@ class _ColoursScreenState extends State<ColoursScreen>
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(friendlyError(e))));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(context, e))));
     }
   }
 
   Future<void> _editColour(Colour colour) async {
     final name = await showAppNameDialog(
       context,
-      title: 'Edit Colour',
-      label: 'Colour Name',
+      title: context.tr('Edit Colour'),
+      label: context.tr('Colour Name'),
       initialValue: colour.name,
-      confirmLabel: 'Save',
+      confirmLabel: context.tr('Save'),
     );
 
     if (name == null || name.isEmpty) {
@@ -104,19 +107,20 @@ class _ColoursScreenState extends State<ColoursScreen>
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(friendlyError(e))));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(context, e))));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return AppShell(
-      title: 'Colours',
+      title: context.tr('Colours'),
       destinationId: 'colours',
       floatingActionButton: FloatingActionButton(
         onPressed: _addColour,
-        tooltip: 'Add colour',
+        tooltip: context.tr('Add colour'),
         child: const Icon(Icons.add),
       ),
       body: _buildBody(),
@@ -134,12 +138,14 @@ class _ColoursScreenState extends State<ColoursScreen>
         child: _colours.isEmpty
             ? ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                children: const [
-                  SizedBox(height: 120),
+                children: [
+                  const SizedBox(height: 120),
                   EmptyState(
                     icon: Icons.palette_outlined,
-                    title: 'No colours yet',
-                    message: 'Add colours to use in product variants.',
+                    title: context.tr('No colours yet'),
+                    message: context.tr(
+                      'Add colours to use in product variants.',
+                    ),
                   ),
                 ],
               )
@@ -167,7 +173,7 @@ class _ColoursScreenState extends State<ColoursScreen>
                       ),
                       title: Text(colour.name),
                       trailing: IconButton(
-                        tooltip: 'Edit',
+                        tooltip: context.tr('Edit'),
                         icon: const Icon(Icons.edit_outlined),
                         onPressed: () => _editColour(colour),
                       ),

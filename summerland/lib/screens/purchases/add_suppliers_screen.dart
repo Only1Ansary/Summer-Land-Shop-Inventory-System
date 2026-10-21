@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../localization/app_strings.dart';
 import '../../models/supplier.dart';
 import '../../services/api_service.dart';
 import '../../services/supplier_service.dart';
@@ -72,8 +73,9 @@ class _AddSuppliersScreenState extends State<AddSuppliersScreen> {
         _isSaving = false;
       });
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(friendlyError(e))));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(context, e))));
     }
   }
 
@@ -81,7 +83,9 @@ class _AddSuppliersScreenState extends State<AddSuppliersScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditing ? 'Edit Supplier' : 'Add Supplier'),
+        title: Text(
+          _isEditing ? context.tr('Edit Supplier') : context.tr('Add Supplier'),
+        ),
       ),
       body: ResponsiveFormPage(
         child: Form(
@@ -92,13 +96,13 @@ class _AddSuppliersScreenState extends State<AddSuppliersScreen> {
               TextFormField(
                 controller: _nameController,
                 textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(
-                  labelText: 'Supplier Name',
-                  prefixIcon: Icon(Icons.factory_outlined),
+                decoration: InputDecoration(
+                  labelText: context.tr('Supplier Name'),
+                  prefixIcon: const Icon(Icons.factory_outlined),
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Supplier name is required.';
+                    return context.tr('Supplier name is required.');
                   }
 
                   return null;
@@ -120,7 +124,7 @@ class _AddSuppliersScreenState extends State<AddSuppliersScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Current debt'),
+                      Text(context.tr('Current debt')),
                       Text(
                         moneyNegative(_currentDebt),
                         style: TextStyle(
@@ -143,7 +147,11 @@ class _AddSuppliersScreenState extends State<AddSuppliersScreen> {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.check_rounded),
-                label: Text(_isEditing ? 'Save Changes' : 'Add Supplier'),
+                label: Text(
+                  _isEditing
+                      ? context.tr('Save Changes')
+                      : context.tr('Add Supplier'),
+                ),
               ),
             ],
           ),

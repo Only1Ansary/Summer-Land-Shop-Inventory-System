@@ -6,6 +6,7 @@ import '../../services/report_service.dart';
 import '../../models/category.dart';
 import '../../models/reports/low_stock_report.dart';
 
+import '../../localization/app_strings.dart';
 import '../../ui/app_shell.dart';
 import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
@@ -92,7 +93,7 @@ class _LowStockReportScreenState extends State<LowStockReportScreen>
       });
     } catch (e) {
       setState(() {
-        _error = friendlyError(e);
+        _error = friendlyErrorMessage(context, e);
         _loading = false;
       });
     }
@@ -103,7 +104,7 @@ class _LowStockReportScreenState extends State<LowStockReportScreen>
     _loadReport();
   }
 
-  String _variantLabel(LowStockItem item) {
+  String _variantLabel(BuildContext context, LowStockItem item) {
     final parts = <String>[];
 
     if (item.sizeName != null && item.sizeName!.isNotEmpty) {
@@ -115,7 +116,7 @@ class _LowStockReportScreenState extends State<LowStockReportScreen>
     }
 
     if (parts.isEmpty) {
-      return 'Variant #${item.productVariantId}';
+      return context.tr('Variant #{0}', [item.productVariantId]);
     }
 
     return parts.join(' / ');
@@ -126,7 +127,7 @@ class _LowStockReportScreenState extends State<LowStockReportScreen>
     final items = _report?.items ?? const <LowStockItem>[];
 
     return AppShell(
-      title: 'Low Stock',
+      title: context.tr('Low Stock'),
       destinationId: 'report-low-stock',
       body: _loading
           ? const LoadingState()
@@ -147,14 +148,14 @@ class _LowStockReportScreenState extends State<LowStockReportScreen>
                           DropdownButtonFormField<int?>(
                             key: ValueKey('category-$_categoryId'),
                             initialValue: _categoryId,
-                            decoration: const InputDecoration(
-                              labelText: 'Category',
-                              prefixIcon: Icon(Icons.category_outlined),
+                            decoration: InputDecoration(
+                              labelText: context.tr('Category'),
+                              prefixIcon: const Icon(Icons.category_outlined),
                             ),
                             items: [
-                              const DropdownMenuItem<int?>(
+                              DropdownMenuItem<int?>(
                                 value: null,
-                                child: Text('All Categories'),
+                                child: Text(context.tr('All Categories')),
                               ),
                               ..._categories.map(
                                 (category) => DropdownMenuItem<int?>(
@@ -175,7 +176,7 @@ class _LowStockReportScreenState extends State<LowStockReportScreen>
                           StatGrid(
                             stats: [
                               StatData(
-                                label: 'Low Stock Variants',
+                                label: context.tr('Low Stock Variants'),
                                 value: '${items.length}',
                                 icon: Icons.warning_amber_rounded,
                                 color: AppPalette.warning,
@@ -184,21 +185,23 @@ class _LowStockReportScreenState extends State<LowStockReportScreen>
                           ),
                           if (items.isEmpty) ...[
                             const SizedBox(height: 16),
-                            const SizedBox(
+                            SizedBox(
                               height: 200,
                               child: EmptyState(
                                 icon: Icons.verified_rounded,
-                                title: 'No low stock items',
-                                message:
-                                    'All variants are above their thresholds.',
+                                title: context.tr('No low stock items'),
+                                message: context.tr(
+                                  'All variants are above their thresholds.',
+                                ),
                               ),
                             ),
                           ] else ...[
                             const SizedBox(height: 16),
-                            const SectionHeader(
-                              title: 'Needs Reordering',
-                              subtitle:
-                                  'Variants below their low stock threshold',
+                            SectionHeader(
+                              title: context.tr('Needs Reordering'),
+                              subtitle: context.tr(
+                                'Variants below their low stock threshold',
+                              ),
                             ),
                             const SizedBox(height: 8),
                             ..._pageSlice(items).map(
@@ -211,7 +214,7 @@ class _LowStockReportScreenState extends State<LowStockReportScreen>
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        _variantLabel(item),
+                                        _variantLabel(context, item),
                                         style: TextStyle(
                                           fontWeight: FontWeight.w600,
                                           color: Theme.of(context)
@@ -220,16 +223,20 @@ class _LowStockReportScreenState extends State<LowStockReportScreen>
                                         ),
                                       ),
                                       Text(
-                                        '${item.modelNumber} • Qty: '
-                                        '${item.totalQuantity}'
-                                        '${item.categoryName.isEmpty ? '' : '\n${item.categoryName}'}',
+                                        context.tr('{0} • Qty: {1}{2}', [
+                                          item.modelNumber,
+                                          item.totalQuantity,
+                                          item.categoryName.isEmpty
+                                              ? ''
+                                              : '\n${item.categoryName}',
+                                        ]),
                                       ),
                                     ],
                                   ),
                                   trailing: const LowStockBadge(),
                                   children: [
                                     ListTile(
-                                      title: const Text('Threshold'),
+                                      title: Text(context.tr('Threshold')),
                                       trailing: Text(
                                         '${item.lowStockThreshold}',
                                         style: const TextStyle(
@@ -242,7 +249,7 @@ class _LowStockReportScreenState extends State<LowStockReportScreen>
                                         Icons.qr_code_2_outlined,
                                         size: 20,
                                       ),
-                                      title: const Text('Barcode'),
+                                      title: Text(context.tr('Barcode')),
                                       trailing: Text(item.barcode),
                                     ),
                                     Padding(

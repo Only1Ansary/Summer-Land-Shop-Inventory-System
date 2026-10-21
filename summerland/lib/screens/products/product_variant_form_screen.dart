@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../localization/app_strings.dart';
 import '../../models/colour.dart';
 import '../../models/location.dart';
 import '../../models/product.dart';
@@ -148,7 +149,7 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
     } catch (e) {
       if (!mounted) return;
 
-      _showError(friendlyError(e));
+      _showError(friendlyErrorMessage(context, e));
     }
   }
 
@@ -184,9 +185,9 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
 
     final name = await showAppNameDialog(
       context,
-      title: 'Add Size',
-      label: 'Size Name',
-      confirmLabel: 'Add',
+      title: context.tr('Add Size'),
+      label: context.tr('Size Name'),
+      confirmLabel: context.tr('Add'),
     );
 
     if (name == null || name.trim().isEmpty) {
@@ -200,7 +201,7 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
     );
 
     if (existing.isNotEmpty) {
-      _showError('$trimmed already exists in sizes.');
+      _showError(context.tr('{0} already exists in sizes.', [trimmed]));
       return;
     }
 
@@ -220,7 +221,7 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
     } catch (e) {
       if (!mounted) return;
 
-      _showError(friendlyError(e));
+      _showError(friendlyErrorMessage(context, e));
     } finally {
       if (mounted) {
         setState(() {
@@ -235,9 +236,9 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
 
     final name = await showAppNameDialog(
       context,
-      title: 'Add Colour',
-      label: 'Colour Name',
-      confirmLabel: 'Add',
+      title: context.tr('Add Colour'),
+      label: context.tr('Colour Name'),
+      confirmLabel: context.tr('Add'),
     );
 
     if (name == null || name.trim().isEmpty) {
@@ -251,7 +252,7 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
     );
 
     if (existing.isNotEmpty) {
-      _showError('$trimmed already exists in colours.');
+      _showError(context.tr('{0} already exists in colours.', [trimmed]));
       return;
     }
 
@@ -271,7 +272,7 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
     } catch (e) {
       if (!mounted) return;
 
-      _showError(friendlyError(e));
+      _showError(friendlyErrorMessage(context, e));
     } finally {
       if (mounted) {
         setState(() {
@@ -297,17 +298,17 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
     final quantity = _stockQuantity();
 
     if (quantity == null) {
-      _showError('Enter a stock quantity greater than zero.');
+      _showError(context.tr('Enter a stock quantity greater than zero.'));
       return null;
     }
 
     if (quantity > 100000) {
-      _showError('Quantity cannot exceed 100,000.');
+      _showError(context.tr('Quantity cannot exceed 100,000.'));
       return null;
     }
 
     if (_selectedLocationId == null) {
-      _showError('Please select a location.');
+      _showError(context.tr('Please select a location.'));
       return null;
     }
 
@@ -361,12 +362,16 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Stock added. Total is now $_currentStock.')),
+        SnackBar(
+          content: Text(
+            context.tr('Stock added. Total is now {0}.', [_currentStock]),
+          ),
+        ),
       );
     } catch (e) {
       if (!mounted) return;
 
-      _showError(friendlyError(e));
+      _showError(friendlyErrorMessage(context, e));
     } finally {
       if (mounted) {
         setState(() {
@@ -397,12 +402,12 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
 
     if (initialStock != null) {
       if (_selectedLocationId == null) {
-        _showError('Select a location for the initial stock.');
+        _showError(context.tr('Select a location for the initial stock.'));
         return;
       }
 
       if (initialStock > 100000) {
-        _showError('Quantity cannot exceed 100,000.');
+        _showError(context.tr('Quantity cannot exceed 100,000.'));
         return;
       }
     }
@@ -451,8 +456,9 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(friendlyError(e))));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(context, e))));
     } finally {
       if (mounted) {
         setState(() {
@@ -470,38 +476,42 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SectionHeader(
-              title: isEditing ? 'Add Stock' : 'Initial Stock',
+              title: isEditing
+                  ? context.tr('Add Stock')
+                  : context.tr('Initial Stock'),
               subtitle: isEditing
-                  ? 'Top up this variant at a location.'
-                  : 'Optional. Leave empty to add stock later.',
+                  ? context.tr('Top up this variant at a location.')
+                  : context.tr('Optional. Leave empty to add stock later.'),
             ),
             const SizedBox(height: 12),
             if (isEditing)
               InfoTile(
-                label: 'Current Stock',
+                label: context.tr('Current Stock'),
                 value: '$_currentStock',
                 valueStyle: amountStyle(context, _currentStock.toDouble()),
               ),
             if (_locations.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 8),
-                child: Text('No locations available.'),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Text(context.tr('No locations available.')),
               )
             else ...[
               DropdownButtonFormField<int>(
                 key: ValueKey('location-$_selectedLocationId'),
                 initialValue: _selectedLocationId,
-                decoration: const InputDecoration(
-                  labelText: 'Location',
-                  prefixIcon: Icon(Icons.location_on_outlined),
+                decoration: InputDecoration(
+                  labelText: context.tr('Location'),
+                  prefixIcon: const Icon(Icons.location_on_outlined),
                 ),
                 items: _locations
                     .map(
                       (location) => DropdownMenuItem<int>(
                         value: location.id,
                         child: Text(
-                          '${location.name} · '
-                          '${_locationStock[location.id] ?? 0} in stock',
+                          context.tr('{0} · {1} in stock', [
+                            location.name,
+                            _locationStock[location.id] ?? 0,
+                          ]),
                         ),
                       ),
                     )
@@ -516,9 +526,9 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
               TextField(
                 controller: _stockQuantityController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Quantity',
-                  prefixIcon: Icon(Icons.pin_outlined),
+                decoration: InputDecoration(
+                  labelText: context.tr('Quantity'),
+                  prefixIcon: const Icon(Icons.pin_outlined),
                 ),
               ),
               if (isEditing) ...[
@@ -536,7 +546,7 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.add_box_outlined),
-                    label: const Text('Add Stock'),
+                    label: Text(context.tr('Add Stock')),
                   ),
                 ),
               ],
@@ -571,7 +581,11 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(isEditing ? 'Edit Variant' : 'Add Variant')),
+      appBar: AppBar(
+        title: Text(
+          isEditing ? context.tr('Edit Variant') : context.tr('Add Variant'),
+        ),
+      ),
       body: ResponsiveFormPage(
         child: Form(
           key: _formKey,
@@ -593,14 +607,16 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Model: ${widget.product.modelNumber}',
+                        context.tr('Model: {0}', [widget.product.modelNumber]),
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Selling Price: ${money(widget.product.sellingPrice)}',
+                        context.tr('Selling Price: {0}', [
+                          money(widget.product.sellingPrice),
+                        ]),
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: amountColor(
                             context,
@@ -623,14 +639,14 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
                     child: DropdownButtonFormField<int?>(
                       key: ValueKey('size-$_selectedSizeId'),
                       initialValue: _selectedSizeId,
-                      decoration: const InputDecoration(
-                        labelText: 'Size',
-                        prefixIcon: Icon(Icons.straighten_outlined),
+                      decoration: InputDecoration(
+                        labelText: context.tr('Size'),
+                        prefixIcon: const Icon(Icons.straighten_outlined),
                       ),
                       items: [
-                        const DropdownMenuItem<int?>(
+                        DropdownMenuItem<int?>(
                           value: null,
-                          child: Text('No Size'),
+                          child: Text(context.tr('No Size')),
                         ),
                         ..._sizes.map(
                           (size) => DropdownMenuItem<int?>(
@@ -649,7 +665,7 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
                   const SizedBox(width: 10),
                   _buildAddButton(
                     icon: Icons.straighten_outlined,
-                    label: 'Add size',
+                    label: context.tr('Add size'),
                     onPressed: _addSize,
                   ),
                 ],
@@ -664,14 +680,14 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
                     child: DropdownButtonFormField<int?>(
                       key: ValueKey('colour-$_selectedColourId'),
                       initialValue: _selectedColourId,
-                      decoration: const InputDecoration(
-                        labelText: 'Colour',
-                        prefixIcon: Icon(Icons.palette_outlined),
+                      decoration: InputDecoration(
+                        labelText: context.tr('Colour'),
+                        prefixIcon: const Icon(Icons.palette_outlined),
                       ),
                       items: [
-                        const DropdownMenuItem<int?>(
+                        DropdownMenuItem<int?>(
                           value: null,
-                          child: Text('No Colour'),
+                          child: Text(context.tr('No Colour')),
                         ),
                         ..._colours.map(
                           (colour) => DropdownMenuItem<int?>(
@@ -690,7 +706,7 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
                   const SizedBox(width: 10),
                   _buildAddButton(
                     icon: Icons.palette_outlined,
-                    label: 'Add colour',
+                    label: context.tr('Add colour'),
                     onPressed: _addColour,
                   ),
                 ],
@@ -702,13 +718,19 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
                 DropdownButtonFormField<int>(
                   key: ValueKey('barcode-type-$_barcodeType'),
                   initialValue: _barcodeType,
-                  decoration: const InputDecoration(
-                    labelText: 'Barcode Type',
-                    prefixIcon: Icon(Icons.qr_code_2_outlined),
+                  decoration: InputDecoration(
+                    labelText: context.tr('Barcode Type'),
+                    prefixIcon: const Icon(Icons.qr_code_2_outlined),
                   ),
-                  items: const [
-                    DropdownMenuItem(value: 1, child: Text('Internal')),
-                    DropdownMenuItem(value: 2, child: Text('Manufacturer')),
+                  items: [
+                    DropdownMenuItem(
+                      value: 1,
+                      child: Text(context.tr('Internal')),
+                    ),
+                    DropdownMenuItem(
+                      value: 2,
+                      child: Text(context.tr('Manufacturer')),
+                    ),
                   ],
                   onChanged: (value) {
                     if (value == null) return;
@@ -731,21 +753,23 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
                   enabled: isEditing || _barcodeType == 2,
                   onChanged: (_) => setState(() {}),
                   decoration: InputDecoration(
-                    labelText: isEditing ? 'Barcode' : 'Manufacturer Barcode',
+                    labelText: isEditing
+                        ? context.tr('Barcode')
+                        : context.tr('Manufacturer Barcode'),
                     prefixIcon: const Icon(Icons.barcode_reader),
                     helperText: !isEditing && _barcodeType == 2
-                        ? 'Enter the manufacturer barcode.'
+                        ? context.tr('Enter the manufacturer barcode.')
                         : null,
                   ),
                   validator: (value) {
                     if (!isEditing &&
                         _barcodeType == 2 &&
                         (value == null || value.trim().isEmpty)) {
-                      return 'Manufacturer barcode is required.';
+                      return context.tr('Manufacturer barcode is required.');
                     }
 
                     if (isEditing && (value == null || value.trim().isEmpty)) {
-                      return 'Barcode is required.';
+                      return context.tr('Barcode is required.');
                     }
 
                     return null;
@@ -774,9 +798,11 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
                           color: Theme.of(context).colorScheme.primary,
                         ),
                         const SizedBox(width: 8),
-                        const Expanded(
+                        Expanded(
                           child: Text(
-                            'The internal barcode will be generated automatically.',
+                            context.tr(
+                              'The internal barcode will be generated automatically.',
+                            ),
                           ),
                         ),
                       ],
@@ -792,20 +818,22 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
-                decoration: const InputDecoration(
-                  labelText: 'Price',
-                  prefixIcon: Icon(Icons.payments_outlined),
-                  helperText: "Price is derived from the product's selling price and cannot be edited.",
+                decoration: InputDecoration(
+                  labelText: context.tr('Price'),
+                  prefixIcon: const Icon(Icons.payments_outlined),
+                  helperText: context.tr(
+                    "Price is derived from the product's selling price and cannot be edited.",
+                  ),
                 ),
                 validator: (value) {
                   final price = double.tryParse(value?.trim() ?? '');
 
                   if (price == null) {
-                    return 'Enter a valid price.';
+                    return context.tr('Enter a valid price.');
                   }
 
                   if (price < 0) {
-                    return 'Price cannot be negative.';
+                    return context.tr('Price cannot be negative.');
                   }
 
                   return null;
@@ -817,19 +845,19 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
               TextFormField(
                 controller: _thresholdController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Low Stock Threshold',
-                  prefixIcon: Icon(Icons.low_priority_outlined),
+                decoration: InputDecoration(
+                  labelText: context.tr('Low Stock Threshold'),
+                  prefixIcon: const Icon(Icons.low_priority_outlined),
                 ),
                 validator: (value) {
                   final threshold = int.tryParse(value?.trim() ?? '');
 
                   if (threshold == null) {
-                    return 'Enter a valid threshold.';
+                    return context.tr('Enter a valid threshold.');
                   }
 
                   if (threshold < 0) {
-                    return 'Threshold cannot be negative.';
+                    return context.tr('Threshold cannot be negative.');
                   }
 
                   return null;
@@ -853,7 +881,9 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.save_outlined),
-                  label: Text(isEditing ? 'Save' : 'Add Variant'),
+                  label: Text(
+                    isEditing ? context.tr('Save') : context.tr('Add Variant'),
+                  ),
                 ),
               ),
             ],

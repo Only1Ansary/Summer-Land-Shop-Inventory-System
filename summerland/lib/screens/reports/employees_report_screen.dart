@@ -4,6 +4,7 @@ import '../../models/reports/employees_report.dart';
 import '../../services/api_service.dart';
 import '../../services/report_service.dart';
 
+import '../../localization/app_strings.dart';
 import '../../ui/app_shell.dart';
 import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
@@ -52,7 +53,7 @@ class _EmployeesReportScreenState extends State<EmployeesReportScreen>
       });
     } catch (e) {
       setState(() {
-        _error = friendlyError(e);
+        _error = friendlyErrorMessage(context, e);
         _loading = false;
       });
     }
@@ -84,7 +85,7 @@ class _EmployeesReportScreenState extends State<EmployeesReportScreen>
     final report = _report;
 
     return AppShell(
-      title: 'Employees Report',
+      title: context.tr('Employees Report'),
       destinationId: 'report-employees',
       body: _loading
           ? const LoadingState()
@@ -110,51 +111,52 @@ class _EmployeesReportScreenState extends State<EmployeesReportScreen>
                       const SizedBox(height: 16),
                     ],
                     SectionHeader(
-                      title: 'Overview',
-                      subtitle:
-                          'Standings for ${monthLabel(_year, _month)} and '
-                          'what has been paid out',
+                      title: context.tr('Overview'),
+                      subtitle: context.tr(
+                        'Standings for {0} and what has been paid out',
+                        [monthLabel(_year, _month)],
+                      ),
                     ),
                     const SizedBox(height: 8),
                     StatGrid(
                       stats: [
                         StatData(
-                          label: 'Employees',
+                          label: context.tr('Employees'),
                           value: '${report.employeeCount}',
                           icon: Icons.people_outline,
                         ),
                         StatData(
-                          label: 'Total Sales',
+                          label: context.tr('Total Sales'),
                           value: money(report.totalSales),
                           icon: Icons.shopping_cart_outlined,
                         ),
                         StatData(
-                          label: 'Targets Met',
+                          label: context.tr('Targets Met'),
                           value: '${report.targetMetCount}',
                           icon: Icons.flag_outlined,
                         ),
                         StatData(
-                          label: 'Monthly Salaries',
+                          label: context.tr('Monthly Salaries'),
                           value: money(report.totalMonthlySalaries),
                           icon: Icons.payments_outlined,
                         ),
                         StatData(
-                          label: 'Bonus Owed',
+                          label: context.tr('Bonus Owed'),
                           value: money(report.totalBonusOwed),
                           icon: Icons.card_giftcard_outlined,
                         ),
                         StatData(
-                          label: 'Paid in Month',
+                          label: context.tr('Paid in Month'),
                           value: money(report.paymentTotalInMonth),
                           icon: Icons.check_circle_outline,
                         ),
                         StatData(
-                          label: 'Total Paid (All Time)',
+                          label: context.tr('Total Paid (All Time)'),
                           value: money(report.totalPaid),
                           icon: Icons.history,
                         ),
                         StatData(
-                          label: 'Left to Pay',
+                          label: context.tr('Left to Pay'),
                           value: money(report.totalLeftToPay),
                           icon: Icons.pending_actions_outlined,
                           valueColor: amountColor(
@@ -165,18 +167,20 @@ class _EmployeesReportScreenState extends State<EmployeesReportScreen>
                       ],
                     ),
                     const SizedBox(height: 16),
-                    const SectionHeader(
-                      title: 'By Employee',
-                      subtitle: 'One card for each member of staff',
+                    SectionHeader(
+                      title: context.tr('By Employee'),
+                      subtitle: context.tr('One card for each member of staff'),
                     ),
                     const SizedBox(height: 12),
                     if (report.employees.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.only(top: 40),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 40),
                         child: EmptyState(
                           icon: Icons.badge_outlined,
-                          title: 'No employees yet',
-                          message: 'Add employees before running this report.',
+                          title: context.tr('No employees yet'),
+                          message: context.tr(
+                            'Add employees before running this report.',
+                          ),
                         ),
                       )
                     else
@@ -232,7 +236,7 @@ class _EmployeeOfTheMonthCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Employee of the Month',
+                    context.tr('Employee of the Month'),
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
@@ -246,7 +250,10 @@ class _EmployeeOfTheMonthCard extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    '${money(sales)} in sales during $monthLabel',
+                    context.tr('{0} in sales during {1}', [
+                      money(sales),
+                      monthLabel,
+                    ]),
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -255,10 +262,10 @@ class _EmployeeOfTheMonthCard extends StatelessWidget {
               ),
             ),
             if (tied)
-              const Padding(
-                padding: EdgeInsets.only(left: 8),
+              Padding(
+                padding: const EdgeInsets.only(left: 8),
                 child: StatusBadge(
-                  label: 'TIED',
+                  label: context.tr('TIED'),
                   color: AppPalette.warning,
                   icon: Icons.handshake_outlined,
                 ),
@@ -324,7 +331,7 @@ class _EmployeeReportTileState extends State<_EmployeeReportTile> {
                         ),
                         const SizedBox(height: 3),
                         Text(
-                          'Sales ${money(item.totalSales)}',
+                          context.tr('Sales {0}', [money(item.totalSales)]),
                           style: theme.textTheme.bodyMedium?.copyWith(
                             fontWeight: FontWeight.w600,
                             color: theme.colorScheme.onSurfaceVariant,
@@ -332,13 +339,13 @@ class _EmployeeReportTileState extends State<_EmployeeReportTile> {
                         ),
                         const SizedBox(height: 8),
                         item.achievedTarget
-                            ? const StatusBadge(
-                                label: 'TARGET MET',
+                            ? StatusBadge(
+                                label: context.tr('TARGET MET'),
                                 color: AppPalette.success,
                                 icon: Icons.check_circle_outline,
                               )
                             : StatusBadge(
-                                label: 'BELOW TARGET',
+                                label: context.tr('BELOW TARGET'),
                                 color: theme.colorScheme.outline,
                                 icon: Icons.remove_circle_outline,
                               ),
@@ -380,8 +387,10 @@ class _EmployeeReportTileState extends State<_EmployeeReportTile> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Target progress: $percent% of '
-                      '${money(item.target)}',
+                      context.tr('Target progress: {0}% of {1}', [
+                        percent,
+                        money(item.target),
+                      ]),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -400,44 +409,46 @@ class _EmployeeReportTileState extends State<_EmployeeReportTile> {
                           _StatChip(
                             width: width,
                             icon: Icons.payments_outlined,
-                            label: 'Salary',
+                            label: context.tr('Salary'),
                             value: money(item.salary),
                           ),
                           _StatChip(
                             width: width,
                             icon: Icons.flag_outlined,
-                            label: 'Target',
-                            value: hasTarget ? money(item.target) : 'No target',
+                            label: context.tr('Target'),
+                            value: hasTarget
+                                ? money(item.target)
+                                : context.tr('No target'),
                           ),
                           _StatChip(
                             width: width,
                             icon: Icons.card_giftcard_outlined,
-                            label: 'Bonus',
-                            value: '${money(item.bonusAmount)}',
+                            label: context.tr('Bonus'),
+                            value: money(item.bonusAmount),
                           ),
                           _StatChip(
                             width: width,
                             icon: Icons.shopping_cart_outlined,
-                            label: 'Total Sales',
+                            label: context.tr('Total Sales'),
                             value: money(item.totalSales),
                           ),
                           _StatChip(
                             width: width,
                             icon: Icons.pending_actions_outlined,
-                            label: 'Left to Pay',
+                            label: context.tr('Left to Pay'),
                             value: money(item.leftToPay),
                             valueColor: amountColor(context, -item.leftToPay),
                           ),
                           _StatChip(
                             width: width,
                             icon: Icons.event_available_outlined,
-                            label: 'Paid in Month',
+                            label: context.tr('Paid in Month'),
                             value: money(item.paymentTotalInMonth),
                           ),
                           _StatChip(
                             width: width,
                             icon: Icons.history,
-                            label: 'Total Paid',
+                            label: context.tr('Total Paid'),
                             value: money(item.totalPaid),
                           ),
                         ],

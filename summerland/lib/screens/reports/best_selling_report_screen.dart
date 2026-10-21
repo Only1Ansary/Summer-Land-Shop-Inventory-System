@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 
-import '../../models/location.dart';
+import '../../models/category.dart';
 import '../../models/reports/best_selling_report.dart';
 import '../../services/api_service.dart';
-import '../../services/location_service.dart';
+import '../../services/category_service.dart';
 import '../../services/report_service.dart';
 
+import '../../localization/app_strings.dart';
 import '../../ui/app_shell.dart';
 import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
@@ -22,12 +23,12 @@ class BestSellingReportScreen extends StatefulWidget {
 class _BestSellingReportScreenState extends State<BestSellingReportScreen>
     with ReconnectReloader<BestSellingReportScreen> {
   late final ReportService _reportService;
-  late final LocationService _locationService;
+  late final CategoryService _categoryService;
 
   BestSellingReport? _report;
-  List<Location> _locations = [];
+  List<Category> _categories = [];
 
-  int? _selectedLocationId;
+  int? _selectedCategoryId;
   DateTime? _from;
   DateTime? _to;
 
@@ -44,7 +45,7 @@ class _BestSellingReportScreenState extends State<BestSellingReportScreen>
     final apiService = ApiService();
 
     _reportService = ReportService(apiService);
-    _locationService = LocationService(apiService);
+    _categoryService = CategoryService(apiService);
 
     _from = defaultFilterFromDate();
     _to = defaultFilterToDate();
@@ -60,16 +61,16 @@ class _BestSellingReportScreenState extends State<BestSellingReportScreen>
     });
 
     try {
-      final locations = await _locationService.getLocations();
+      final categories = await _categoryService.getCategories();
 
       final report = await _reportService.getBestSellingReport(
         from: _from,
         to: _to,
-        locationId: _selectedLocationId,
+        categoryId: _selectedCategoryId,
       );
 
       setState(() {
-        _locations = locations;
+        _categories = categories;
         _report = report;
         _loading = false;
 
@@ -84,7 +85,7 @@ class _BestSellingReportScreenState extends State<BestSellingReportScreen>
       });
     } catch (e) {
       setState(() {
-        _error = friendlyError(e);
+        _error = friendlyErrorMessage(context, e);
         _loading = false;
       });
     }
@@ -151,15 +152,17 @@ class _BestSellingReportScreenState extends State<BestSellingReportScreen>
 
     if (value == null || value < 1) {
       setState(() {
-        _rankError = 'Enter a whole number of ranks, 1 or more.';
+        _rankError = context.tr('Enter a whole number of ranks, 1 or more.');
       });
       return;
     }
 
     if (value > sold) {
       setState(() {
-        _rankError =
-            'Only $sold product${sold == 1 ? '' : 's'} sold in this period.';
+        _rankError = context.tr('Only {0} product{1} sold in this period.', [
+          sold,
+          sold == 1 ? '' : 's',
+        ]);
       });
       return;
     }
@@ -194,9 +197,9 @@ class _BestSellingReportScreenState extends State<BestSellingReportScreen>
             keyboardType: TextInputType.number,
             textInputAction: TextInputAction.done,
             decoration: InputDecoration(
-              labelText: 'Show top',
-              hintText: 'All',
-              helperText: 'Empty shows every product',
+              labelText: context.tr('Show top'),
+              hintText: context.tr('All'),
+              helperText: context.tr('Empty shows every product'),
               errorText: _rankError,
               errorMaxLines: 2,
               prefixIcon: const Icon(Icons.emoji_events_outlined),
@@ -208,7 +211,10 @@ class _BestSellingReportScreenState extends State<BestSellingReportScreen>
         if (_rankLimit != null && shown < sold) ...[
           const SizedBox(height: 6),
           Text(
-            'Showing the top $shown of $sold products sold',
+            context.tr('Showing the top {0} of {1} products sold', [
+              shown,
+              sold,
+            ]),
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ],
@@ -239,7 +245,7 @@ class _BestSellingReportScreenState extends State<BestSellingReportScreen>
           );
 
     return AppShell(
-      title: 'Best Selling',
+      title: context.tr('Best Selling'),
       destinationId: 'report-best-selling',
       body: _loading
           ? const LoadingState()
@@ -252,8 +258,12 @@ class _BestSellingReportScreenState extends State<BestSellingReportScreen>
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                     child: DateFilterBar(
-                      fromLabel: _from == null ? 'From' : _formatDate(_from!),
-                      toLabel: _to == null ? 'To' : _formatDate(_to!),
+                      fromLabel: _from == null
+                          ? context.tr('From')
+                          : _formatDate(_from!),
+                      toLabel: _to == null
+                          ? context.tr('To')
+                          : _formatDate(_to!),
                       onFrom: () => _pickDate(true),
                       onTo: () => _pickDate(false),
                     ),
@@ -262,27 +272,27 @@ class _BestSellingReportScreenState extends State<BestSellingReportScreen>
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: DropdownButtonFormField<int?>(
-                      key: ValueKey('location-$_selectedLocationId'),
-                      initialValue: _selectedLocationId,
-                      decoration: const InputDecoration(
-                        labelText: 'Cashier Location',
-                        prefixIcon: Icon(Icons.storefront_outlined),
+                      key: ValueKey('category-$_selectedCategoryId'),
+                      initialValue: _selectedCategoryId,
+                      decoration: InputDecoration(
+                        labelText: context.tr('Category'),
+                        prefixIcon: const Icon(Icons.category_outlined),
                       ),
                       items: [
-                        const DropdownMenuItem<int?>(
+                        DropdownMenuItem<int?>(
                           value: null,
-                          child: Text('All Locations'),
+                          child: Text(context.tr('All Categories')),
                         ),
-                        ..._locations.map(
-                          (location) => DropdownMenuItem<int?>(
-                            value: location.id,
-                            child: Text(location.name),
+                        ..._categories.map(
+                          (category) => DropdownMenuItem<int?>(
+                            value: category.id,
+                            child: Text(category.name),
                           ),
                         ),
                       ],
                       onChanged: (value) async {
                         setState(() {
-                          _selectedLocationId = value;
+                          _selectedCategoryId = value;
                         });
 
                         await _loadData();
@@ -290,11 +300,13 @@ class _BestSellingReportScreenState extends State<BestSellingReportScreen>
                     ),
                   ),
                   if (report!.items.isEmpty)
-                    const Expanded(
+                    Expanded(
                       child: EmptyState(
                         icon: Icons.trending_down_rounded,
-                        title: 'No sales data',
-                        message: 'Adjust the dates or add new sales.',
+                        title: context.tr('No sales data'),
+                        message: context.tr(
+                          'Adjust the dates or add new sales.',
+                        ),
                       ),
                     )
                   else ...[
@@ -306,12 +318,12 @@ class _BestSellingReportScreenState extends State<BestSellingReportScreen>
                       padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                       child: SectionHeader(
                         title: _rankLimit == null
-                            ? 'Top Sellers'
-                            : 'Top $shownRanks',
-                        subtitle:
-                            'Ranked by units sold'
-                            ' • ${items.length} product'
-                            '${items.length == 1 ? '' : 's'} sold',
+                            ? context.tr('Top Sellers')
+                            : context.tr('Top {0}', [shownRanks]),
+                        subtitle: context.tr(
+                          'Ranked by units sold • {0} product{1} sold',
+                          [items.length, items.length == 1 ? '' : 's'],
+                        ),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -349,8 +361,10 @@ class _BestSellingReportScreenState extends State<BestSellingReportScreen>
                                 ),
                                 title: Text(item.productName),
                                 subtitle: Text(
-                                  '${item.modelNumber}\n'
-                                  'Sold: ${item.totalQuantitySold}',
+                                  context.tr('{0}\nSold: {1}', [
+                                    item.modelNumber,
+                                    item.totalQuantitySold,
+                                  ]),
                                 ),
                                 isThreeLine: true,
                                 trailing: Text(

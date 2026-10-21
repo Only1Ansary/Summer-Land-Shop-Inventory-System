@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../localization/app_strings.dart';
 import '../../models/inventory.dart';
 import '../../models/location.dart';
 import '../../models/product_variant.dart';
@@ -8,7 +9,6 @@ import '../../services/inventory_service.dart';
 import '../../services/location_service.dart';
 import '../../services/product_variant_service.dart';
 import '../../services/stock_transfer_service.dart';
-import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
 
 class CreateStockTransferScreen extends StatefulWidget {
@@ -19,23 +19,40 @@ class CreateStockTransferScreen extends StatefulWidget {
       _CreateStockTransferScreenState();
 }
 
+/// A variant the user has queued for this transfer, plus the quantity they
+/// typed for it.
+class _TransferLine {
+  final ProductVariant variant;
+  final TextEditingController quantityController;
+
+  _TransferLine(this.variant)
+    : quantityController = TextEditingController(text: '1');
+
+  int get quantity => int.tryParse(quantityController.text.trim()) ?? 0;
+
+  void dispose() {
+    quantityController.dispose();
+  }
+}
+
 class _CreateStockTransferScreenState extends State<CreateStockTransferScreen> {
   late final LocationService _locationService;
   late final ProductVariantService _variantService;
   late final StockTransferService _transferService;
   late final InventoryService _inventoryService;
 
-  List<Inventory> _variantInventory = [];
-
   List<Location> _locations = [];
   List<ProductVariant> _variants = [];
 
+  /// Stock held at each location for each queued variant, keyed by variant id.
+  final Map<int, List<Inventory>> _variantStock = {};
+
   Location? _fromLocation;
   Location? _toLocation;
-  ProductVariant? _selectedVariant;
 
   final TextEditingController _searchController = TextEditingController();
-  final TextEditingController _quantityController = TextEditingController();
+
+  final List<_TransferLine> _lines = [];
 
   bool _isLoading = true;
   bool _isSubmitting = false;
@@ -60,24 +77,12 @@ class _CreateStockTransferScreenState extends State<CreateStockTransferScreen> {
   @override
   void dispose() {
     _searchController.dispose();
-    _quantityController.dispose();
-    super.dispose();
-  }
 
-  Future<void> _loadVariantInventory(ProductVariant variant) async {
-    try {
-      final inventory = await _inventoryService.getVariantInventory(variant.id);
-
-      if (!mounted) return;
-
-      setState(() {
-        _variantInventory = inventory;
-      });
-    } catch (e) {
-      if (!mounted) return;
-
-      _showError(friendlyError(e));
+    for (final line in _lines) {
+      line.dispose();
     }
+
+    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -97,7 +102,7 @@ class _CreateStockTransferScreenState extends State<CreateStockTransferScreen> {
       if (!mounted) return;
 
       setState(() {
-        _error = friendlyError(e);
+        _error = friendlyErrorMessage(context, e);
         _isLoading = false;
       });
     }
@@ -132,32 +137,113 @@ class _CreateStockTransferScreenState extends State<CreateStockTransferScreen> {
     return parts.join(' - ');
   }
 
-  Future<void> _createTransfer() async {
-    if (_selectedVariant == null) {
-      _showError('Please select a product variant.');
+  bool _isQueued(ProductVariant variant) {
+    return _lines.any((line) => line.variant.id == variant.id);
+  }
+
+  /// Asks for a quantity, then adds [variant] to the list of things to
+  /// transfer, unless it is already queued.
+  Future<void> _queueVariant(ProductVariant variant) async {
+    if (_isQueued(variant)) {
+      _showError(
+        context.tr('{0} is already in the list.', [
+          _variantDisplayName(variant),
+        ]),
+      );
       return;
     }
 
+    final quantity = await _promptQuantity(variant);
+
+    if (quantity == null || !mounted) return;
+
+    setState(() {
+      final line = _TransferLine(variant);
+      line.quantityController.text = quantity.toString();
+
+      _lines.add(line);
+      _searchController.clear();
+      _filteredVariants = _variants;
+    });
+
+    await _loadVariantStock(variant);
+  }
+
+  /// Loads the per-location stock for [variant] so each location can show how
+  /// much of it is available.
+  Future<void> _loadVariantStock(ProductVariant variant) async {
+    if (_variantStock.containsKey(variant.id)) return;
+
+    try {
+      final inventory = await _inventoryService.getVariantInventory(variant.id);
+
+      if (!mounted) return;
+
+      setState(() {
+        _variantStock[variant.id] = inventory;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      _showError(friendlyErrorMessage(context, e));
+    }
+  }
+
+  /// Stock held for [variant] at [location], or 0 when unknown.
+  int _stockAt(ProductVariant variant, Location? location) {
+    if (location == null) return 0;
+
+    final inventory = _variantStock[variant.id];
+
+    if (inventory == null) return 0;
+
+    for (final item in inventory) {
+      if (item.locationId == location.id) return item.quantity;
+    }
+
+    return 0;
+  }
+
+  void _removeLine(int index) {
+    setState(() {
+      _lines.removeAt(index).dispose();
+    });
+  }
+
+  int get _queuedCount => _lines.length;
+
+  Future<void> _createTransfer() async {
     if (_fromLocation == null) {
-      _showError('Please select the source location.');
+      _showError(context.tr('Please select the source location.'));
       return;
     }
 
     if (_toLocation == null) {
-      _showError('Please select the destination location.');
+      _showError(context.tr('Please select the destination location.'));
       return;
     }
 
     if (_fromLocation!.id == _toLocation!.id) {
-      _showError('Source and destination locations must be different.');
+      _showError(
+        context.tr('Source and destination locations must be different.'),
+      );
       return;
     }
 
-    final quantity = int.tryParse(_quantityController.text.trim());
-
-    if (quantity == null || quantity <= 0) {
-      _showError('Quantity must be greater than zero.');
+    if (_lines.isEmpty) {
+      _showError(context.tr('Add at least one product variant.'));
       return;
+    }
+
+    for (final line in _lines) {
+      if (line.quantity <= 0) {
+        _showError(
+          context.tr('Quantity for {0} must be greater than zero.', [
+            _variantDisplayName(line.variant),
+          ]),
+        );
+        return;
+      }
     }
 
     setState(() {
@@ -166,16 +252,28 @@ class _CreateStockTransferScreenState extends State<CreateStockTransferScreen> {
 
     try {
       await _transferService.createTransfer(
-        productVariantId: _selectedVariant!.id,
         fromLocationId: _fromLocation!.id,
         toLocationId: _toLocation!.id,
-        quantity: quantity,
+        items: _lines
+            .map(
+              (line) => StockTransferLine(
+                productVariantId: line.variant.id,
+                quantity: line.quantity,
+              ),
+            )
+            .toList(),
       );
 
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Stock transfer created successfully.')),
+        SnackBar(
+          content: Text(
+            context.tr('Transfer of {0} variant(s) created successfully.', [
+              _queuedCount,
+            ]),
+          ),
+        ),
       );
 
       Navigator.pop(context, true);
@@ -186,7 +284,7 @@ class _CreateStockTransferScreenState extends State<CreateStockTransferScreen> {
         _isSubmitting = false;
       });
 
-      _showError(friendlyError(e));
+      _showError(friendlyErrorMessage(context, e));
     }
   }
 
@@ -195,124 +293,26 @@ class _CreateStockTransferScreenState extends State<CreateStockTransferScreen> {
         .showSnackBar(SnackBar(content: Text(message)));
   }
 
-  Widget _buildVariantSearch() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SectionHeader(
-          title: '1. Product',
-          subtitle: 'Search and select the variant to transfer',
-        ),
-        const SizedBox(height: 8),
-
-        TextField(
-          controller: _searchController,
-          onChanged: _searchVariants,
-          decoration: const InputDecoration(
-            labelText: 'Search Product',
-            hintText: 'Model, name, barcode, size, colour',
-            prefixIcon: Icon(Icons.search),
-          ),
-        ),
-        const SizedBox(height: 8),
-
-        if (_selectedVariant != null)
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.check_circle_rounded),
-              title: Text(_variantDisplayName(_selectedVariant!)),
-              subtitle: Text(
-                'Model: ${_selectedVariant!.modelNumber}\n'
-                'Quantity: ${_selectedVariant!.totalQuantity}\n'
-                'Barcode: ${_selectedVariant!.barcode}',
-              ),
-              trailing: IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: () {
-                  setState(() {
-                    _selectedVariant = null;
-                  });
-                },
-              ),
-            ),
-          )
-        else if (_searchController.text.trim().isNotEmpty)
-          Container(
-            constraints: const BoxConstraints(maxHeight: 300),
-            child: _filteredVariants.isEmpty
-                ? const Card(
-                    child: Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Text('No variants found.'),
-                    ),
-                  )
-                : ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: _filteredVariants.length,
-                    itemBuilder: (context, index) {
-                      final variant = _filteredVariants[index];
-
-                      return Card(
-                        child: ListTile(
-                          title: Text(_variantDisplayName(variant)),
-                          subtitle: Text(
-                            'Model: ${variant.modelNumber}\n'
-                            'Quantity: ${variant.totalQuantity}\n'
-                            'Barcode: ${variant.barcode}',
-                          ),
-                          trailing: Text(
-                            money(variant.price),
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: amountColor(context, variant.price),
-                            ),
-                          ),
-                          onTap: () async {
-                            setState(() {
-                              _selectedVariant = variant;
-                              _searchController.clear();
-                              _filteredVariants = _variants;
-                              _variantInventory = [];
-                            });
-
-                            await _loadVariantInventory(variant);
-                          },
-                        ),
-                      );
-                    },
-                  ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildTransferForm() {
+  Widget _buildLocationForm() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SectionHeader(
-          title: '2. Transfer Details',
-          subtitle: 'Pick source, destination and quantity',
+        SectionHeader(
+          title: context.tr('1. Locations'),
+          subtitle: context.tr('Pick source and destination for every variant'),
         ),
         const SizedBox(height: 12),
-
         DropdownButtonFormField<Location>(
           key: ValueKey('from-${_fromLocation?.id}'),
           initialValue: _fromLocation,
-          decoration: const InputDecoration(
-            labelText: 'From Location',
-            prefixIcon: Icon(Icons.file_upload_outlined),
+          decoration: InputDecoration(
+            labelText: context.tr('From Location'),
+            prefixIcon: const Icon(Icons.file_upload_outlined),
           ),
           items: _locations.map((location) {
-            final inventory = _variantInventory
-                .where((item) => item.locationId == location.id)
-                .firstOrNull;
-
-            final quantity = inventory?.quantity ?? 0;
-
             return DropdownMenuItem<Location>(
               value: location,
-              child: Text('${location.name} ($quantity)'),
+              child: Text(location.name),
             );
           }).toList(),
           onChanged: (value) {
@@ -325,26 +325,18 @@ class _CreateStockTransferScreenState extends State<CreateStockTransferScreen> {
             });
           },
         ),
-
         const SizedBox(height: 16),
-
         DropdownButtonFormField<Location>(
           key: ValueKey('to-${_toLocation?.id}'),
           initialValue: _toLocation,
-          decoration: const InputDecoration(
-            labelText: 'To Location',
-            prefixIcon: Icon(Icons.file_download_outlined),
+          decoration: InputDecoration(
+            labelText: context.tr('To Location'),
+            prefixIcon: const Icon(Icons.file_download_outlined),
           ),
           items: _locations.map((location) {
-            final inventory = _variantInventory
-                .where((item) => item.locationId == location.id)
-                .firstOrNull;
-
-            final quantity = inventory?.quantity ?? 0;
-
             return DropdownMenuItem<Location>(
               value: location,
-              child: Text('${location.name} ($quantity)'),
+              child: Text(location.name),
             );
           }).toList(),
           onChanged: (value) {
@@ -353,31 +345,219 @@ class _CreateStockTransferScreenState extends State<CreateStockTransferScreen> {
             });
           },
         ),
+      ],
+    );
+  }
 
-        const SizedBox(height: 16),
+  Widget _buildVariantPicker() {
+    final showResults = _searchController.text.trim().isNotEmpty;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SectionHeader(
+          title: context.tr('2. Products'),
+          subtitle: context.tr('Search and add the variants to transfer'),
+        ),
+        const SizedBox(height: 8),
 
         TextField(
-          controller: _quantityController,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
-            labelText: 'Quantity',
-            prefixIcon: Icon(Icons.pin_outlined),
+          controller: _searchController,
+          onChanged: _searchVariants,
+          decoration: InputDecoration(
+            labelText: context.tr('Search Product'),
+            hintText: context.tr('Model, name, barcode, size, colour'),
+            prefixIcon: const Icon(Icons.search),
           ),
         ),
 
-        const SizedBox(height: 24),
+        if (showResults) ...[
+          const SizedBox(height: 8),
+          Container(
+            constraints: const BoxConstraints(maxHeight: 300),
+            child: _filteredVariants.isEmpty
+                ? Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(context.tr('No variants found.')),
+                    ),
+                  )
+                : ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: _filteredVariants.length,
+                    itemBuilder: (context, index) {
+                      final variant = _filteredVariants[index];
 
-        FilledButton.icon(
-          onPressed: _isSubmitting ? null : _createTransfer,
-          icon: _isSubmitting
-              ? const SizedBox(
-                  height: 18,
-                  width: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.swap_horiz_rounded),
-          label: const Text('Transfer Stock'),
+                      final queued = _isQueued(variant);
+
+                      return Card(
+                        child: ListTile(
+                          enabled: !queued,
+                          title: Text(_variantDisplayName(variant)),
+                          subtitle: Text(
+                            context.tr(
+                              'Model: {0}\nQuantity: {1}\nBarcode: {2}',
+                              [
+                                variant.modelNumber,
+                                variant.totalQuantity,
+                                variant.barcode,
+                              ],
+                            ),
+                          ),
+                          trailing: queued
+                              ? const Icon(Icons.check_circle_rounded)
+                              : IconButton(
+                                  tooltip: context.tr('Add to transfer'),
+                                  icon: const Icon(Icons.add_circle_outline),
+                                  onPressed: () => _queueVariant(variant),
+                                ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+
+        const SizedBox(height: 12),
+        _buildQueuedList(),
+      ],
+    );
+  }
+
+  /// Opens a small dialog to set the quantity for [variant]. Returns the
+  /// entered quantity, or null if cancelled.
+  Future<int?> _promptQuantity(ProductVariant variant) async {
+    final value = await showDialog<String>(
+      context: context,
+      builder: (context) =>
+          _QuantityDialog(title: _variantDisplayName(variant)),
+    );
+
+    if (value == null) return null;
+
+    return int.tryParse(value.trim());
+  }
+
+  Widget _buildQueuedList() {
+    if (_lines.isEmpty) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: EmptyState(
+            icon: Icons.inventory_2_outlined,
+            title: context.tr('No variants added yet'),
+            message: context.tr(
+              'Search above and add the variants you want to transfer.',
+            ),
+          ),
         ),
+      );
+    }
+
+    final total = _lines.fold<int>(0, (sum, line) => sum + line.quantity);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+          child: Text(
+            context.tr('{0} variant(s) · {1} unit(s)', [_queuedCount, total]),
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+        const SizedBox(height: 4),
+        ...List.generate(_lines.length, (index) {
+          final line = _lines[index];
+
+          return Card(
+            margin: const EdgeInsets.only(bottom: 10),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _variantDisplayName(line.variant),
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          context.tr('Model: {0}', [line.variant.modelNumber]),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
+                              ),
+                        ),
+                        const SizedBox(height: 4),
+                        Wrap(
+                          spacing: 10,
+                          runSpacing: 2,
+                          children: [
+                            Text(
+                              _fromLocation == null
+                                  ? context.tr('From: —')
+                                  : context.tr('From: {0} ({1})', [
+                                      _fromLocation!.name,
+                                      _stockAt(line.variant, _fromLocation),
+                                    ]),
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .primary,
+                                  ),
+                            ),
+                            Text(
+                              _toLocation == null
+                                  ? context.tr('To: —')
+                                  : context.tr('To: {0} ({1})', [
+                                      _toLocation!.name,
+                                      _stockAt(line.variant, _toLocation),
+                                    ]),
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    width: 96,
+                    child: TextField(
+                      controller: line.quantityController,
+                      keyboardType: TextInputType.number,
+                      onChanged: (_) => setState(() {}),
+                      decoration: InputDecoration(
+                        labelText: context.tr('Qty'),
+                        isDense: true,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: context.tr('Remove'),
+                    onPressed: () => _removeLine(index),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }),
       ],
     );
   }
@@ -385,7 +565,7 @@ class _CreateStockTransferScreenState extends State<CreateStockTransferScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Create Stock Transfer')),
+      appBar: AppBar(title: Text(context.tr('Create Stock Transfer'))),
       body: _isLoading
           ? const LoadingState()
           : _error != null
@@ -394,12 +574,78 @@ class _CreateStockTransferScreenState extends State<CreateStockTransferScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _buildVariantSearch(),
+                  _buildLocationForm(),
                   const SizedBox(height: 24),
-                  _buildTransferForm(),
+                  _buildVariantPicker(),
+                  const SizedBox(height: 24),
+                  FilledButton.icon(
+                    onPressed: _isSubmitting || _lines.isEmpty
+                        ? null
+                        : _createTransfer,
+                    icon: _isSubmitting
+                        ? const SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.swap_horiz_rounded),
+                    label: Text(
+                      _queuedCount > 0
+                          ? context.tr('Transfer {0} variant(s)', [
+                              _queuedCount,
+                            ])
+                          : context.tr('Transfer Stock'),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                 ],
               ),
             ),
+    );
+  }
+}
+
+class _QuantityDialog extends StatefulWidget {
+  final String title;
+
+  const _QuantityDialog({required this.title});
+
+  @override
+  State<_QuantityDialog> createState() => _QuantityDialogState();
+}
+
+class _QuantityDialogState extends State<_QuantityDialog> {
+  final TextEditingController _controller = TextEditingController(text: '1');
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.title),
+      content: TextField(
+        controller: _controller,
+        autofocus: true,
+        keyboardType: TextInputType.number,
+        decoration: InputDecoration(
+          labelText: context.tr('Quantity'),
+          prefixIcon: const Icon(Icons.pin_outlined),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(context.tr('Cancel')),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, _controller.text),
+          child: Text(context.tr('Set')),
+        ),
+      ],
     );
   }
 }

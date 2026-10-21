@@ -4,6 +4,7 @@ import '../../models/employee.dart';
 import '../../services/api_service.dart';
 import '../../services/employee_service.dart';
 
+import '../../localization/app_strings.dart';
 import '../../ui/app_shell.dart';
 import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
@@ -51,7 +52,7 @@ class _EmployeesScreenState extends State<EmployeesScreen>
       if (!mounted) return;
 
       setState(() {
-        _error = friendlyError(e);
+        _error = friendlyErrorMessage(context, e);
       });
     } finally {
       if (mounted) {
@@ -97,20 +98,22 @@ class _EmployeesScreenState extends State<EmployeesScreen>
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Delete ${employee.name}?'),
-        content: const Text(
-          'Their sales history will be removed. '
-          'Invoices they sold keep the employee name.',
+        title: Text(context.tr('Delete {0}?', [employee.name])),
+        content: Text(
+          context.tr(
+            'Their sales history will be removed. '
+            'Invoices they sold keep the employee name.',
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            child: Text(context.tr('Cancel')),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
             child: Text(
-              'Delete',
+              context.tr('Delete'),
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
           ),
@@ -125,15 +128,18 @@ class _EmployeesScreenState extends State<EmployeesScreen>
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('${employee.name} was deleted.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.tr('{0} was deleted.', [employee.name])),
+        ),
+      );
       _loadEmployees();
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(friendlyError(e))));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(context, e))));
     }
   }
 
@@ -146,7 +152,9 @@ class _EmployeesScreenState extends State<EmployeesScreen>
     if (paid != true || !mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Payment recorded for ${employee.name}.')),
+      SnackBar(
+        content: Text(context.tr('Payment recorded for {0}.', [employee.name])),
+      ),
     );
     _loadEmployees();
   }
@@ -154,11 +162,11 @@ class _EmployeesScreenState extends State<EmployeesScreen>
   @override
   Widget build(BuildContext context) {
     return AppShell(
-      title: 'Employees',
+      title: context.tr('Employees'),
       destinationId: 'employees',
       floatingActionButton: FloatingActionButton(
         onPressed: _addEmployee,
-        tooltip: 'Add employee',
+        tooltip: context.tr('Add employee'),
         child: const Icon(Icons.add),
       ),
       body: _buildBody(),
@@ -180,12 +188,12 @@ class _EmployeesScreenState extends State<EmployeesScreen>
           onRefresh: _loadEmployees,
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
-            children: const [
-              SizedBox(height: 120),
+            children: [
+              const SizedBox(height: 120),
               EmptyState(
                 icon: Icons.badge_outlined,
-                title: 'No employees yet',
-                message: 'Tap + to add your first employee.',
+                title: context.tr('No employees yet'),
+                message: context.tr('Tap + to add your first employee.'),
               ),
             ],
           ),
@@ -273,13 +281,13 @@ class _EmployeeCard extends StatelessWidget {
                 );
 
                 final Widget badge = employee.reachedTarget
-                    ? const StatusBadge(
-                        label: 'TARGET MET',
+                    ? StatusBadge(
+                        label: context.tr('TARGET MET'),
                         color: AppPalette.success,
                         icon: Icons.check_circle_outline,
                       )
                     : StatusBadge(
-                        label: 'BELOW TARGET',
+                        label: context.tr('BELOW TARGET'),
                         color: theme.colorScheme.outline,
                         icon: Icons.remove_circle_outline,
                       );
@@ -288,7 +296,7 @@ class _EmployeeCard extends StatelessWidget {
                   IconButton(
                     visualDensity: VisualDensity.compact,
                     icon: const Icon(Icons.history),
-                    tooltip: 'Monthly history',
+                    tooltip: context.tr('Monthly history'),
                     onPressed: onHistory,
                   ),
                   IconButton(
@@ -297,13 +305,13 @@ class _EmployeeCard extends StatelessWidget {
                       Icons.payments_outlined,
                       color: theme.colorScheme.primary,
                     ),
-                    tooltip: 'Record payment',
+                    tooltip: context.tr('Record payment'),
                     onPressed: onPay,
                   ),
                   IconButton(
                     visualDensity: VisualDensity.compact,
                     icon: const Icon(Icons.edit_outlined),
-                    tooltip: 'Edit',
+                    tooltip: context.tr('Edit'),
                     onPressed: onEdit,
                   ),
                   IconButton(
@@ -312,7 +320,7 @@ class _EmployeeCard extends StatelessWidget {
                       Icons.delete_outline,
                       color: theme.colorScheme.error,
                     ),
-                    tooltip: 'Delete',
+                    tooltip: context.tr('Delete'),
                     onPressed: onDelete,
                   ),
                 ];
@@ -359,20 +367,28 @@ class _EmployeeCard extends StatelessWidget {
               spacing: 24,
               runSpacing: 8,
               children: [
-                _Metric(label: 'Salary', value: money(employee.salary)),
-                _Metric(label: 'Target', value: money(employee.target)),
+                _Metric(
+                  label: context.tr('Salary'),
+                  value: money(employee.salary),
+                ),
+                _Metric(
+                  label: context.tr('Target'),
+                  value: money(employee.target),
+                ),
                 _Metric(
                   label: employee.bonusType == BonusType.percentage
-                      ? 'Bonus (${_formatPercent(employee.bonus)}%)'
-                      : 'Bonus',
+                      ? context.tr('Bonus ({0}%)', [
+                          _formatPercent(employee.bonus),
+                        ])
+                      : context.tr('Bonus'),
                   value: money(employee.bonusAmount),
                 ),
                 _Metric(
-                  label: 'Total sales',
+                  label: context.tr('Total sales'),
                   value: money(employee.totalSales),
                 ),
                 _Metric(
-                  label: 'Left to pay',
+                  label: context.tr('Left to pay'),
                   value: money(employee.effectiveLeftToPay),
                 ),
               ],
@@ -458,7 +474,7 @@ class _PayEmployeeDialogState extends State<_PayEmployeeDialog> {
 
     if (amount == null || amount <= 0) {
       setState(() {
-        _error = 'Enter a payment amount greater than zero.';
+        _error = context.tr('Enter a payment amount greater than zero.');
       });
       return;
     }
@@ -482,7 +498,7 @@ class _PayEmployeeDialogState extends State<_PayEmployeeDialog> {
 
       setState(() {
         _saving = false;
-        _error = friendlyError(e);
+        _error = friendlyErrorMessage(context, e);
       });
     }
   }
@@ -492,22 +508,26 @@ class _PayEmployeeDialogState extends State<_PayEmployeeDialog> {
     final theme = Theme.of(context);
 
     return AlertDialog(
-      title: Text('Pay ${widget.employee.name}'),
+      title: Text(context.tr('Pay {0}', [widget.employee.name])),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Salary ${money(widget.employee.salary)}'
-            ' + bonus ${money(widget.employee.bonusAmount)}'
-            ' = ${money(widget.employee.totalCompensation)} due this month',
+            context.tr('Salary {0} + bonus {1} = {2} due this month', [
+              money(widget.employee.salary),
+              money(widget.employee.bonusAmount),
+              money(widget.employee.totalCompensation),
+            ]),
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 4),
           Text(
-            'Left to pay: ${money(widget.employee.effectiveLeftToPay)}',
+            context.tr('Left to pay: {0}', [
+              money(widget.employee.effectiveLeftToPay),
+            ]),
             style: theme.textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.w700,
             ),
@@ -518,9 +538,9 @@ class _PayEmployeeDialogState extends State<_PayEmployeeDialog> {
             autofocus: true,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             decoration: InputDecoration(
-              labelText: 'Amount paid',
+              labelText: context.tr('Amount paid'),
               prefixIcon: const Icon(Icons.payments_outlined),
-              helperText: 'Prefilled with what is left to pay.',
+              helperText: context.tr('Prefilled with what is left to pay.'),
               border: const OutlineInputBorder(),
             ),
           ),
@@ -539,7 +559,7 @@ class _PayEmployeeDialogState extends State<_PayEmployeeDialog> {
       actions: [
         TextButton(
           onPressed: _saving ? null : () => Navigator.of(context).pop(false),
-          child: const Text('Cancel'),
+          child: Text(context.tr('Cancel')),
         ),
         FilledButton(
           onPressed: _saving ? null : _record,
@@ -549,7 +569,7 @@ class _PayEmployeeDialogState extends State<_PayEmployeeDialog> {
                   height: 16,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : const Text('Record payment'),
+              : Text(context.tr('Record payment')),
         ),
       ],
     );

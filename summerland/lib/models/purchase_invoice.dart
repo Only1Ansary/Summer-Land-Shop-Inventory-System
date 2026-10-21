@@ -68,11 +68,13 @@ class PurchaseInvoiceFee {
   final int id;
   final String description;
   final double amount;
+  final bool isPaid;
 
   PurchaseInvoiceFee({
     required this.id,
     required this.description,
     required this.amount,
+    this.isPaid = false,
   });
 
   factory PurchaseInvoiceFee.fromJson(Map<String, dynamic> json) {
@@ -80,6 +82,7 @@ class PurchaseInvoiceFee {
       id: json['id'] ?? 0,
       description: json['description'] ?? '',
       amount: (json['amount'] as num? ?? 0).toDouble(),
+      isPaid: json['isPaid'] as bool? ?? false,
     );
   }
 }

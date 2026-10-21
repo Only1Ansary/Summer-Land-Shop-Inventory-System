@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../localization/app_strings.dart';
 import '../../models/stock_transfer.dart';
 import '../../services/api_service.dart';
 import '../../services/stock_transfer_service.dart';
@@ -79,7 +80,7 @@ class _StockTransfersScreenState extends State<StockTransfersScreen>
       if (!mounted) return;
 
       setState(() {
-        _error = friendlyError(e);
+        _error = friendlyErrorMessage(context, e);
         _isLoading = false;
       });
     }
@@ -115,14 +116,12 @@ class _StockTransfersScreenState extends State<StockTransfersScreen>
     return '${date.day}/${date.month}/${date.year}';
   }
 
-  String _variantName(StockTransfer transfer) {
-    final parts = <String>[
-      transfer.productName,
-      if (transfer.sizeName != null) transfer.sizeName!,
-      if (transfer.colourName != null) transfer.colourName!,
-    ];
+  String _itemCountLabel(BuildContext context, StockTransfer transfer) {
+    final count = transfer.items.length;
 
-    return parts.join(' - ');
+    return count == 1
+        ? context.tr('1 variant')
+        : context.tr('{0} variants', [count]);
   }
 
   Future<void> _openCreateScreen() async {
@@ -139,11 +138,11 @@ class _StockTransfersScreenState extends State<StockTransfersScreen>
   @override
   Widget build(BuildContext context) {
     return AppShell(
-      title: 'Stock Transfers',
+      title: context.tr('Stock Transfers'),
       destinationId: 'transfers',
       floatingActionButton: FloatingActionButton(
         onPressed: _openCreateScreen,
-        tooltip: 'Create stock transfer',
+        tooltip: context.tr('Create stock transfer'),
         child: const Icon(Icons.swap_horiz),
       ),
       body: Column(
@@ -190,14 +189,15 @@ class _StockTransfersScreenState extends State<StockTransfersScreen>
               child: _transfers.isEmpty
                   ? ListView(
                       physics: const AlwaysScrollableScrollPhysics(),
-                      children: const [
-                        SizedBox(height: 120),
+                      children: [
+                        const SizedBox(height: 120),
                         EmptyState(
                           icon: Icons.swap_horiz_rounded,
-                          title: 'No stock transfers found',
-                          message:
-                              'Transfer stock between locations using the + '
-                              'button.',
+                          title: context.tr('No stock transfers found'),
+                          message: context.tr(
+                            'Transfer stock between locations using the + '
+                            'button.',
+                          ),
                         ),
                       ],
                     )
@@ -214,22 +214,23 @@ class _StockTransfersScreenState extends State<StockTransfersScreen>
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  _variantName(transfer),
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Model: ${transfer.modelNumber}',
-                                  style: Theme.of(context).textTheme.bodySmall
-                                      ?.copyWith(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onSurfaceVariant,
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        _itemCountLabel(context, transfer),
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 16,
+                                        ),
                                       ),
+                                    ),
+                                    _QuantityBadge(
+                                      label: context.tr('Total: {0}', [
+                                        transfer.totalQuantity,
+                                      ]),
+                                    ),
+                                  ],
                                 ),
                                 const Divider(height: 20),
                                 Row(
@@ -258,24 +259,41 @@ class _StockTransfersScreenState extends State<StockTransfersScreen>
                                   ],
                                 ),
                                 const SizedBox(height: 12),
-                                Row(
-                                  children: [
-                                    _QuantityBadge(
-                                      label: 'Qty: ${transfer.quantity}',
-                                    ),
-                                    const Spacer(),
-                                    Text(
-                                      '${transfer.createdAt.toLocal()}',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .onSurfaceVariant,
+                                ...transfer.items.map(
+                                  (item) => Padding(
+                                    padding: const EdgeInsets.only(bottom: 4),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            item.displayName,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
                                           ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          context.tr('× {0}', [item.quantity]),
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  ],
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: Text(
+                                    '${transfer.createdAt.toLocal()}',
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurfaceVariant,
+                                        ),
+                                  ),
                                 ),
                               ],
                             ),
@@ -319,7 +337,7 @@ class _LocationChip extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            isSource ? 'FROM' : 'TO',
+            isSource ? context.tr('FROM') : context.tr('TO'),
             style: theme.textTheme.labelSmall?.copyWith(
               fontSize: 10,
               fontWeight: FontWeight.w700,

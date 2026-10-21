@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../localization/app_strings.dart';
 import '../../models/invoice.dart';
 import '../../services/api_service.dart';
 import '../../services/invoice_service.dart';
@@ -62,7 +63,7 @@ class _SearchSaleInvoicesScreenState extends State<SearchSaleInvoicesScreen>
       if (!mounted) return;
 
       setState(() {
-        _error = friendlyError(e);
+        _error = friendlyErrorMessage(context, e);
       });
     } finally {
       if (mounted) {
@@ -179,7 +180,7 @@ class _SearchSaleInvoicesScreenState extends State<SearchSaleInvoicesScreen>
     final results = _results;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Search Sale Invoices')),
+      appBar: AppBar(title: Text(context.tr('Search Sale Invoices'))),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -200,12 +201,12 @@ class _SearchSaleInvoicesScreenState extends State<SearchSaleInvoicesScreen>
           TextField(
             controller: _queryController,
             decoration: InputDecoration(
-              labelText: 'Invoice #, location or product',
+              labelText: context.tr('Invoice #, location or product'),
               prefixIcon: const Icon(Icons.search),
               suffixIcon: _queryController.text.isNotEmpty
                   ? IconButton(
                       icon: const Icon(Icons.clear),
-                      tooltip: 'Clear search',
+                      tooltip: context.tr('Clear search'),
                       onPressed: () {
                         _queryController.clear();
                         setState(() {});
@@ -223,7 +224,9 @@ class _SearchSaleInvoicesScreenState extends State<SearchSaleInvoicesScreen>
                   onPressed: _pickFromDate,
                   icon: const Icon(Icons.event_outlined),
                   label: Text(
-                    _fromDate == null ? 'From date' : _formatDate(_fromDate!),
+                    _fromDate == null
+                        ? context.tr('From date')
+                        : _formatDate(_fromDate!),
                   ),
                 ),
               ),
@@ -233,7 +236,9 @@ class _SearchSaleInvoicesScreenState extends State<SearchSaleInvoicesScreen>
                   onPressed: _pickToDate,
                   icon: const Icon(Icons.event_outlined),
                   label: Text(
-                    _toDate == null ? 'To date' : _formatDate(_toDate!),
+                    _toDate == null
+                        ? context.tr('To date')
+                        : _formatDate(_toDate!),
                   ),
                 ),
               ),
@@ -246,7 +251,7 @@ class _SearchSaleInvoicesScreenState extends State<SearchSaleInvoicesScreen>
               child: TextButton.icon(
                 onPressed: _clearFilters,
                 icon: const Icon(Icons.clear),
-                label: const Text('Clear filters'),
+                label: Text(context.tr('Clear filters')),
               ),
             ),
           ],
@@ -265,10 +270,12 @@ class _SearchSaleInvoicesScreenState extends State<SearchSaleInvoicesScreen>
     }
 
     if (results.isEmpty) {
-      return const EmptyState(
+      return EmptyState(
         icon: Icons.search_off_rounded,
-        title: 'No matches',
-        message: 'Try adjusting the invoice number, location, product or the date range.',
+        title: context.tr('No matches'),
+        message: context.tr(
+          'Try adjusting the invoice number, location, product or the date range.',
+        ),
       );
     }
 

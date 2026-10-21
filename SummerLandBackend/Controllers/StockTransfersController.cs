@@ -22,26 +22,15 @@ public class StockTransfersController : ControllerBase
     public async Task<ActionResult<StockTransferResponseDto>> CreateTransfer(
         CreateStockTransferDto dto)
     {
-        if (dto.Quantity <= 0)
+        if (dto.Items == null || dto.Items.Count == 0)
         {
-            return BadRequest("Quantity must be greater than zero.");
+            return BadRequest("Add at least one product variant.");
         }
 
         if (dto.FromLocationId == dto.ToLocationId)
         {
             return BadRequest(
                 "FromLocation and ToLocation must be different.");
-        }
-
-        var variant = await _context.ProductVariants
-            .Include(v => v.Product)
-            .Include(v => v.Size)
-            .Include(v => v.Colour)
-            .FirstOrDefaultAsync(v => v.Id == dto.ProductVariantId);
-
-        if (variant == null)
-        {
-            return BadRequest("ProductVariant not found.");
         }
 
         var fromLocation = await _context.Locations
@@ -60,87 +49,118 @@ public class StockTransfersController : ControllerBase
             return BadRequest("Destination location not found.");
         }
 
+        // A variant must not appear twice in the same transfer.
+        var variantIds = dto.Items.Select(i => i.ProductVariantId).ToList();
+
+        if (variantIds.Count != variantIds.Distinct().Count())
+        {
+            return BadRequest(
+                "The same product variant appears more than once.");
+        }
+
+        foreach (var item in dto.Items)
+        {
+            if (item.Quantity <= 0)
+            {
+                return BadRequest(
+                    "Every quantity must be greater than zero.");
+            }
+
+            var variantExists = await _context.ProductVariants
+                .AnyAsync(v => v.Id == item.ProductVariantId);
+
+            if (!variantExists)
+            {
+                return BadRequest("ProductVariant not found.");
+            }
+        }
+
         await using var transaction =
             await _context.Database.BeginTransactionAsync();
 
         try
         {
-            var sourceInventory = await _context.Inventory
-                .FirstOrDefaultAsync(i =>
-                    i.ProductVariantId == dto.ProductVariantId &&
-                    i.LocationId == dto.FromLocationId);
-
-            if (sourceInventory == null)
-            {
-                return BadRequest(
-                    "ProductVariant is not available at the source location.");
-            }
-
-            if (sourceInventory.Quantity < dto.Quantity)
-            {
-                return BadRequest(
-                    $"Insufficient stock at source location. " +
-                    $"Available: {sourceInventory.Quantity}, " +
-                    $"Requested: {dto.Quantity}.");
-            }
-
-            var destinationInventory = await _context.Inventory
-                .FirstOrDefaultAsync(i =>
-                    i.ProductVariantId == dto.ProductVariantId &&
-                    i.LocationId == dto.ToLocationId);
-
-            // Remove from source
-            sourceInventory.Quantity -= dto.Quantity;
-
-            // Add to destination
-            if (destinationInventory == null)
-            {
-                destinationInventory = new Inventory
-                {
-                    ProductVariantId = dto.ProductVariantId,
-                    LocationId = dto.ToLocationId,
-                    Quantity = dto.Quantity
-                };
-
-                _context.Inventory.Add(destinationInventory);
-            }
-            else
-            {
-                destinationInventory.Quantity += dto.Quantity;
-            }
-
-            // Transfer out
-            var transferOut = new StockMovement
-            {
-                ProductVariantId = dto.ProductVariantId,
-                LocationId = dto.FromLocationId,
-                QuantityChange = -dto.Quantity,
-                Reason = "Transfer Out",
-                CreatedAt = DateTime.UtcNow
-            };
-
-            // Transfer in
-            var transferIn = new StockMovement
-            {
-                ProductVariantId = dto.ProductVariantId,
-                LocationId = dto.ToLocationId,
-                QuantityChange = dto.Quantity,
-                Reason = "Transfer In",
-                CreatedAt = DateTime.UtcNow
-            };
-
-            _context.StockMovements.Add(transferOut);
-            _context.StockMovements.Add(transferIn);
-
-            // Transfer record
             var transfer = new StockTransfer
             {
-                ProductVariantId = dto.ProductVariantId,
                 FromLocationId = dto.FromLocationId,
                 ToLocationId = dto.ToLocationId,
-                Quantity = dto.Quantity,
                 CreatedAt = DateTime.UtcNow
             };
+
+            foreach (var item in dto.Items)
+            {
+                var sourceInventory = await _context.Inventory
+                    .FirstOrDefaultAsync(i =>
+                        i.ProductVariantId == item.ProductVariantId &&
+                        i.LocationId == dto.FromLocationId);
+
+                if (sourceInventory == null)
+                {
+                    await transaction.RollbackAsync();
+
+                    return BadRequest(
+                        "A product variant is not available at the source location.");
+                }
+
+                if (sourceInventory.Quantity < item.Quantity)
+                {
+                    await transaction.RollbackAsync();
+
+                    return BadRequest(
+                        $"Insufficient stock at source location. " +
+                        $"Available: {sourceInventory.Quantity}, " +
+                        $"Requested: {item.Quantity}.");
+                }
+
+                var destinationInventory = await _context.Inventory
+                    .FirstOrDefaultAsync(i =>
+                        i.ProductVariantId == item.ProductVariantId &&
+                        i.LocationId == dto.ToLocationId);
+
+                // Remove from source
+                sourceInventory.Quantity -= item.Quantity;
+
+                // Add to destination
+                if (destinationInventory == null)
+                {
+                    destinationInventory = new Inventory
+                    {
+                        ProductVariantId = item.ProductVariantId,
+                        LocationId = dto.ToLocationId,
+                        Quantity = item.Quantity
+                    };
+
+                    _context.Inventory.Add(destinationInventory);
+                }
+                else
+                {
+                    destinationInventory.Quantity += item.Quantity;
+                }
+
+                _context.StockMovements.Add(new StockMovement
+                {
+                    ProductVariantId = item.ProductVariantId,
+                    LocationId = dto.FromLocationId,
+                    QuantityChange = -item.Quantity,
+                    Reason = "Transfer Out",
+                    CreatedAt = DateTime.UtcNow
+                });
+
+                _context.StockMovements.Add(new StockMovement
+                {
+                    ProductVariantId = item.ProductVariantId,
+                    LocationId = dto.ToLocationId,
+                    QuantityChange = item.Quantity,
+                    Reason = "Transfer In",
+                    CreatedAt = DateTime.UtcNow
+                });
+
+                transfer.Items.Add(new StockTransferItem
+                {
+                    ProductVariantId = item.ProductVariantId,
+                    Quantity = item.Quantity
+                });
+            }
 
             _context.StockTransfers.Add(transfer);
 
@@ -148,26 +168,7 @@ public class StockTransfersController : ControllerBase
 
             await transaction.CommitAsync();
 
-            var response = new StockTransferResponseDto
-            {
-                Id = transfer.Id,
-
-                ProductVariantId = variant.Id,
-                ModelNumber = variant.Product.ModelNumber,
-                ProductName = variant.Product.Name,
-
-                SizeName = variant.Size?.Name,
-                ColourName = variant.Colour?.Name,
-
-                FromLocationId = fromLocation.Id,
-                FromLocationName = fromLocation.Name,
-
-                ToLocationId = toLocation.Id,
-                ToLocationName = toLocation.Name,
-
-                Quantity = transfer.Quantity,
-                CreatedAt = transfer.CreatedAt
-            };
+            var response = await BuildResponseAsync(transfer.Id);
 
             return CreatedAtAction(
                 nameof(GetTransfer),
@@ -185,42 +186,12 @@ public class StockTransfersController : ControllerBase
     public async Task<ActionResult<StockTransferResponseDto>> GetTransfer(
         int id)
     {
-        var transfer = await _context.StockTransfers
-            .Include(t => t.ProductVariant)
-                .ThenInclude(v => v.Product)
-            .Include(t => t.ProductVariant)
-                .ThenInclude(v => v.Size)
-            .Include(t => t.ProductVariant)
-                .ThenInclude(v => v.Colour)
-            .Include(t => t.FromLocation)
-            .Include(t => t.ToLocation)
-            .FirstOrDefaultAsync(t => t.Id == id);
+        var response = await BuildResponseAsync(id);
 
-        if (transfer == null)
+        if (response == null)
         {
             return NotFound("Stock transfer not found.");
         }
-
-        var response = new StockTransferResponseDto
-        {
-            Id = transfer.Id,
-
-            ProductVariantId = transfer.ProductVariantId,
-            ModelNumber = transfer.ProductVariant.Product.ModelNumber,
-            ProductName = transfer.ProductVariant.Product.Name,
-
-            SizeName = transfer.ProductVariant.Size?.Name,
-            ColourName = transfer.ProductVariant.Colour?.Name,
-
-            FromLocationId = transfer.FromLocationId,
-            FromLocationName = transfer.FromLocation.Name,
-
-            ToLocationId = transfer.ToLocationId,
-            ToLocationName = transfer.ToLocation.Name,
-
-            Quantity = transfer.Quantity,
-            CreatedAt = transfer.CreatedAt
-        };
 
         return Ok(response);
     }
@@ -232,14 +203,17 @@ public class StockTransfersController : ControllerBase
             [FromQuery] DateTime? to)
     {
         var query = _context.StockTransfers
-            .Include(t => t.ProductVariant)
-                .ThenInclude(v => v.Product)
-            .Include(t => t.ProductVariant)
-                .ThenInclude(v => v.Size)
-            .Include(t => t.ProductVariant)
-                .ThenInclude(v => v.Colour)
             .Include(t => t.FromLocation)
             .Include(t => t.ToLocation)
+            .Include(t => t.Items)
+                .ThenInclude(i => i.ProductVariant)
+                    .ThenInclude(v => v.Product)
+            .Include(t => t.Items)
+                .ThenInclude(i => i.ProductVariant)
+                    .ThenInclude(v => v.Size)
+            .Include(t => t.Items)
+                .ThenInclude(i => i.ProductVariant)
+                    .ThenInclude(v => v.Colour)
             .AsQueryable();
 
         if (from.HasValue)
@@ -260,28 +234,59 @@ public class StockTransfersController : ControllerBase
             .OrderByDescending(t => t.CreatedAt)
             .ToListAsync();
 
-        var response = transfers.Select(t =>
-            new StockTransferResponseDto
-            {
-                Id = t.Id,
-
-                ProductVariantId = t.ProductVariantId,
-                ModelNumber = t.ProductVariant.Product.ModelNumber,
-                ProductName = t.ProductVariant.Product.Name,
-
-                SizeName = t.ProductVariant.Size?.Name,
-                ColourName = t.ProductVariant.Colour?.Name,
-
-                FromLocationId = t.FromLocationId,
-                FromLocationName = t.FromLocation.Name,
-
-                ToLocationId = t.ToLocationId,
-                ToLocationName = t.ToLocation.Name,
-
-                Quantity = t.Quantity,
-                CreatedAt = t.CreatedAt
-            }).ToList();
+        var response = transfers.Select(MapToResponse).ToList();
 
         return Ok(response);
+    }
+
+    private async Task<StockTransferResponseDto?> BuildResponseAsync(int id)
+    {
+        var transfer = await _context.StockTransfers
+            .Include(t => t.FromLocation)
+            .Include(t => t.ToLocation)
+            .Include(t => t.Items)
+                .ThenInclude(i => i.ProductVariant)
+                    .ThenInclude(v => v.Product)
+            .Include(t => t.Items)
+                .ThenInclude(i => i.ProductVariant)
+                    .ThenInclude(v => v.Size)
+            .Include(t => t.Items)
+                .ThenInclude(i => i.ProductVariant)
+                    .ThenInclude(v => v.Colour)
+            .FirstOrDefaultAsync(t => t.Id == id);
+
+        if (transfer == null)
+        {
+            return null;
+        }
+
+        return MapToResponse(transfer);
+    }
+
+    private static StockTransferResponseDto MapToResponse(StockTransfer t)
+    {
+        return new StockTransferResponseDto
+        {
+            Id = t.Id,
+
+            FromLocationId = t.FromLocationId,
+            FromLocationName = t.FromLocation.Name,
+
+            ToLocationId = t.ToLocationId,
+            ToLocationName = t.ToLocation.Name,
+
+            TotalQuantity = t.Items.Sum(i => i.Quantity),
+            CreatedAt = t.CreatedAt,
+
+            Items = t.Items.Select(i => new StockTransferItemResponseDto
+            {
+                ProductVariantId = i.ProductVariantId,
+                ModelNumber = i.ProductVariant.Product.ModelNumber,
+                ProductName = i.ProductVariant.Product.Name,
+                SizeName = i.ProductVariant.Size?.Name,
+                ColourName = i.ProductVariant.Colour?.Name,
+                Quantity = i.Quantity
+            }).ToList()
+        };
     }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../localization/app_strings.dart';
 import '../../models/invoice.dart';
 import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
@@ -32,16 +33,18 @@ class SaleInvoiceTile extends StatelessWidget {
           ),
         ),
         title: Text(
-          'Invoice #${invoice.id}',
+          context.tr('Invoice #{0}', [invoice.id]),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
         subtitle: Text(
-          '${_formatDate(invoice.createdAt)} · '
-          '${invoice.locationName} · '
-          '${invoice.employeeName ?? 'None'} · '
-          '${invoice.items.length} '
-          'item${invoice.items.length == 1 ? '' : 's'}',
+          context.tr('{0} · {1} · {2} · {3} item{4}', [
+            _formatDate(invoice.createdAt),
+            invoice.locationName,
+            invoice.employeeName ?? context.tr('None'),
+            invoice.items.length,
+            invoice.items.length == 1 ? '' : 's',
+          ]),
         ),
         trailing: Text(
           money(invoice.totalAmount),

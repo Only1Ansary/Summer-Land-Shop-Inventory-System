@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../localization/app_strings.dart';
 import '../../models/location.dart';
 import '../../services/api_service.dart';
 import '../../services/location_service.dart';
@@ -45,8 +46,9 @@ class _LocationsScreenState extends State<LocationsScreen>
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(friendlyError(e))));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(context, e))));
     } finally {
       if (mounted) {
         setState(() {
@@ -64,9 +66,9 @@ class _LocationsScreenState extends State<LocationsScreen>
   Future<void> _addLocation() async {
     final name = await showAppNameDialog(
       context,
-      title: 'Add Location',
-      label: 'Location Name',
-      confirmLabel: 'Add',
+      title: context.tr('Add Location'),
+      label: context.tr('Location Name'),
+      confirmLabel: context.tr('Add'),
     );
 
     if (name == null || name.isEmpty) {
@@ -79,18 +81,19 @@ class _LocationsScreenState extends State<LocationsScreen>
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(friendlyError(e))));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(context, e))));
     }
   }
 
   Future<void> _editLocation(Location location) async {
     final name = await showAppNameDialog(
       context,
-      title: 'Edit Location',
-      label: 'Location Name',
+      title: context.tr('Edit Location'),
+      label: context.tr('Location Name'),
       initialValue: location.name,
-      confirmLabel: 'Save',
+      confirmLabel: context.tr('Save'),
     );
 
     if (name == null || name.isEmpty) {
@@ -104,8 +107,9 @@ class _LocationsScreenState extends State<LocationsScreen>
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(friendlyError(e))));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(context, e))));
     }
   }
 
@@ -113,16 +117,18 @@ class _LocationsScreenState extends State<LocationsScreen>
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete location?'),
-        content: Text('Delete "${location.name}"? This cannot be undone.'),
+        title: Text(context.tr('Delete location?')),
+        content: Text(
+          context.tr('Delete "{0}"? This cannot be undone.', [location.name]),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            child: Text(context.tr('Cancel')),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Delete'),
+            child: Text(context.tr('Delete')),
           ),
         ],
       ),
@@ -141,24 +147,26 @@ class _LocationsScreenState extends State<LocationsScreen>
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('${location.name} deleted.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.tr('{0} deleted.', [location.name]))),
+      );
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(friendlyError(e))));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(context, e))));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return AppShell(
-      title: 'Locations',
+      title: context.tr('Locations'),
       destinationId: 'locations',
       floatingActionButton: FloatingActionButton(
         onPressed: _addLocation,
-        tooltip: 'Add location',
+        tooltip: context.tr('Add location'),
         child: const Icon(Icons.add),
       ),
       body: _buildBody(),
@@ -178,12 +186,12 @@ class _LocationsScreenState extends State<LocationsScreen>
         child: _locations.isEmpty
             ? ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                children: const [
-                  SizedBox(height: 120),
+                children: [
+                  const SizedBox(height: 120),
                   EmptyState(
                     icon: Icons.location_on_outlined,
-                    title: 'No locations yet',
-                    message: 'Add store locations to manage stock.',
+                    title: context.tr('No locations yet'),
+                    message: context.tr('Add store locations to manage stock.'),
                   ),
                 ],
               )
@@ -214,12 +222,12 @@ class _LocationsScreenState extends State<LocationsScreen>
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           IconButton(
-                            tooltip: 'Edit',
+                            tooltip: context.tr('Edit'),
                             icon: const Icon(Icons.edit_outlined),
                             onPressed: () => _editLocation(location),
                           ),
                           IconButton(
-                            tooltip: 'Delete',
+                            tooltip: context.tr('Delete'),
                             icon: const Icon(Icons.delete_outline),
                             color: theme.colorScheme.error,
                             onPressed: () => _deleteLocation(location),

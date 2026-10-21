@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:file_selector/file_selector.dart';
 
+import '../../localization/app_strings.dart';
+import '../../services/language_service.dart';
 import '../../services/pinned_modules_service.dart';
 import '../../services/shop_profile_service.dart';
 import '../../services/theme_service.dart';
@@ -24,6 +26,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   int _maxPinned = PinnedModulesService.defaultMaxPinned;
   bool _loading = true;
   ThemeMode _themeMode = ThemeService.instance.mode.value;
+  AppLanguage _language = LanguageService.instance.language.value;
 
   @override
   void initState() {
@@ -39,6 +42,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
 
     await ThemeService.instance.setMode(value);
+  }
+
+  Future<void> _setLanguage(AppLanguage value) async {
+    setState(() {
+      _language = value;
+    });
+
+    await LanguageService.instance.setLanguage(value);
   }
 
   Future<void> _loadPinned() async {
@@ -63,8 +74,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _pinnedCount = 0;
     });
 
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('Home shortcuts cleared.')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(context.tr('Home shortcuts cleared.'))),
+    );
   }
 
   Future<void> _editShopName() async {
@@ -86,8 +98,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          'Shop name set to '
-          '"${ShopProfileService.instance.profile.value.name}".',
+          context.tr('Shop name set to "{0}".', [
+            ShopProfileService.instance.profile.value.name,
+          ]),
         ),
       ),
     );
@@ -97,8 +110,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       final XFile? file = await openFile(
         acceptedTypeGroups: <XTypeGroup>[
-          const XTypeGroup(
-            label: 'Images',
+          XTypeGroup(
+            label: context.tr('Images'),
             extensions: <String>['png', 'jpg', 'jpeg', 'webp', 'heic', 'heif'],
             mimeTypes: <String>[
               'image/png',
@@ -109,7 +122,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ],
           ),
         ],
-        confirmButtonText: 'Select',
+        confirmButtonText: context.tr('Select'),
       );
 
       if (file == null) return;
@@ -125,12 +138,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
       setState(() {});
 
       ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Logo updated.')));
+          .showSnackBar(SnackBar(content: Text(context.tr('Logo updated.'))));
     } catch (error) {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not load that image: $error')),
+        SnackBar(
+          content: Text(context.tr('Could not load that image: {0}', [error])),
+        ),
       );
     }
   }
@@ -143,7 +158,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() {});
 
     ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('Logo removed.')));
+        .showSnackBar(SnackBar(content: Text(context.tr('Logo removed.'))));
   }
 
   Future<void> _editMaxPinned() async {
@@ -163,14 +178,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('You can now pin up to $value modules.')),
+      SnackBar(
+        content: Text(
+          context.tr('You can now pin up to {0} modules.', [value]),
+        ),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return AppShell(
-      title: 'Settings',
+      title: context.tr('Settings'),
       destinationId: 'settings',
       body: _loading
           ? const LoadingState()
@@ -178,9 +197,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  const SectionHeader(
-                    title: 'Shop',
-                    subtitle: 'Name and logo shown around the app',
+                  SectionHeader(
+                    title: context.tr('Shop'),
+                    subtitle: context.tr('Name and logo shown around the app'),
                   ),
                   const SizedBox(height: 8),
                   Card(
@@ -191,20 +210,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           title: Text(
                             ShopProfileService.instance.profile.value.name,
                           ),
-                          subtitle: const Text('Shop name'),
+                          subtitle: Text(context.tr('Shop name')),
                           trailing: TextButton(
                             onPressed: _editShopName,
-                            child: const Text('Rename'),
+                            child: Text(context.tr('Rename')),
                           ),
                         ),
                         const Divider(height: 1),
                         ListTile(
                           leading: const Icon(Icons.image_outlined),
-                          title: const Text('Logo'),
+                          title: Text(context.tr('Logo')),
                           subtitle: Text(
                             ShopProfileService.instance.profile.value.hasLogo
-                                ? 'Custom logo'
-                                : 'Using the default icon',
+                                ? context.tr('Custom logo')
+                                : context.tr('Using the default icon'),
                           ),
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -216,11 +235,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   .hasLogo)
                                 TextButton(
                                   onPressed: _removeLogo,
-                                  child: const Text('Remove'),
+                                  child: Text(context.tr('Remove')),
                                 ),
                               TextButton(
                                 onPressed: _chooseLogo,
-                                child: const Text('Choose'),
+                                child: Text(context.tr('Choose')),
                               ),
                             ],
                           ),
@@ -229,42 +248,65 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  const SectionHeader(
-                    title: 'Appearance',
-                    subtitle: 'Choose how the app looks',
+                  SectionHeader(
+                    title: context.tr('Appearance'),
+                    subtitle: context.tr('Choose how the app looks'),
                   ),
                   const SizedBox(height: 8),
                   Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: SegmentedButton<ThemeMode>(
-                        segments: const [
-                          ButtonSegment(
-                            value: ThemeMode.light,
-                            label: Text('Light'),
-                            icon: Icon(Icons.light_mode_outlined),
+                    child: Column(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: SegmentedButton<ThemeMode>(
+                            segments: [
+                              ButtonSegment(
+                                value: ThemeMode.light,
+                                label: Text(context.tr('Light')),
+                                icon: const Icon(Icons.light_mode_outlined),
+                              ),
+                              ButtonSegment(
+                                value: ThemeMode.dark,
+                                label: Text(context.tr('Dark')),
+                                icon: const Icon(Icons.dark_mode_outlined),
+                              ),
+                              ButtonSegment(
+                                value: ThemeMode.system,
+                                label: Text(context.tr('System')),
+                                icon: const Icon(
+                                  Icons.brightness_auto_outlined,
+                                ),
+                              ),
+                            ],
+                            selected: {_themeMode},
+                            onSelectionChanged: (selection) =>
+                                _setThemeMode(selection.first),
                           ),
-                          ButtonSegment(
-                            value: ThemeMode.dark,
-                            label: Text('Dark'),
-                            icon: Icon(Icons.dark_mode_outlined),
+                        ),
+                        const Divider(height: 1),
+                        Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: SegmentedButton<AppLanguage>(
+                            segments: [
+                              for (final language in LanguageService.languages)
+                                ButtonSegment(
+                                  value: language,
+                                  label: Text(language.nativeName),
+                                  icon: const Icon(Icons.language_outlined),
+                                ),
+                            ],
+                            selected: {_language},
+                            onSelectionChanged: (selection) =>
+                                _setLanguage(selection.first),
                           ),
-                          ButtonSegment(
-                            value: ThemeMode.system,
-                            label: Text('System'),
-                            icon: Icon(Icons.brightness_auto_outlined),
-                          ),
-                        ],
-                        selected: {_themeMode},
-                        onSelectionChanged: (selection) =>
-                            _setThemeMode(selection.first),
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 20),
-                  const SectionHeader(
-                    title: 'Home',
-                    subtitle: 'Your pinned shortcuts',
+                  SectionHeader(
+                    title: context.tr('Home'),
+                    subtitle: context.tr('Your pinned shortcuts'),
                   ),
                   const SizedBox(height: 8),
                   Card(
@@ -272,36 +314,42 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       children: [
                         ListTile(
                           leading: const Icon(Icons.push_pin_outlined),
-                          title: const Text('Pinned modules'),
+                          title: Text(context.tr('Pinned modules')),
                           subtitle: Text(
                             _pinnedCount == 0
-                                ? 'No modules pinned'
-                                : '$_pinnedCount of $_maxPinned pinned',
+                                ? context.tr('No modules pinned')
+                                : context.tr('{0} of {1} pinned', [
+                                    _pinnedCount,
+                                    _maxPinned,
+                                  ]),
                           ),
                           trailing: TextButton(
                             onPressed: _pinnedCount == 0 ? null : _resetPins,
-                            child: const Text('Reset'),
+                            child: Text(context.tr('Reset')),
                           ),
                         ),
                         const Divider(height: 1),
                         ListTile(
                           leading: const Icon(Icons.star_outline_rounded),
-                          title: const Text('Maximum pinned modules'),
+                          title: Text(context.tr('Maximum pinned modules')),
                           subtitle: Text(
-                            'Currently $_maxPinned of $_moduleCount',
+                            context.tr('Currently {0} of {1}', [
+                              _maxPinned,
+                              _moduleCount,
+                            ]),
                           ),
                           trailing: TextButton(
                             onPressed: _editMaxPinned,
-                            child: const Text('Edit'),
+                            child: Text(context.tr('Edit')),
                           ),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 20),
-                  const SectionHeader(
-                    title: 'About',
-                    subtitle: 'Application information',
+                  SectionHeader(
+                    title: context.tr('About'),
+                    subtitle: context.tr('Application information'),
                   ),
                   const SizedBox(height: 8),
                   Card(
@@ -312,13 +360,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           title: Text(
                             ShopProfileService.instance.profile.value.name,
                           ),
-                          subtitle: const Text('Inventory & POS'),
+                          subtitle: Text(context.tr('Inventory & POS')),
                         ),
                         const Divider(height: 1),
-                        const ListTile(
-                          leading: Icon(Icons.info_outline),
-                          title: Text('Version'),
-                          subtitle: Text('1.0.0'),
+                        ListTile(
+                          leading: const Icon(Icons.info_outline),
+                          title: Text(context.tr('Version')),
+                          subtitle: Text(context.tr('1.0.0')),
                         ),
                       ],
                     ),
@@ -356,23 +404,23 @@ class _ShopNameDialogState extends State<_ShopNameDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Shop name'),
+      title: Text(context.tr('Shop name')),
       content: TextField(
         controller: _controller,
         autofocus: true,
         textInputAction: TextInputAction.done,
-        decoration: const InputDecoration(
-          labelText: 'Name',
-          hintText: 'e.g. Summerland',
+        decoration: InputDecoration(
+          labelText: context.tr('Name'),
+          hintText: context.tr('e.g. Summerland'),
         ),
         onSubmitted: (_) => _submit(),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(context.tr('Cancel')),
         ),
-        FilledButton(onPressed: _submit, child: const Text('Save')),
+        FilledButton(onPressed: _submit, child: Text(context.tr('Save'))),
       ],
     );
   }
@@ -408,16 +456,16 @@ class _MaxPinnedDialogState extends State<_MaxPinnedDialog> {
 
     if (value == null || value < PinnedModulesService.minPinned) {
       setState(() {
-        _error =
-            'Enter a whole number, '
-            '${PinnedModulesService.minPinned} or more.';
+        _error = context.tr('Enter a whole number, {0} or more.', [
+          PinnedModulesService.minPinned,
+        ]);
       });
       return;
     }
 
     if (value > widget.max) {
       setState(() {
-        _error = 'Home has only ${widget.max} modules.';
+        _error = context.tr('Home has only {0} modules.', [widget.max]);
       });
       return;
     }
@@ -428,16 +476,18 @@ class _MaxPinnedDialogState extends State<_MaxPinnedDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Maximum pinned modules'),
+      title: Text(context.tr('Maximum pinned modules')),
       content: TextField(
         controller: _controller,
         autofocus: true,
         keyboardType: TextInputType.number,
         textInputAction: TextInputAction.done,
         decoration: InputDecoration(
-          labelText: 'Maximum',
-          helperText:
-              'Between ${PinnedModulesService.minPinned} and ${widget.max}',
+          labelText: context.tr('Maximum'),
+          helperText: context.tr('Between {0} and {1}', [
+            PinnedModulesService.minPinned,
+            widget.max,
+          ]),
           errorText: _error,
         ),
         onSubmitted: (_) => _submit(),
@@ -445,9 +495,9 @@ class _MaxPinnedDialogState extends State<_MaxPinnedDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(context.tr('Cancel')),
         ),
-        FilledButton(onPressed: _submit, child: const Text('Save')),
+        FilledButton(onPressed: _submit, child: Text(context.tr('Save'))),
       ],
     );
   }

@@ -15,5 +15,11 @@ namespace SummerLandBackend.Models
         public string Description { get; set; } = string.Empty;
 
         public decimal Amount { get; set; }
+
+        /// <summary>
+        /// Whether this fee has already been paid. Paid fees are part of
+        /// TotalCost; unpaid fees are added to the supplier debt instead.
+        /// </summary>
+        public bool IsPaid { get; set; }
     }
 }

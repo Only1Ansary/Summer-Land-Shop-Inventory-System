@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../localization/app_strings.dart';
 import '../services/pinned_modules_service.dart';
 import '../services/shop_profile_service.dart';
 import '../ui/app_destinations.dart';
@@ -14,7 +15,7 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppShell(
-      title: 'Home',
+      title: context.tr('Home'),
       destinationId: 'home',
       body: const _HomeDashboard(),
     );
@@ -62,7 +63,9 @@ class _HomeDashboardState extends State<_HomeDashboard> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'You can pin up to $_maxPinned modules. Unpin one first.',
+            context.tr('You can pin up to {0} modules. Unpin one first.', [
+              _maxPinned,
+            ]),
           ),
         ),
       );
@@ -125,7 +128,9 @@ class _HomeDashboardState extends State<_HomeDashboard> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Welcome to ${ShopProfileService.instance.profile.value.name}',
+                          context.tr('Welcome to {0}', [
+                            ShopProfileService.instance.profile.value.name,
+                          ]),
                           style: theme.textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.w700,
                             color: theme.colorScheme.onPrimaryContainer,
@@ -133,7 +138,9 @@ class _HomeDashboardState extends State<_HomeDashboard> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Manage products, inventory and sales from one place.',
+                          context.tr(
+                            'Manage products, inventory and sales from one place.',
+                          ),
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: theme.colorScheme.onPrimaryContainer
                                 .withValues(alpha: 0.8),
@@ -147,7 +154,10 @@ class _HomeDashboardState extends State<_HomeDashboard> {
             ),
             const SizedBox(height: 20),
             if (!_isLoading && pinnedTiles.isNotEmpty) ...[
-              const SectionHeader(title: 'Pinned', subtitle: 'Your shortcuts'),
+              SectionHeader(
+                title: context.tr('Pinned'),
+                subtitle: context.tr('Your shortcuts'),
+              ),
               const SizedBox(height: 12),
               _buildGrid(
                 columns: columns,
@@ -157,8 +167,10 @@ class _HomeDashboardState extends State<_HomeDashboard> {
               const SizedBox(height: 20),
             ],
             SectionHeader(
-              title: 'All Modules',
-              subtitle: 'Tap the star to pin up to $_maxPinned shortcuts',
+              title: context.tr('All Modules'),
+              subtitle: context.tr('Tap the star to pin up to {0} shortcuts', [
+                _maxPinned,
+              ]),
             ),
             const SizedBox(height: 12),
             _buildGrid(columns: columns, tiles: otherTiles, atLimit: atLimit),
@@ -239,7 +251,7 @@ class _HomeTileCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    tile.title,
+                    context.tr(tile.title),
                     textAlign: TextAlign.center,
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w600,
@@ -247,7 +259,7 @@ class _HomeTileCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    tile.subtitle,
+                    context.tr(tile.subtitle),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.center,
@@ -264,10 +276,10 @@ class _HomeTileCard extends StatelessWidget {
               child: IconButton(
                 onPressed: onTogglePin,
                 tooltip: pinned
-                    ? 'Unpin from Home'
+                    ? context.tr('Unpin from Home')
                     : atLimit
-                    ? 'You can pin up to $maxPinned modules'
-                    : 'Pin to Home',
+                    ? context.tr('You can pin up to {0} modules', [maxPinned])
+                    : context.tr('Pin to Home'),
                 visualDensity: VisualDensity.compact,
                 iconSize: 20,
                 icon: Icon(

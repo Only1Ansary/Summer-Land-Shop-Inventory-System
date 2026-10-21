@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../localization/app_strings.dart';
 import '../../models/invoice.dart';
 import '../../models/location.dart';
 import '../../models/invoice_item.dart';
@@ -68,7 +69,7 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
         _isLoadingLocations = false;
       });
 
-      _showError(friendlyError(e));
+      _showError(friendlyErrorMessage(context, e));
     }
   }
 
@@ -76,7 +77,7 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
     final invoiceId = int.tryParse(_invoiceIdController.text.trim());
 
     if (invoiceId == null || invoiceId <= 0) {
-      _showError('Please enter a valid invoice ID.');
+      _showError(context.tr('Please enter a valid invoice ID.'));
       return;
     }
 
@@ -101,13 +102,13 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
         _isLoadingInvoice = false;
       });
 
-      _showError(friendlyError(e));
+      _showError(friendlyErrorMessage(context, e));
     }
   }
 
   Future<void> _showReturnDialog(InvoiceItem item) async {
     if (_locations.isEmpty) {
-      _showError('No stock locations available.');
+      _showError(context.tr('No stock locations available.'));
       return;
     }
 
@@ -141,15 +142,15 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
         context: context,
         builder: (context) {
           return AlertDialog(
-            title: const Text('Return Created'),
+            title: Text(context.tr('Return Created')),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    const StatusBadge(
-                      label: 'DONE',
+                    StatusBadge(
+                      label: context.tr('DONE'),
                       color: AppPalette.success,
                       icon: Icons.check_circle_outline,
                     ),
@@ -163,10 +164,13 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                InfoTile(label: 'Quantity', value: '${returnRecord.quantity}'),
+                InfoTile(
+                  label: context.tr('Quantity'),
+                  value: '${returnRecord.quantity}',
+                ),
                 if (item.hasDiscount) ...[
                   InfoTile(
-                    label: 'Unit before discount',
+                    label: context.tr('Unit before discount'),
                     value: money(item.unitPrice),
                     valueStyle: TextStyle(
                       decoration: TextDecoration.lineThrough,
@@ -174,12 +178,12 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
                     ),
                   ),
                   InfoTile(
-                    label: 'Unit after discount',
+                    label: context.tr('Unit after discount'),
                     value: money(returnRecord.unitPrice),
                     valueStyle: amountStyle(context, returnRecord.unitPrice),
                   ),
                   InfoTile(
-                    label: 'Total before discount',
+                    label: context.tr('Total before discount'),
                     value: money(item.unitPrice * returnRecord.quantity),
                     valueStyle: TextStyle(
                       decoration: TextDecoration.lineThrough,
@@ -187,9 +191,12 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
                     ),
                   ),
                 ],
-                InfoTile(label: 'Location', value: returnRecord.locationName),
                 InfoTile(
-                  label: 'Total',
+                  label: context.tr('Location'),
+                  value: returnRecord.locationName,
+                ),
+                InfoTile(
+                  label: context.tr('Total'),
                   value: money(returnRecord.totalAmount),
                   valueStyle: amountStyle(context, returnRecord.totalAmount),
                 ),
@@ -200,7 +207,7 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
                 onPressed: () {
                   Navigator.pop(context);
                 },
-                child: const Text('OK'),
+                child: Text(context.tr('OK')),
               ),
             ],
           );
@@ -211,7 +218,7 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
     } catch (e) {
       if (!mounted) return;
 
-      _showError(friendlyError(e));
+      _showError(friendlyErrorMessage(context, e));
     }
   }
 
@@ -231,9 +238,9 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
               child: TextField(
                 controller: _invoiceIdController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Invoice ID',
-                  prefixIcon: Icon(Icons.confirmation_number_outlined),
+                decoration: InputDecoration(
+                  labelText: context.tr('Invoice ID'),
+                  prefixIcon: const Icon(Icons.confirmation_number_outlined),
                 ),
                 onSubmitted: (_) => _loadInvoice(),
               ),
@@ -248,7 +255,7 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.search_rounded),
-              label: const Text('Load'),
+              label: Text(context.tr('Load')),
             ),
           ],
         ),
@@ -259,7 +266,7 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
   @override
   Widget build(BuildContext context) {
     return AppShell(
-      title: 'Returns',
+      title: context.tr('Returns'),
       destinationId: 'returns',
       body: _isLoadingLocations
           ? const LoadingState()
@@ -271,8 +278,12 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
                   Expanded(
                     child: EmptyState(
                       icon: Icons.assignment_return_outlined,
-                      title: 'Enter an invoice ID to start a return.',
-                      message: 'Load an invoice to return sold items.',
+                      title: context.tr(
+                        'Enter an invoice ID to start a return.',
+                      ),
+                      message: context.tr(
+                        'Load an invoice to return sold items.',
+                      ),
                     ),
                   )
                 else
@@ -296,7 +307,7 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Invoice #${invoice.id}',
+                    context.tr('Invoice #{0}', [invoice.id]),
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -304,12 +315,15 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
                   ),
                   const Divider(height: 22),
                   InfoTile(
-                    label: 'Cashier Location',
+                    label: context.tr('Cashier Location'),
                     value: invoice.locationName,
                   ),
-                  InfoTile(label: 'Date', value: '${invoice.createdAt}'),
                   InfoTile(
-                    label: 'Invoice Total',
+                    label: context.tr('Date'),
+                    value: '${invoice.createdAt}',
+                  ),
+                  InfoTile(
+                    label: context.tr('Invoice Total'),
                     value: money(invoice.totalAmount),
                     valueStyle: amountStyle(context, invoice.totalAmount),
                   ),
@@ -318,15 +332,17 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          const SectionHeader(
-            title: 'Invoice Items',
-            subtitle: 'Return an item with the Return button',
+          SectionHeader(
+            title: context.tr('Invoice Items'),
+            subtitle: context.tr('Return an item with the Return button'),
           ),
           const SizedBox(height: 8),
           ...invoice.items.map((item) {
             final details = [
-              if (item.sizeName != null) 'Size: ${item.sizeName}',
-              if (item.colourName != null) 'Colour: ${item.colourName}',
+              if (item.sizeName != null)
+                context.tr('Size: {0}', [item.sizeName]),
+              if (item.colourName != null)
+                context.tr('Colour: {0}', [item.colourName]),
             ].join(' • ');
 
             return Card(
@@ -338,18 +354,20 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
                   children: [
                     Text(item.modelNumber),
                     if (details.isNotEmpty) Text(details),
-                    Text('Sold: ${item.quantity}'),
+                    Text(context.tr('Sold: {0}', [item.quantity])),
                     if (!item.hasDiscount)
                       Text(
-                        'Unit Price: ${money(item.unitPrice)}',
+                        context.tr('Unit Price: {0}', [money(item.unitPrice)]),
                         style: TextStyle(
                           color: amountColor(context, item.unitPrice),
                         ),
                       )
                     else ...[
                       Text(
-                        'Unit Price: ${money(item.unitPrice)} → '
-                        '${money(item.unitPriceAfterDiscount)}',
+                        context.tr('Unit Price: {0} → {1}', [
+                          money(item.unitPrice),
+                          money(item.unitPriceAfterDiscount),
+                        ]),
                         style: TextStyle(
                           color: amountColor(
                             context,
@@ -359,8 +377,12 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
                         ),
                       ),
                       Text(
-                        'Discount: -${money(item.discountAmount)}/unit'
-                        '${item.discountPercent == null ? '' : ' (${percentLabel(item.discountPercent!)})'}',
+                        context.tr('Discount: -{0}/unit{1}', [
+                          money(item.discountAmount),
+                          item.discountPercent == null
+                              ? ''
+                              : ' (${percentLabel(item.discountPercent!)})',
+                        ]),
                         style: TextStyle(
                           fontSize: 12,
                           color: amountColor(context, -item.discountAmount),
@@ -373,7 +395,7 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
                 trailing: FilledButton.icon(
                   onPressed: () => _showReturnDialog(item),
                   icon: const Icon(Icons.assignment_return_outlined),
-                  label: const Text('Return'),
+                  label: Text(context.tr('Return')),
                 ),
               ),
             );
@@ -433,7 +455,7 @@ class _ReturnItemDialogState extends State<_ReturnItemDialog> {
 
     if (_selectedLocation == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please choose a stock location.')),
+        SnackBar(content: Text(context.tr('Please choose a stock location.'))),
       );
       return;
     }
@@ -442,7 +464,7 @@ class _ReturnItemDialogState extends State<_ReturnItemDialog> {
 
     if (quantity == null || quantity <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a valid quantity.')),
+        SnackBar(content: Text(context.tr('Please enter a valid quantity.'))),
       );
       return;
     }
@@ -450,7 +472,9 @@ class _ReturnItemDialogState extends State<_ReturnItemDialog> {
     if (quantity > item.quantity) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Maximum returnable quantity: ${item.quantity}'),
+          content: Text(
+            context.tr('Maximum returnable quantity: {0}', [item.quantity]),
+          ),
         ),
       );
       return;
@@ -470,7 +494,7 @@ class _ReturnItemDialogState extends State<_ReturnItemDialog> {
     final item = widget.item;
 
     return AlertDialog(
-      title: const Text('Create Return'),
+      title: Text(context.tr('Create Return')),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -481,35 +505,44 @@ class _ReturnItemDialogState extends State<_ReturnItemDialog> {
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            Text('Model: ${item.modelNumber}'),
-            if (item.sizeName != null) Text('Size: ${item.sizeName}'),
-            if (item.colourName != null) Text('Colour: ${item.colourName}'),
+            Text(context.tr('Model: {0}', [item.modelNumber])),
+            if (item.sizeName != null)
+              Text(context.tr('Size: {0}', [item.sizeName])),
+            if (item.colourName != null)
+              Text(context.tr('Colour: {0}', [item.colourName])),
             const SizedBox(height: 12),
-            Text('Sold Quantity: ${item.quantity}'),
+            Text(context.tr('Sold Quantity: {0}', [item.quantity])),
             if (!item.hasDiscount)
               Text(
-                'Unit Price: ${money(item.unitPrice)}',
+                context.tr('Unit Price: {0}', [money(item.unitPrice)]),
                 style: TextStyle(color: amountColor(context, item.unitPrice)),
               )
             else ...[
               Text(
-                'Unit price before discount: ${money(item.unitPrice)}',
+                context.tr('Unit price before discount: {0}', [
+                  money(item.unitPrice),
+                ]),
                 style: TextStyle(
                   decoration: TextDecoration.lineThrough,
                   color: Theme.of(context).colorScheme.outline,
                 ),
               ),
               Text(
-                'Unit price after discount: '
-                '${money(item.unitPriceAfterDiscount)}',
+                context.tr('Unit price after discount: {0}', [
+                  money(item.unitPriceAfterDiscount),
+                ]),
                 style: TextStyle(
                   color: amountColor(context, item.unitPriceAfterDiscount),
                   fontWeight: FontWeight.w600,
                 ),
               ),
               Text(
-                'Discount: -${money(item.discountAmount)}/unit'
-                '${item.discountPercent == null ? '' : ' (${percentLabel(item.discountPercent!)})'}',
+                context.tr('Discount: -{0}/unit{1}', [
+                  money(item.discountAmount),
+                  item.discountPercent == null
+                      ? ''
+                      : ' (${percentLabel(item.discountPercent!)})',
+                ]),
                 style: TextStyle(
                   color: amountColor(context, -item.discountAmount),
                 ),
@@ -519,9 +552,9 @@ class _ReturnItemDialogState extends State<_ReturnItemDialog> {
             DropdownButtonFormField<int>(
               key: ValueKey('location-${_selectedLocation?.id}'),
               initialValue: _selectedLocation?.id,
-              decoration: const InputDecoration(
-                labelText: 'Return Stock Location',
-                prefixIcon: Icon(Icons.location_on_outlined),
+              decoration: InputDecoration(
+                labelText: context.tr('Return Stock Location'),
+                prefixIcon: const Icon(Icons.location_on_outlined),
               ),
               items: widget.locations.map((location) {
                 return DropdownMenuItem<int>(
@@ -543,15 +576,17 @@ class _ReturnItemDialogState extends State<_ReturnItemDialog> {
             TextField(
               controller: _quantityController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Return Quantity'),
+              decoration: InputDecoration(
+                labelText: context.tr('Return Quantity'),
+              ),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: _reasonController,
               maxLines: 3,
-              decoration: const InputDecoration(
-                labelText: 'Reason',
-                hintText: 'Enter return reason',
+              decoration: InputDecoration(
+                labelText: context.tr('Reason'),
+                hintText: context.tr('Enter return reason'),
               ),
             ),
           ],
@@ -560,9 +595,9 @@ class _ReturnItemDialogState extends State<_ReturnItemDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(context.tr('Cancel')),
         ),
-        FilledButton(onPressed: _submit, child: const Text('Return')),
+        FilledButton(onPressed: _submit, child: Text(context.tr('Return'))),
       ],
     );
   }

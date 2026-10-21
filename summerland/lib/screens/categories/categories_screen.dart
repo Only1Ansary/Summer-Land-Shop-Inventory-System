@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../localization/app_strings.dart';
 import '../../models/category.dart';
 import '../../services/api_service.dart';
 import '../../services/category_service.dart';
@@ -33,10 +34,10 @@ class _CategoriesScreenState extends State<CategoriesScreen>
   Future<void> _editCategory(Category category) async {
     final name = await showAppNameDialog(
       context,
-      title: 'Edit Category',
-      label: 'Category Name',
+      title: context.tr('Edit Category'),
+      label: context.tr('Category Name'),
       initialValue: category.name,
-      confirmLabel: 'Save',
+      confirmLabel: context.tr('Save'),
     );
 
     if (name == null || name.isEmpty) {
@@ -50,8 +51,9 @@ class _CategoriesScreenState extends State<CategoriesScreen>
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(friendlyError(e))));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(context, e))));
     }
   }
 
@@ -59,16 +61,18 @@ class _CategoriesScreenState extends State<CategoriesScreen>
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete category?'),
-        content: Text('Delete "${category.name}"? This cannot be undone.'),
+        title: Text(context.tr('Delete category?')),
+        content: Text(
+          context.tr('Delete "{0}"? This cannot be undone.', [category.name]),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            child: Text(context.tr('Cancel')),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Delete'),
+            child: Text(context.tr('Delete')),
           ),
         ],
       ),
@@ -87,22 +91,24 @@ class _CategoriesScreenState extends State<CategoriesScreen>
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('${category.name} deleted.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.tr('{0} deleted.', [category.name]))),
+      );
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(friendlyError(e))));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(context, e))));
     }
   }
 
   Future<void> _addCategory() async {
     final name = await showAppNameDialog(
       context,
-      title: 'Add Category',
-      label: 'Category Name',
-      confirmLabel: 'Add',
+      title: context.tr('Add Category'),
+      label: context.tr('Category Name'),
+      confirmLabel: context.tr('Add'),
     );
 
     if (name == null || name.isEmpty) {
@@ -115,8 +121,9 @@ class _CategoriesScreenState extends State<CategoriesScreen>
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(friendlyError(e))));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(context, e))));
     }
   }
 
@@ -138,7 +145,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
       if (!mounted) return;
 
       setState(() {
-        _error = friendlyError(e);
+        _error = friendlyErrorMessage(context, e);
       });
     } finally {
       if (mounted) {
@@ -157,11 +164,11 @@ class _CategoriesScreenState extends State<CategoriesScreen>
   @override
   Widget build(BuildContext context) {
     return AppShell(
-      title: 'Categories',
+      title: context.tr('Categories'),
       destinationId: 'categories',
       floatingActionButton: FloatingActionButton(
         onPressed: () => _addCategory(),
-        tooltip: 'Add category',
+        tooltip: context.tr('Add category'),
         child: const Icon(Icons.add),
       ),
       body: _buildBody(),
@@ -185,12 +192,14 @@ class _CategoriesScreenState extends State<CategoriesScreen>
         child: _categories.isEmpty
             ? ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                children: const [
-                  SizedBox(height: 120),
+                children: [
+                  const SizedBox(height: 120),
                   EmptyState(
                     icon: Icons.category_outlined,
-                    title: 'No categories yet',
-                    message: 'Add a category to start organising products.',
+                    title: context.tr('No categories yet'),
+                    message: context.tr(
+                      'Add a category to start organising products.',
+                    ),
                   ),
                 ],
               )
@@ -221,12 +230,12 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           IconButton(
-                            tooltip: 'Edit',
+                            tooltip: context.tr('Edit'),
                             icon: const Icon(Icons.edit_outlined),
                             onPressed: () => _editCategory(category),
                           ),
                           IconButton(
-                            tooltip: 'Delete',
+                            tooltip: context.tr('Delete'),
                             icon: const Icon(Icons.delete_outline),
                             color: theme.colorScheme.error,
                             onPressed: () => _deleteCategory(category),

@@ -27,9 +27,9 @@ const List<HomeModule> homeModules = [
   ),
   HomeModule(
     title: 'Inventory',
-    subtitle: 'Stock by location',
+    subtitle: 'Search stock by product',
     icon: Icons.warehouse_rounded,
-    destinationId: 'inventory',
+    destinationId: 'inventory-search',
   ),
   HomeModule(
     title: 'New Sale',

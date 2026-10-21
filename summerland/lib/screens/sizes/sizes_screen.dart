@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../localization/app_strings.dart';
 import '../../models/size_model.dart';
 import '../../services/api_service.dart';
 import '../../services/size_service.dart';
@@ -45,8 +46,9 @@ class _SizesScreenState extends State<SizesScreen>
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(friendlyError(e))));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(context, e))));
     } finally {
       if (mounted) {
         setState(() {
@@ -64,9 +66,9 @@ class _SizesScreenState extends State<SizesScreen>
   Future<void> _addSizeModel() async {
     final name = await showAppNameDialog(
       context,
-      title: 'Add Size',
-      label: 'Size Name',
-      confirmLabel: 'Add',
+      title: context.tr('Add Size'),
+      label: context.tr('Size Name'),
+      confirmLabel: context.tr('Add'),
     );
 
     if (name == null || name.isEmpty) {
@@ -79,18 +81,19 @@ class _SizesScreenState extends State<SizesScreen>
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(friendlyError(e))));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(context, e))));
     }
   }
 
   Future<void> _editSizeModel(SizeModel size) async {
     final name = await showAppNameDialog(
       context,
-      title: 'Edit Size',
-      label: 'Size Name',
+      title: context.tr('Edit Size'),
+      label: context.tr('Size Name'),
       initialValue: size.name,
-      confirmLabel: 'Save',
+      confirmLabel: context.tr('Save'),
     );
 
     if (name == null || name.isEmpty) {
@@ -104,19 +107,20 @@ class _SizesScreenState extends State<SizesScreen>
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(friendlyError(e))));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(context, e))));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return AppShell(
-      title: 'Sizes',
+      title: context.tr('Sizes'),
       destinationId: 'sizes',
       floatingActionButton: FloatingActionButton(
         onPressed: _addSizeModel,
-        tooltip: 'Add size',
+        tooltip: context.tr('Add size'),
         child: const Icon(Icons.add),
       ),
       body: _buildBody(),
@@ -134,12 +138,14 @@ class _SizesScreenState extends State<SizesScreen>
         child: _sizes.isEmpty
             ? ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                children: const [
-                  SizedBox(height: 120),
+                children: [
+                  const SizedBox(height: 120),
                   EmptyState(
                     icon: Icons.straighten_outlined,
-                    title: 'No sizes yet',
-                    message: 'Add sizes to use in product variants.',
+                    title: context.tr('No sizes yet'),
+                    message: context.tr(
+                      'Add sizes to use in product variants.',
+                    ),
                   ),
                 ],
               )
@@ -167,7 +173,7 @@ class _SizesScreenState extends State<SizesScreen>
                       ),
                       title: Text(size.name),
                       trailing: IconButton(
-                        tooltip: 'Edit',
+                        tooltip: context.tr('Edit'),
                         icon: const Icon(Icons.edit_outlined),
                         onPressed: () => _editSizeModel(size),
                       ),
