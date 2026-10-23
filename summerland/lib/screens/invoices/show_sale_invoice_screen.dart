@@ -54,7 +54,11 @@ class _ShowSaleInvoiceScreenState extends State<ShowSaleInvoiceScreen> {
       if (!mounted) return;
 
       setState(() {
-        _error = friendlyErrorMessage(context, e);
+        if (_invoice != null) {
+          _isLoading = false;
+        } else {
+          _error = friendlyErrorMessage(context, e);
+        }
       });
     } finally {
       if (mounted) {

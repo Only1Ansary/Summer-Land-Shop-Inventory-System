@@ -144,7 +144,7 @@ class _ShowPurchaseInvoicesScreenState extends State<ShowPurchaseInvoicesScreen>
   Future<void> _openInvoice(PurchaseInvoice invoice) async {
     await pushScreen<void>(
       context,
-      (_) => ShowPurchaseInvoiceScreen(invoiceId: invoice.id),
+      (_) => ShowPurchaseInvoiceScreen(invoice: invoice, invoiceId: invoice.id),
     );
 
     if (mounted) {

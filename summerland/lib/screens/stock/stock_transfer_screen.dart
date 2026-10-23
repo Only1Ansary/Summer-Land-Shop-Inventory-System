@@ -125,6 +125,8 @@ class _StockTransfersScreenState extends State<StockTransfersScreen>
   }
 
   Future<void> _openCreateScreen() async {
+    if (!ensureOnlineForWrite(context)) return;
+
     final result = await pushScreen<bool>(
       context,
       (_) => const CreateStockTransferScreen(),

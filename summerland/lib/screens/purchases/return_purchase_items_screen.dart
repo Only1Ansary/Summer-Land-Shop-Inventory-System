@@ -69,6 +69,8 @@ class _ReturnPurchaseItemsScreenState extends State<ReturnPurchaseItemsScreen> {
   }
 
   Future<void> _submit() async {
+    if (!ensureOnlineForWrite(context)) return;
+
     if (_returnedCount <= 0) {
       _showError('Choose at least one item to return.');
       return;

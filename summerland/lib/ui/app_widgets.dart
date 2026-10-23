@@ -71,6 +71,25 @@ class LoadingState extends StatelessWidget {
   }
 }
 
+/// Checks if the app is online. If offline, shows a snackbar explaining that
+/// the app is in offline read mode and returns false.
+bool ensureOnlineForWrite(BuildContext context) {
+  if (!ConnectivityService.instance.online.value) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          context.tr(
+            'You are offline. You can browse the last loaded data, but changes cannot be saved until the server is back.',
+          ),
+        ),
+      ),
+    );
+    return false;
+  }
+  return true;
+}
+
 /// A thin bar that appears while the backend is unreachable, noting that
 /// the data on screen is the last copy the app managed to load.
 ///
@@ -106,12 +125,36 @@ class OfflineBanner extends StatelessWidget {
                         size: 18,
                         color: AppPalette.warning,
                       ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppPalette.warning.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: AppPalette.warning.withValues(alpha: 0.5),
+                          ),
+                        ),
+                        child: Text(
+                          context.tr('READ MODE'),
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppPalette.warning,
+                            fontSize: 10,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                      ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           context.tr(
                             'No connection to the server. Showing the last '
-                            'loaded data.',
+                            'loaded data. Changes cannot be saved until it is '
+                            'back.',
                           ),
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurface,

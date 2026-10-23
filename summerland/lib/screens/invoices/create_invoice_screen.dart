@@ -407,6 +407,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   }
 
   Future<void> _createInvoice() async {
+    if (!ensureOnlineForWrite(context)) return;
+
     if (_selectedCashierLocation == null) {
       _showError(context.tr('Please select the cashier location.'));
       return;

@@ -69,6 +69,8 @@ class _EmployeesScreenState extends State<EmployeesScreen>
   }
 
   Future<void> _addEmployee() async {
+    if (!ensureOnlineForWrite(context)) return;
+
     final added = await pushScreen<bool>(
       context,
       (_) => const AddEmployeeScreen(),
@@ -80,6 +82,8 @@ class _EmployeesScreenState extends State<EmployeesScreen>
   }
 
   Future<void> _editEmployee(Employee employee) async {
+    if (!ensureOnlineForWrite(context)) return;
+
     final updated = await pushScreen<bool>(
       context,
       (_) => AddEmployeeScreen(employee: employee),
@@ -95,6 +99,8 @@ class _EmployeesScreenState extends State<EmployeesScreen>
   }
 
   Future<void> _deleteEmployee(Employee employee) async {
+    if (!ensureOnlineForWrite(context)) return;
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -144,6 +150,8 @@ class _EmployeesScreenState extends State<EmployeesScreen>
   }
 
   Future<void> _payEmployee(Employee employee) async {
+    if (!ensureOnlineForWrite(context)) return;
+
     final paid = await showDialog<bool>(
       context: context,
       builder: (_) => _PayEmployeeDialog(employee: employee),

@@ -32,6 +32,8 @@ class _CategoriesScreenState extends State<CategoriesScreen>
   }
 
   Future<void> _editCategory(Category category) async {
+    if (!ensureOnlineForWrite(context)) return;
+
     final name = await showAppNameDialog(
       context,
       title: context.tr('Edit Category'),
@@ -58,6 +60,8 @@ class _CategoriesScreenState extends State<CategoriesScreen>
   }
 
   Future<void> _deleteCategory(Category category) async {
+    if (!ensureOnlineForWrite(context)) return;
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -104,6 +108,8 @@ class _CategoriesScreenState extends State<CategoriesScreen>
   }
 
   Future<void> _addCategory() async {
+    if (!ensureOnlineForWrite(context)) return;
+
     final name = await showAppNameDialog(
       context,
       title: context.tr('Add Category'),

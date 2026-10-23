@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:file_selector/file_selector.dart';
 
 import '../../localization/app_strings.dart';
+import '../../services/cache_store.dart';
 import '../../services/language_service.dart';
 import '../../services/pinned_modules_service.dart';
+import '../../services/prefetch_service.dart';
 import '../../services/shop_profile_service.dart';
 import '../../services/theme_service.dart';
 import '../../ui/app_shell.dart';
@@ -35,6 +37,48 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   int get _moduleCount => homeModules.length;
+
+  String _cacheSizeLabel() {
+    try {
+      return CacheStore.instance.formattedSize;
+    } catch (_) {
+      return '0 B';
+    }
+  }
+
+  Future<void> _clearCache() async {
+    final confirm = await showAppConfirmDialog(
+      context,
+      title: context.tr('Clear cache'),
+      message: context.tr(
+        'This will remove all cached data. You will need an internet '
+        'connection to reload data. Do you want to continue?',
+      ),
+      confirmLabel: context.tr('Clear'),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      await CacheStore.instance.clearAll();
+    } catch (_) {
+      // Ignore cache clear errors.
+    }
+
+    if (!mounted) return;
+
+    setState(() {});
+
+    try {
+      await PrefetchService.instance.forceWarmUp();
+    } catch (_) {}
+
+    if (!mounted) return;
+    setState(() {});
+
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(context.tr('Cache cleared.'))));
+  }
 
   Future<void> _setThemeMode(ThemeMode value) async {
     setState(() {
@@ -342,6 +386,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             onPressed: _editMaxPinned,
                             child: Text(context.tr('Edit')),
                           ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  SectionHeader(
+                    title: context.tr('Offline Data'),
+                    subtitle: context.tr('Cached data for offline browsing'),
+                  ),
+                  const SizedBox(height: 8),
+                  Card(
+                    child: Column(
+                      children: [
+                        ListTile(
+                          leading: const Icon(Icons.cached_outlined),
+                          title: Text(context.tr('Cache size')),
+                          subtitle: Text(_cacheSizeLabel()),
+                        ),
+                        const Divider(height: 1),
+                        ListTile(
+                          leading: const Icon(Icons.delete_outline),
+                          title: Text(context.tr('Clear cache')),
+                          subtitle: Text(context.tr('Remove all cached data')),
+                          onTap: _clearCache,
                         ),
                       ],
                     ),

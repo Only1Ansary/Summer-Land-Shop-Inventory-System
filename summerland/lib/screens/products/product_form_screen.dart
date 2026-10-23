@@ -92,6 +92,8 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   }
 
   Future<void> _save() async {
+    if (!ensureOnlineForWrite(context)) return;
+
     if (!_formKey.currentState!.validate()) {
       return;
     }

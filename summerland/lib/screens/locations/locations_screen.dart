@@ -64,6 +64,8 @@ class _LocationsScreenState extends State<LocationsScreen>
   }
 
   Future<void> _addLocation() async {
+    if (!ensureOnlineForWrite(context)) return;
+
     final name = await showAppNameDialog(
       context,
       title: context.tr('Add Location'),
@@ -88,6 +90,8 @@ class _LocationsScreenState extends State<LocationsScreen>
   }
 
   Future<void> _editLocation(Location location) async {
+    if (!ensureOnlineForWrite(context)) return;
+
     final name = await showAppNameDialog(
       context,
       title: context.tr('Edit Location'),
@@ -114,6 +118,8 @@ class _LocationsScreenState extends State<LocationsScreen>
   }
 
   Future<void> _deleteLocation(Location location) async {
+    if (!ensureOnlineForWrite(context)) return;
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(

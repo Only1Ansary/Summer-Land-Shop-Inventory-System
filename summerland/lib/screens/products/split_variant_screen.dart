@@ -125,6 +125,7 @@ class _SplitVariantScreenState extends State<SplitVariantScreen> {
   }
 
   Future<void> _save() async {
+    if (!ensureOnlineForWrite(context)) return;
     if (_isSaving) return;
 
     if (_rows.isEmpty) {

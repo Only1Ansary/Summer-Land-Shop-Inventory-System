@@ -143,6 +143,8 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
   }
 
   Future<void> _editProduct() async {
+    if (!ensureOnlineForWrite(context)) return;
+
     final categories = await _loadCategories();
 
     if (!mounted) return;
@@ -197,6 +199,8 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
   }
 
   Future<void> _addVariant() async {
+    if (!ensureOnlineForWrite(context)) return;
+
     final result = await pushScreen(
       context,
       (_) => ProductVariantFormScreen(
@@ -212,6 +216,8 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
   }
 
   Future<void> _editVariant(ProductVariant variant) async {
+    if (!ensureOnlineForWrite(context)) return;
+
     final result = await pushScreen(
       context,
       (_) => ProductVariantFormScreen(
@@ -234,6 +240,8 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
   }
 
   Future<void> _splitVariant(ProductVariant variant) async {
+    if (!ensureOnlineForWrite(context)) return;
+
     final result = await pushScreen(
       context,
       (_) => SplitVariantScreen(
@@ -254,6 +262,8 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
   }
 
   Future<void> _deleteVariant(ProductVariant variant) async {
+    if (!ensureOnlineForWrite(context)) return;
+
     final confirmed = await showAppConfirmDialog(
       context,
       title: context.tr('Delete Variant'),

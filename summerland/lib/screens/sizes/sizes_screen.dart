@@ -64,6 +64,8 @@ class _SizesScreenState extends State<SizesScreen>
   }
 
   Future<void> _addSizeModel() async {
+    if (!ensureOnlineForWrite(context)) return;
+
     final name = await showAppNameDialog(
       context,
       title: context.tr('Add Size'),
@@ -88,6 +90,8 @@ class _SizesScreenState extends State<SizesScreen>
   }
 
   Future<void> _editSizeModel(SizeModel size) async {
+    if (!ensureOnlineForWrite(context)) return;
+
     final name = await showAppNameDialog(
       context,
       title: context.tr('Edit Size'),

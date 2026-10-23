@@ -225,6 +225,7 @@ class _CreatePurchaseInvoiceScreenState
   }
 
   Future<void> _createPurchaseInvoice() async {
+    if (!ensureOnlineForWrite(context)) return;
     final supplierName = _supplierNameController.text.trim();
 
     if (supplierName.isEmpty) {

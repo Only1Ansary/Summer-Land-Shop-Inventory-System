@@ -117,6 +117,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
   }
 
   Future<void> _save() async {
+    if (!ensureOnlineForWrite(context)) return;
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {

@@ -64,6 +64,8 @@ class _ColoursScreenState extends State<ColoursScreen>
   }
 
   Future<void> _addColour() async {
+    if (!ensureOnlineForWrite(context)) return;
+
     final name = await showAppNameDialog(
       context,
       title: context.tr('Add Colour'),
@@ -88,6 +90,8 @@ class _ColoursScreenState extends State<ColoursScreen>
   }
 
   Future<void> _editColour(Colour colour) async {
+    if (!ensureOnlineForWrite(context)) return;
+
     final name = await showAppNameDialog(
       context,
       title: context.tr('Edit Colour'),

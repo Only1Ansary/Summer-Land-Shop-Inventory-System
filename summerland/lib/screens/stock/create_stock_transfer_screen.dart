@@ -213,6 +213,7 @@ class _CreateStockTransferScreenState extends State<CreateStockTransferScreen> {
   int get _queuedCount => _lines.length;
 
   Future<void> _createTransfer() async {
+    if (!ensureOnlineForWrite(context)) return;
     if (_fromLocation == null) {
       _showError(context.tr('Please select the source location.'));
       return;

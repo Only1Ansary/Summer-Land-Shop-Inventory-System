@@ -86,6 +86,8 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen>
   }
 
   Future<void> _addSupplier() async {
+    if (!ensureOnlineForWrite(context)) return;
+
     final added = await pushScreen<bool>(
       context,
       (_) => const AddSuppliersScreen(),
@@ -97,6 +99,8 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen>
   }
 
   Future<void> _editSupplier(Supplier supplier) async {
+    if (!ensureOnlineForWrite(context)) return;
+
     final updated = await pushScreen<bool>(
       context,
       (_) => AddSuppliersScreen(supplier: supplier),
@@ -108,6 +112,8 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen>
   }
 
   Future<void> _deleteSupplier(Supplier supplier) async {
+    if (!ensureOnlineForWrite(context)) return;
+
     final confirmed = await showAppConfirmDialog(
       context,
       title: context.tr('Delete supplier'),
@@ -138,6 +144,8 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen>
   }
 
   Future<void> _paySupplierDebt(Supplier supplier) async {
+    if (!ensureOnlineForWrite(context)) return;
+
     final remaining = supplier.debt;
 
     final amountText = await showAppAmountDialog(

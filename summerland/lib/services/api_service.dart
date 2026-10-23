@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart' show ValueNotifier, visibleForTesting;
+import 'package:flutter/foundation.dart'
+    show ChangeNotifier, ValueListenable, ValueNotifier, visibleForTesting;
 import 'package:flutter/widgets.dart' show BuildContext;
 import 'package:http/http.dart' as http;
 
@@ -24,6 +25,13 @@ const _unknownMessage = 'Something went wrong. Please try again.';
 
 const _serverErrorMessage =
     'Something went wrong on the server. Please try again.';
+
+// Shown when a change is attempted while the server cannot be reached. The
+// app deliberately runs read-only offline, so this explains why the action
+// was refused instead of letting it fail with a generic network error.
+const _offlineWriteMessage =
+    'You are offline. You can browse the last loaded data, but changes '
+    'cannot be saved until the server is back.';
 
 // Titles that explain nothing to a person and are dropped in favour of
 // the status-based wording below.
@@ -56,6 +64,10 @@ class ApiService {
   /// the server but a saved copy existed, and back to false on the next
   /// successful read.
   static final ValueNotifier<bool> servingCachedData = ValueNotifier(false);
+
+  /// True when the app is running in read-only offline mode.
+  static ValueListenable<bool> get isReadOnly =>
+      ConnectivityService.instance.online;
 
   /// How long any request may take before it is treated as unreachable.
   ///
@@ -95,14 +107,14 @@ class ApiService {
   /// doomed request to time out.
   Future<dynamic> get(String endpoint) async {
     if (!ConnectivityService.instance.online.value) {
-      final cached =
-          CacheStore.instance.read(endpoint) ??
-          CacheStore.instance.read(_withoutQuery(endpoint));
+      final cached = CacheStore.instance.read(endpoint);
 
       if (cached != null) {
         servingCachedData.value = true;
         return cached;
       }
+
+      throw ApiException(statusCode: 0, message: _networkMessage);
     }
 
     try {
@@ -120,25 +132,15 @@ class ApiService {
     } on ApiException catch (error) {
       if (error.statusCode != 0) rethrow;
 
+      // Mark offline so future reads take the fast path
+      ConnectivityService.instance.markOffline();
+
       final cached = CacheStore.instance.read(endpoint);
 
       if (cached != null) {
         servingCachedData.value = true;
         return cached;
       }
-
-      // Nothing cached for this exact URL. A date-ranged request can still be
-      // answered from the same endpoint's unfiltered copy, which is what the
-      // prefetch warmed, so the user sees data instead of an error.
-      final fallback = CacheStore.instance.read(_withoutQuery(endpoint));
-
-      if (fallback != null) {
-        servingCachedData.value = true;
-        return fallback;
-      }
-
-      // Mark offline so the very next read takes the fast path above.
-      ConnectivityService.instance.markOffline();
 
       rethrow;
     }
@@ -153,36 +155,69 @@ class ApiService {
   }
 
   Future<dynamic> post(String endpoint, Map<String, dynamic> body) {
-    return _send(
-      () => _sendRequest(
-        (client) => client.post(
-          Uri.parse('$baseUrl$endpoint'),
-          headers: _headers,
-          body: jsonEncode(body),
+    return _guardWrite(
+      () => _send(
+        () => _sendRequest(
+          (client) => client.post(
+            Uri.parse('$baseUrl$endpoint'),
+            headers: _headers,
+            body: jsonEncode(body),
+          ),
         ),
       ),
     );
   }
 
   Future<dynamic> put(String endpoint, Map<String, dynamic> body) {
-    return _send(
-      () => _sendRequest(
-        (client) => client.put(
-          Uri.parse('$baseUrl$endpoint'),
-          headers: _headers,
-          body: jsonEncode(body),
+    return _guardWrite(
+      () => _send(
+        () => _sendRequest(
+          (client) => client.put(
+            Uri.parse('$baseUrl$endpoint'),
+            headers: _headers,
+            body: jsonEncode(body),
+          ),
         ),
       ),
     );
   }
 
   Future<dynamic> delete(String endpoint) {
-    return _send(
-      () => _sendRequest(
-        (client) =>
-            client.delete(Uri.parse('$baseUrl$endpoint'), headers: _headers),
+    return _guardWrite(
+      () => _send(
+        () => _sendRequest(
+          (client) =>
+              client.delete(Uri.parse('$baseUrl$endpoint'), headers: _headers),
+        ),
       ),
     );
+  }
+
+  /// Refuses a write while the app knows it is offline.
+  ///
+  /// The app is read-only offline: reads fall back to the cache, but saving
+  /// changes needs the server. Blocking here - rather than letting the socket
+  /// time out - keeps the message clear and stops screens from waiting ~8s for
+  /// a doomed request. Any transport failure that slips through also flips the
+  /// app offline so the next attempt is refused immediately.
+  Future<dynamic> _guardWrite(Future<dynamic> Function() request) async {
+    if (!ConnectivityService.instance.online.value) {
+      // Re-check in the background so a server that just came back is noticed
+      // for the next attempt instead of waiting for the next poll.
+      unawaited(ConnectivityService.instance.checkNow());
+
+      throw ApiException(statusCode: 0, message: _offlineWriteMessage);
+    }
+
+    try {
+      return await request();
+    } on ApiException catch (error) {
+      if (error.statusCode == 0) {
+        ConnectivityService.instance.markOffline();
+      }
+
+      rethrow;
+    }
   }
 
   static const Map<String, String> _headers = {

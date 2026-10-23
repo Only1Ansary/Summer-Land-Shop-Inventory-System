@@ -59,6 +59,13 @@ class _ShowPurchaseInvoiceScreenState extends State<ShowPurchaseInvoiceScreen> {
     } catch (e) {
       if (!mounted) return;
 
+      if (_invoice != null) {
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
+
       setState(() {
         _error = friendlyErrorMessage(context, e);
         _isLoading = false;
@@ -139,6 +146,8 @@ class _ShowPurchaseInvoiceScreenState extends State<ShowPurchaseInvoiceScreen> {
   }
 
   Future<void> _openReturnScreen() async {
+    if (!ensureOnlineForWrite(context)) return;
+
     final invoice = _invoice;
 
     if (invoice == null) return;
@@ -154,6 +163,8 @@ class _ShowPurchaseInvoiceScreenState extends State<ShowPurchaseInvoiceScreen> {
   }
 
   Future<void> _payDebt() async {
+    if (!ensureOnlineForWrite(context)) return;
+
     final invoice = _invoice;
 
     if (invoice == null || invoice.debt <= 0) return;

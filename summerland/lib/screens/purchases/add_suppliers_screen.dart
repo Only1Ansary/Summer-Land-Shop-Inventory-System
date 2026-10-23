@@ -44,6 +44,7 @@ class _AddSuppliersScreenState extends State<AddSuppliersScreen> {
   }
 
   Future<void> _save() async {
+    if (!ensureOnlineForWrite(context)) return;
     if (!_formKey.currentState!.validate()) return;
 
     final name = _nameController.text.trim();

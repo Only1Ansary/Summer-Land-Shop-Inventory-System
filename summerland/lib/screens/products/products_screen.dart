@@ -204,7 +204,40 @@ class _ProductsScreenState extends State<ProductsScreen>
     _search();
   }
 
+  Future<void> _loadAllProducts() async {
+    _searchDebounce?.cancel();
+    if (!mounted) return;
+
+    setState(() {
+      _isSearching = true;
+      _hasSearched = true;
+      _error = null;
+    });
+
+    try {
+      final products = await _productService.getProducts();
+      if (!mounted) return;
+      setState(() {
+        _products = products;
+        _currentPage = 0;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = friendlyErrorMessage(context, e);
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSearching = false;
+        });
+      }
+    }
+  }
+
   Future<void> _openProductForm({Product? product}) async {
+    if (!ensureOnlineForWrite(context)) return;
+
     final result = await pushScreen(
       context,
       (_) => ProductFormScreen(product: product, categories: _categories),
@@ -222,6 +255,8 @@ class _ProductsScreenState extends State<ProductsScreen>
   }
 
   Future<void> _deleteProduct(Product product) async {
+    if (!ensureOnlineForWrite(context)) return;
+
     final confirmed = await showAppConfirmDialog(
       context,
       title: context.tr('Delete Product'),
@@ -379,6 +414,11 @@ class _ProductsScreenState extends State<ProductsScreen>
             message: context.tr(
               'Enter a model, name or barcode, or use the filters, '
               'to find products.',
+            ),
+            action: FilledButton.tonalIcon(
+              icon: const Icon(Icons.list_alt_rounded),
+              label: Text(context.tr('Show all products')),
+              onPressed: _loadAllProducts,
             ),
           ),
         ),

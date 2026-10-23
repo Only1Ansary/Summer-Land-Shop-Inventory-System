@@ -136,6 +136,8 @@ class _ShowSaleInvoicesScreenState extends State<ShowSaleInvoicesScreen>
   }
 
   Future<void> _newSale() async {
+    if (!ensureOnlineForWrite(context)) return;
+
     await pushScreen<void>(context, (_) => const CreateInvoiceScreen());
 
     if (mounted) {
@@ -146,7 +148,7 @@ class _ShowSaleInvoicesScreenState extends State<ShowSaleInvoicesScreen>
   void _openInvoice(Invoice invoice) {
     pushScreen<void>(
       context,
-      (_) => ShowSaleInvoiceScreen(invoiceId: invoice.id),
+      (_) => ShowSaleInvoiceScreen(invoice: invoice, invoiceId: invoice.id),
     );
   }
 

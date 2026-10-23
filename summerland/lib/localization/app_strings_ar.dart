@@ -6,6 +6,8 @@ const Map<String, String> appStringsAr = <String, String>{
   // ---- Language / settings ----
   'English': 'English',
   'Settings': 'الإعدادات',
+  'READ MODE': 'وضع القراءة',
+  'Show all products': 'عرض جميع المنتجات',
 
   // ---- Navigation destinations ----
   'Home': 'الرئيسية',
@@ -74,10 +76,18 @@ const Map<String, String> appStringsAr = <String, String>{
   'Store locations': 'مواقع المتجر',
   'Staff & payroll': 'الموظفون والرواتب',
 
+  // ---- Offline ----
+  'Offline Data': 'البيانات دون اتصال',
+  'Cached data for offline browsing': 'البيانات المخزّنة للتصفّح دون اتصال',
+  'Cache size': 'حجم الذاكرة المؤقّتة',
+  'Clear cache': 'مسح الذاكرة المؤقّتة',
+  'Remove all cached data': 'إزالة جميع البيانات المخزّنة مؤقّتاً',
+  'This will remove all cached data. You will need an internet connection to reload data. Do you want to continue?': 'سيؤدي هذا إلى إزالة جميع البيانات المخزّنة مؤقّتاً. ستحتاج إلى اتصال بالإنترنت لإعادة التحميل. هل تريد المتابعة؟',
+  'Cache cleared.': 'تم مسح الذاكرة المؤقّتة.',
+
   // ---- Shared widgets ----
   'Loading…': 'جارٍ التحميل…',
-  'No connection to the server. Showing the last loaded data.':
-      'لا يوجد اتصال بالخادم. يتم عرض آخر بيانات تم تحميلها.',
+  'No connection to the server. Showing the last loaded data. Changes cannot be saved until it is back.': 'لا يوجد اتصال بالخادم. يتم عرض آخر بيانات تم تحميلها. لا يمكن حفظ التغييرات حتى يعود الاتصال.',
   'Retry': 'إعادة المحاولة',
   'LOW STOCK': 'مخزون منخفض',
   'Showing {0}-{1} of {2}': 'عرض {0}-{1} من {2}',
@@ -124,6 +134,7 @@ const Map<String, String> appStringsAr = <String, String>{
   'Something went wrong. Please try again.': 'حدث خطأ ما. حاول مرة أخرى.',
   'Something went wrong on the server. Please try again.':
       'حدث خطأ ما على الخادم. حاول مرة أخرى.',
+  'You are offline. You can browse the last loaded data, but changes cannot be saved until the server is back.': 'أنت غير متصل. يمكنك تصفّح آخر بيانات تم تحميلها، لكن لا يمكن حفظ التغييرات حتى يعود الخادم.',
   'Some of the details you entered are not valid. Please review them and try '
           'again.':
       'بعض التفاصيل التي أدخلتها غير صالحة. راجعها وحاول مرة أخرى.',

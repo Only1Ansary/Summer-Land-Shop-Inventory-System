@@ -181,6 +181,7 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
   }
 
   Future<void> _addSize() async {
+    if (!ensureOnlineForWrite(context)) return;
     if (_isCreatingOption) return;
 
     final name = await showAppNameDialog(
@@ -232,6 +233,7 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
   }
 
   Future<void> _addColour() async {
+    if (!ensureOnlineForWrite(context)) return;
     if (_isCreatingOption) return;
 
     final name = await showAppNameDialog(
@@ -336,6 +338,7 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
   }
 
   Future<void> _addStockToExistingVariant() async {
+    if (!ensureOnlineForWrite(context)) return;
     if (_isAddingStock) return;
 
     final quantity = _validatedStockQuantity();
@@ -382,6 +385,8 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
   }
 
   Future<void> _save() async {
+    if (!ensureOnlineForWrite(context)) return;
+
     if (!_formKey.currentState!.validate()) {
       return;
     }
