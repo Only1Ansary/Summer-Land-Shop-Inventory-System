@@ -10,6 +10,10 @@ import 'shop_logo.dart';
 /// Desktop / wide screens get an always-visible grouped navigation panel next
 /// to the content. Mobile / narrow screens get a hamburger drawer plus a
 /// bottom navigation bar for the most-used destinations.
+///
+/// On Android, the system back button navigates to the Home screen when on a
+/// different top-level destination, and exits the app only from the Home
+/// screen.
 class AppShell extends StatelessWidget {
   const AppShell({
     super.key,
@@ -36,9 +40,15 @@ class AppShell extends StatelessWidget {
     final double width = MediaQuery.sizeOf(context).width;
     final bool isDesktop = width >= 960;
 
+    // On the home screen the system back button should exit the app normally.
+    // On any other top-level screen it should navigate back to Home first.
+    final bool isHome = destinationId == 'home';
+
+    Widget scaffold;
+
     // Desktop layout: persistent side rail + content column.
     if (isDesktop) {
-      return Scaffold(
+      scaffold = Scaffold(
         floatingActionButton: floatingActionButton,
         body: Row(
           children: [
@@ -59,28 +69,43 @@ class AppShell extends StatelessWidget {
           ],
         ),
       );
-    }
-
-    // Mobile layout: drawer + bottom navigation bar.
-    return Scaffold(
-      appBar: AppBar(title: Text(title), actions: actions),
-      drawer: Drawer(
-        child: SafeArea(
-          child: _AppNavPanel(
-            items: AppDestinations.items,
-            selectedId: destinationId,
-            inDrawer: true,
+    } else {
+      // Mobile layout: drawer + bottom navigation bar.
+      scaffold = Scaffold(
+        appBar: AppBar(title: Text(title), actions: actions),
+        drawer: Drawer(
+          child: SafeArea(
+            child: _AppNavPanel(
+              items: AppDestinations.items,
+              selectedId: destinationId,
+              inDrawer: true,
+            ),
           ),
         ),
-      ),
-      bottomNavigationBar: _AppBottomNav(selectedId: destinationId),
-      floatingActionButton: floatingActionButton,
-      body: Column(
-        children: [
-          const OfflineBanner(),
-          Expanded(child: body),
-        ],
-      ),
+        bottomNavigationBar: _AppBottomNav(selectedId: destinationId),
+        floatingActionButton: floatingActionButton,
+        body: Column(
+          children: [
+            const OfflineBanner(),
+            Expanded(child: body),
+          ],
+        ),
+      );
+    }
+
+    // When already on Home, let the system back button exit the app.
+    if (isHome) return scaffold;
+
+    // On every other top-level screen, intercept the back gesture and
+    // navigate to Home instead of exiting.
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) {
+          AppDestinations.open(context, 'home');
+        }
+      },
+      child: scaffold,
     );
   }
 }
