@@ -22,6 +22,8 @@ class _SearchSaleInvoicesScreenState extends State<SearchSaleInvoicesScreen>
   final InvoiceService _invoiceService = InvoiceService(ApiService());
 
   final TextEditingController _queryController = TextEditingController();
+  final Debouncer _searchDebounce = Debouncer();
+  String _query = '';
 
   List<Invoice> _invoices = [];
 
@@ -41,6 +43,7 @@ class _SearchSaleInvoicesScreenState extends State<SearchSaleInvoicesScreen>
 
   @override
   void dispose() {
+    _searchDebounce.dispose();
     _queryController.dispose();
     super.dispose();
   }
@@ -80,7 +83,7 @@ class _SearchSaleInvoicesScreenState extends State<SearchSaleInvoicesScreen>
   }
 
   List<Invoice> get _results {
-    final query = _queryController.text.trim().toLowerCase();
+    final query = _query.trim().toLowerCase();
 
     return _invoices.where((invoice) {
       final matchesId =
@@ -208,13 +211,18 @@ class _SearchSaleInvoicesScreenState extends State<SearchSaleInvoicesScreen>
                       icon: const Icon(Icons.clear),
                       tooltip: context.tr('Clear search'),
                       onPressed: () {
+                        _searchDebounce.cancel();
                         _queryController.clear();
-                        setState(() {});
+                        setState(() => _query = '');
                       },
                     )
                   : null,
             ),
-            onChanged: (_) => setState(() {}),
+            onChanged: (value) {
+              _searchDebounce.run(() {
+                setState(() => _query = value);
+              });
+            },
           ),
           const SizedBox(height: 12),
           Row(

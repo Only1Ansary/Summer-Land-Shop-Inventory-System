@@ -24,6 +24,8 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen>
 
   List<Supplier> _suppliers = [];
   final Set<int> _expanded = {};
+  String _query = '';
+  final Debouncer _searchDebounce = Debouncer();
 
   bool _isLoading = false;
   String? _error;
@@ -31,17 +33,25 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen>
   static const int _pageSize = 10;
   int _currentPage = 0;
 
+  List<Supplier> get _filteredSuppliers {
+    final query = _query.trim().toLowerCase();
+
+    if (query.isEmpty) return _suppliers;
+
+    return _suppliers
+        .where((s) => s.supplierName.toLowerCase().contains(query))
+        .toList();
+  }
+
   List<Supplier> get _pageSuppliers {
+    final list = _filteredSuppliers;
     final start = _currentPage * _pageSize;
 
-    if (start >= _suppliers.length) return const [];
+    if (start >= list.length) return const [];
 
     final end = start + _pageSize;
 
-    return _suppliers.sublist(
-      start,
-      end > _suppliers.length ? _suppliers.length : end,
-    );
+    return list.sublist(start, end > list.length ? list.length : end);
   }
 
   @override
@@ -83,6 +93,12 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen>
   @override
   void onReconnected() {
     _loadSuppliers();
+  }
+
+  @override
+  void dispose() {
+    _searchDebounce.dispose();
+    super.dispose();
   }
 
   Future<void> _addSupplier() async {
@@ -227,6 +243,35 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen>
     return WideContent(
       child: Column(
         children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: TextField(
+              decoration: InputDecoration(
+                labelText: context.tr('Search suppliers'),
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _query.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchDebounce.cancel();
+                          setState(() {
+                            _query = '';
+                            _currentPage = 0;
+                          });
+                        },
+                      )
+                    : null,
+              ),
+              onChanged: (value) {
+                _searchDebounce.run(() {
+                  setState(() {
+                    _query = value;
+                    _currentPage = 0;
+                  });
+                });
+              },
+            ),
+          ),
           Expanded(
             child: RefreshIndicator(
               onRefresh: _loadSuppliers,
@@ -250,100 +295,160 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen>
                       itemCount: _pageSuppliers.length,
                       itemBuilder: (context, index) {
                         final supplier = _pageSuppliers[index];
-                        final expanded = _expanded.contains(supplier.id);
 
                         return Card(
                           margin: const EdgeInsets.only(bottom: 8),
-                          child: Column(
-                            children: [
-                              ListTile(
-                                leading: Container(
-                                  width: 40,
-                                  height: 40,
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context).colorScheme.primary
-                                        .withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: Icon(
-                                    Icons.factory_rounded,
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .primary,
-                                  ),
+                          clipBehavior: Clip.antiAlias,
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              final isWide = constraints.maxWidth >= 560;
+                              final scheme = Theme.of(context).colorScheme;
+
+                              final iconBox = Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: scheme.primary.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(10),
                                 ),
-                                title: Text(supplier.supplierName),
-                                subtitle: Text.rich(
-                                  TextSpan(
-                                    children: [
-                                      TextSpan(text: context.tr('Debt: ')),
-                                      TextSpan(
-                                        text: moneyNegative(supplier.debt),
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: amountColor(
-                                            context,
-                                            -supplier.debt,
-                                          ),
-                                        ),
+                                child: Icon(Icons.factory_rounded, color: scheme.primary),
+                              );
+
+                              final subtitle = Text.rich(
+                                TextSpan(
+                                  children: [
+                                    TextSpan(text: context.tr('Debt: ')),
+                                    TextSpan(
+                                      text: moneyNegative(supplier.debt),
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: amountColor(context, -supplier.debt),
                                       ),
-                                      TextSpan(
-                                        text: context.tr('  ·  {0} {1}', [
-                                          supplier.invoiceCount,
-                                          supplier.invoiceCount == 1
-                                              ? context.tr('invoice')
-                                              : context.tr('invoices'),
-                                        ]),
+                                    ),
+                                    TextSpan(
+                                      text: context.tr('\n{0} {1}', [
+                                        supplier.invoiceCount,
+                                        supplier.invoiceCount == 1
+                                            ? context.tr('invoice')
+                                            : context.tr('invoices'),
+                                      ]),
+                                    ),
+                                  ],
+                                ),
+                              );
+
+                              final title = Text(
+                                supplier.supplierName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              );
+
+                              // ---------- WIDE: inline icon buttons ----------
+                              if (isWide) {
+                                return ListTile(
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                                  leading: iconBox,
+                                  title: title,
+                                  subtitle: subtitle,
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if (supplier.debt > 0)
+                                        IconButton(
+                                          visualDensity: VisualDensity.compact,
+                                          icon: const Icon(Icons.payments_outlined),
+                                          tooltip: context.tr('Pay debt'),
+                                          onPressed: () => _paySupplierDebt(supplier),
+                                        ),
+                                      IconButton(
+                                        visualDensity: VisualDensity.compact,
+                                        icon: const Icon(Icons.history),
+                                        tooltip: context.tr('Payment history'),
+                                        onPressed: () => _showPaymentHistory(supplier),
+                                      ),
+                                      IconButton(
+                                        visualDensity: VisualDensity.compact,
+                                        icon: const Icon(Icons.edit_outlined),
+                                        tooltip: context.tr('Edit'),
+                                        onPressed: () => _editSupplier(supplier),
+                                      ),
+                                      IconButton(
+                                        visualDensity: VisualDensity.compact,
+                                        icon: const Icon(Icons.delete_outline),
+                                        tooltip: context.tr('Delete'),
+                                        onPressed: () => _deleteSupplier(supplier),
                                       ),
                                     ],
                                   ),
-                                ),
+                                );
+                              }
+
+                              // ---------- NARROW: pay button + overflow menu ----------
+                              return ListTile(
+                                contentPadding: const EdgeInsetsDirectional.only(start: 16, end: 4),
+                                leading: iconBox,
+                                title: title,
+                                subtitle: subtitle,
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     if (supplier.debt > 0)
-                                      IconButton(
+                                      IconButton.filledTonal(
                                         visualDensity: VisualDensity.compact,
-                                        icon: const Icon(
-                                          Icons.payments_outlined,
-                                        ),
+                                        icon: const Icon(Icons.payments_outlined),
                                         tooltip: context.tr('Pay debt'),
-                                        onPressed: () =>
-                                            _paySupplierDebt(supplier),
+                                        onPressed: () => _paySupplierDebt(supplier),
                                       ),
-                                    IconButton(
-                                      visualDensity: VisualDensity.compact,
-                                      icon: const Icon(Icons.history),
-                                      tooltip: context.tr('Payment history'),
-                                      onPressed: () =>
-                                          _showPaymentHistory(supplier),
-                                    ),
-                                    IconButton(
-                                      visualDensity: VisualDensity.compact,
-                                      icon: const Icon(Icons.edit_outlined),
-                                      tooltip: context.tr('Edit'),
-                                      onPressed: () => _editSupplier(supplier),
-                                    ),
-                                    IconButton(
-                                      visualDensity: VisualDensity.compact,
-                                      icon: const Icon(Icons.delete_outline),
-                                      tooltip: context.tr('Delete'),
-                                      onPressed: () =>
-                                          _deleteSupplier(supplier),
-                                    ),
-                                    AnimatedRotation(
-                                      turns: expanded ? 0.5 : 0,
-                                      duration: const Duration(
-                                        milliseconds: 200,
-                                      ),
-                                      child: const Icon(Icons.expand_more),
+                                    PopupMenuButton<String>(
+                                      tooltip: context.tr('More'),
+                                      icon: const Icon(Icons.more_vert),
+                                      onSelected: (value) {
+                                        switch (value) {
+                                          case 'history':
+                                            _showPaymentHistory(supplier);
+                                          case 'edit':
+                                            _editSupplier(supplier);
+                                          case 'delete':
+                                            _deleteSupplier(supplier);
+                                        }
+                                      },
+                                      itemBuilder: (_) => [
+                                        PopupMenuItem(
+                                          value: 'history',
+                                          child: ListTile(
+                                            dense: true,
+                                            contentPadding: EdgeInsets.zero,
+                                            leading: const Icon(Icons.history),
+                                            title: Text(context.tr('Payment history')),
+                                          ),
+                                        ),
+                                        PopupMenuItem(
+                                          value: 'edit',
+                                          child: ListTile(
+                                            dense: true,
+                                            contentPadding: EdgeInsets.zero,
+                                            leading: const Icon(Icons.edit_outlined),
+                                            title: Text(context.tr('Edit')),
+                                          ),
+                                        ),
+                                        PopupMenuItem(
+                                          value: 'delete',
+                                          child: ListTile(
+                                            dense: true,
+                                            contentPadding: EdgeInsets.zero,
+                                            leading: Icon(Icons.delete_outline, color: scheme.error),
+                                            title: Text(
+                                              context.tr('Delete'),
+                                              style: TextStyle(color: scheme.error),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
-                                onTap: () => _toggleExpanded(supplier.id),
-                              ),
-                              if (expanded) _buildInvoices(supplier),
-                            ],
+                              );
+                            },
                           ),
                         );
                       },

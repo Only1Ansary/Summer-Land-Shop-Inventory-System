@@ -76,6 +76,7 @@ class _CreateStockTransferScreenState extends State<CreateStockTransferScreen> {
 
   @override
   void dispose() {
+    _searchDebounce.dispose();
     _searchController.dispose();
 
     for (final line in _lines) {
@@ -108,6 +109,8 @@ class _CreateStockTransferScreenState extends State<CreateStockTransferScreen> {
     }
   }
 
+  final Debouncer _searchDebounce = Debouncer();
+
   void _searchVariants(String query) {
     final value = query.trim().toLowerCase();
 
@@ -125,6 +128,10 @@ class _CreateStockTransferScreenState extends State<CreateStockTransferScreen> {
             (variant.colourName?.toLowerCase().contains(value) ?? false);
       }).toList();
     });
+  }
+
+  void _onSearchChanged(String query) {
+    _searchDebounce.run(() => _searchVariants(query));
   }
 
   String _variantDisplayName(ProductVariant variant) {
@@ -370,7 +377,7 @@ class _CreateStockTransferScreenState extends State<CreateStockTransferScreen> {
 
         TextField(
           controller: _searchController,
-          onChanged: _searchVariants,
+          onChanged: _onSearchChanged,
           decoration: InputDecoration(
             labelText: context.tr('Search Product'),
             hintText: context.tr('Model, name, barcode, size, colour'),

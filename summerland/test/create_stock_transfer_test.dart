@@ -175,6 +175,7 @@ void main() {
       find.widgetWithText(TextField, 'Search Product'),
       'TS-001',
     );
+    await tester.pump(const Duration(seconds: 1));
     await tester.pumpAndSettle();
 
     await tester.tap(find.byTooltip('Add to transfer').first);
@@ -200,6 +201,7 @@ void main() {
       find.widgetWithText(TextField, 'Search Product'),
       'TS-001',
     );
+    await tester.pump(const Duration(seconds: 1));
     await tester.pumpAndSettle();
 
     await tester.tap(find.byTooltip('Add to transfer').first);

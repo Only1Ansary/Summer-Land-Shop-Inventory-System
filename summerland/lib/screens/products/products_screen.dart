@@ -32,7 +32,7 @@ class _ProductsScreenState extends State<ProductsScreen>
 
   final TextEditingController _searchController = TextEditingController();
 
-  Timer? _searchDebounce;
+  final Debouncer _searchDebounce = Debouncer();
 
   List<Product> _products = [];
   List<Category> _categories = [];
@@ -75,7 +75,7 @@ class _ProductsScreenState extends State<ProductsScreen>
 
   @override
   void dispose() {
-    _searchDebounce?.cancel();
+    _searchDebounce.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -125,7 +125,7 @@ class _ProductsScreenState extends State<ProductsScreen>
   }
 
   Future<void> _search() async {
-    _searchDebounce?.cancel();
+    _searchDebounce.cancel();
 
     if (!mounted) return;
 
@@ -181,8 +181,7 @@ class _ProductsScreenState extends State<ProductsScreen>
   void _onQueryChanged(String _) {
     setState(() {});
 
-    _searchDebounce?.cancel();
-    _searchDebounce = Timer(const Duration(milliseconds: 350), _search);
+    _searchDebounce.run(_search);
   }
 
   void _setCategoryFilter(int? value) {
@@ -194,7 +193,7 @@ class _ProductsScreenState extends State<ProductsScreen>
   }
 
   void _clearFilters() {
-    _searchDebounce?.cancel();
+    _searchDebounce.cancel();
     _searchController.clear();
 
     setState(() {
@@ -205,7 +204,7 @@ class _ProductsScreenState extends State<ProductsScreen>
   }
 
   Future<void> _loadAllProducts() async {
-    _searchDebounce?.cancel();
+    _searchDebounce.cancel();
     if (!mounted) return;
 
     setState(() {

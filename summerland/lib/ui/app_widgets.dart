@@ -197,16 +197,16 @@ class _UndoSnackBarContentState extends State<_UndoSnackBarContent>
                 ),
                 const Spacer(),
                 TextButton(
-                  onPressed: widget.onUndo,
+                  onPressed: widget.onSkip,
                   child: Text(
-                    strings.translate('Undo'),
+                    strings.translate('Skip'),
                     style: TextStyle(color: theme.colorScheme.onPrimary),
                   ),
                 ),
                 TextButton(
-                  onPressed: widget.onSkip,
+                  onPressed: widget.onUndo,
                   child: Text(
-                    strings.translate('Skip'),
+                    strings.translate('Undo'),
                     style: TextStyle(color: theme.colorScheme.onPrimary),
                   ),
                 ),
@@ -1373,4 +1373,23 @@ class _AppNameDialogState extends State<_AppNameDialog> {
       ],
     );
   }
+}
+
+
+/// A simple debounce helper: coalesces rapid calls into a single delayed
+/// invocation. Used to avoid firing a network request on every keystroke.
+class Debouncer {
+  Debouncer({this.delay = const Duration(milliseconds: 900)});
+
+  final Duration delay;
+  Timer? _timer;
+
+  void run(void Function() action) {
+    _timer?.cancel();
+    _timer = Timer(delay, action);
+  }
+
+  void cancel() => _timer?.cancel();
+
+  void dispose() => _timer?.cancel();
 }

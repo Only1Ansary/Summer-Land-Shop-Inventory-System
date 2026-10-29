@@ -107,6 +107,7 @@ void main() {
     await pumpSearch(tester);
 
     await tester.enterText(find.byType(TextField), 'tee');
+    await tester.pump(const Duration(seconds: 1));
     await tester.pumpAndSettle();
 
     expect(find.text('Cotton T-Shirt'), findsOneWidget);
@@ -125,18 +126,21 @@ void main() {
     await pumpSearch(tester);
 
     await tester.enterText(find.byType(TextField), 'jeans');
+    await tester.pump(const Duration(seconds: 1));
     await tester.pumpAndSettle();
 
     expect(find.text('Slim Jeans'), findsOneWidget);
     expect(find.text('Cotton T-Shirt'), findsNothing);
 
     await tester.enterText(find.byType(TextField), 'TEE-001');
+    await tester.pump(const Duration(seconds: 1));
     await tester.pumpAndSettle();
 
     expect(find.text('Cotton T-Shirt'), findsOneWidget);
     expect(find.text('Slim Jeans'), findsNothing);
 
     await tester.enterText(find.byType(TextField), 'zzz');
+    await tester.pump(const Duration(seconds: 1));
     await tester.pumpAndSettle();
 
     expect(find.text('No products found'), findsOneWidget);
@@ -149,6 +153,7 @@ void main() {
     await pumpSearch(tester);
 
     await tester.enterText(find.byType(TextField), 'tee');
+    await tester.pump(const Duration(seconds: 1));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Cotton T-Shirt'));

@@ -52,6 +52,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
 
   bool _isLoading = true;
   bool _isCreating = false;
+  final Debouncer _searchDebounce = Debouncer();
   bool _isIncrementing = false;
 
   // The cart panel starts collapsed so it never covers the variant
@@ -73,6 +74,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
 
   @override
   void dispose() {
+    _searchDebounce.dispose();
     _searchController.dispose();
     _discountController.dispose();
 
@@ -128,6 +130,10 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
             (variant.colourName?.toLowerCase().contains(query) ?? false);
       }).toList();
     });
+  }
+
+  void _onSearchChanged(String value) {
+    _searchDebounce.run(() => _searchVariants(value));
   }
 
   Future<void> _selectVariant(ProductVariant variant) async {
@@ -547,7 +553,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       child: WideContent(
         child: TextField(
           controller: _searchController,
-          onChanged: _searchVariants,
+          onChanged: _onSearchChanged,
           decoration: InputDecoration(
             labelText: context.tr('Search Model / Name / Barcode'),
             prefixIcon: const Icon(Icons.search),

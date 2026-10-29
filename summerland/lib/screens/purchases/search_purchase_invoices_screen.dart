@@ -25,6 +25,8 @@ class _SearchPurchaseInvoicesScreenState
   );
 
   final TextEditingController _nameController = TextEditingController();
+  final Debouncer _searchDebounce = Debouncer();
+  String _supplierQuery = '';
 
   List<PurchaseInvoice> _invoices = [];
 
@@ -44,6 +46,7 @@ class _SearchPurchaseInvoicesScreenState
 
   @override
   void dispose() {
+    _searchDebounce.dispose();
     _nameController.dispose();
     super.dispose();
   }
@@ -83,7 +86,7 @@ class _SearchPurchaseInvoicesScreenState
   }
 
   List<PurchaseInvoice> get _results {
-    final query = _nameController.text.trim().toLowerCase();
+    final query = _supplierQuery.trim().toLowerCase();
 
     return _invoices.where((invoice) {
       final nameOk =
@@ -139,6 +142,7 @@ class _SearchPurchaseInvoicesScreenState
       _fromDate = defaultFilterFromDate();
       _toDate = defaultFilterToDate();
       _nameController.clear();
+      _supplierQuery = '';
     });
   }
 
@@ -153,7 +157,7 @@ class _SearchPurchaseInvoicesScreenState
     }
   }
 
-  bool get _hasFilters => _nameController.text.isNotEmpty || !_datesAreDefault;
+  bool get _hasFilters => _supplierQuery.isNotEmpty || !_datesAreDefault;
 
   bool get _datesAreDefault =>
       _sameDay(_fromDate, defaultFilterFromDate()) &&
@@ -196,18 +200,23 @@ class _SearchPurchaseInvoicesScreenState
             decoration: InputDecoration(
               labelText: context.tr('Supplier name'),
               prefixIcon: const Icon(Icons.factory_outlined),
-              suffixIcon: _nameController.text.isNotEmpty
+              suffixIcon: _supplierQuery.isNotEmpty
                   ? IconButton(
                       icon: const Icon(Icons.clear),
                       tooltip: context.tr('Clear name'),
                       onPressed: () {
+                        _searchDebounce.cancel();
                         _nameController.clear();
-                        setState(() {});
+                        setState(() => _supplierQuery = '');
                       },
                     )
                   : null,
             ),
-            onChanged: (_) => setState(() {}),
+            onChanged: (value) {
+              _searchDebounce.run(() {
+                setState(() => _supplierQuery = value);
+              });
+            },
           ),
           const SizedBox(height: 12),
           Row(

@@ -33,6 +33,7 @@ class _InventorySearchScreenState extends State<InventorySearchScreen>
 
   int _currentPage = 0;
   String _query = '';
+  final Debouncer _searchDebounce = Debouncer();
 
   List<T> _pageSlice<T>(List<T> items) {
     final start = _currentPage * _pageSize;
@@ -48,6 +49,21 @@ class _InventorySearchScreenState extends State<InventorySearchScreen>
     setState(() {
       _currentPage = page;
     });
+  }
+
+  void _onQueryChanged(String value) {
+    _searchDebounce.run(() {
+      setState(() {
+        _query = value;
+        _currentPage = 0;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchDebounce.dispose();
+    super.dispose();
   }
 
   @override
@@ -229,12 +245,7 @@ class _InventorySearchScreenState extends State<InventorySearchScreen>
                         prefixIcon: const Icon(Icons.search_rounded),
                         border: const OutlineInputBorder(),
                       ),
-                      onChanged: (value) {
-                        setState(() {
-                          _query = value;
-                          _currentPage = 0;
-                        });
-                      },
+                      onChanged: _onQueryChanged,
                     ),
                   ),
                 ),

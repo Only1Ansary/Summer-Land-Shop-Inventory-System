@@ -177,6 +177,7 @@ class _AppNavPanelState extends State<_AppNavPanel> {
 
   final TextEditingController _searchController = TextEditingController();
   String _query = '';
+  final Debouncer _searchDebounce = Debouncer();
 
   /// Which groups the user has collapsed. Stored on [_NavScroll] rather than
   /// in this widget so the choice survives both the ListView disposing
@@ -214,6 +215,7 @@ class _AppNavPanelState extends State<_AppNavPanel> {
 
   @override
   void dispose() {
+    _searchDebounce.dispose();
     _scrollController.removeListener(_rememberScroll);
     _searchController.dispose();
     super.dispose();
@@ -340,7 +342,9 @@ class _AppNavPanelState extends State<_AppNavPanel> {
                     padding: const EdgeInsets.fromLTRB(10, 10, 10, 4),
                     child: TextField(
                       controller: _searchController,
-                      onChanged: (value) => setState(() => _query = value),
+                      onChanged: (value) {
+                        _searchDebounce.run(() => setState(() => _query = value));
+                      },
                       decoration: InputDecoration(
                         hintText: context.tr('Search pages…'),
                         isDense: true,
@@ -356,6 +360,7 @@ class _AppNavPanelState extends State<_AppNavPanel> {
                                 visualDensity: VisualDensity.compact,
                                 tooltip: context.tr('Clear search'),
                                 onPressed: () {
+                                  _searchDebounce.cancel();
                                   _searchController.clear();
                                   setState(() => _query = '');
                                 },

@@ -89,6 +89,7 @@ void main() {
 
     // Searching reveals matches even inside collapsed groups.
     await tester.enterText(find.byType(TextField), 'categories');
+    await tester.pump(const Duration(seconds: 1));
     await tester.pumpAndSettle();
 
     expect(find.text('Categories'), findsOneWidget);
