@@ -171,36 +171,36 @@ class _SplitVariantScreenState extends State<SplitVariantScreen> {
       _isSaving = true;
     });
 
-    try {
-      final splits = _rows
-          .map(
-            (row) => <String, dynamic>{
-              'sizeId': row.sizeId,
-              'colourId': row.colourId,
-              'quantity': row.quantity,
-            },
-          )
-          .toList();
+    final splits = _rows
+        .map(
+          (row) => <String, dynamic>{
+            'sizeId': row.sizeId,
+            'colourId': row.colourId,
+            'quantity': row.quantity,
+          },
+        )
+        .toList();
 
-      await _variantService.splitVariant(
+    scheduleUndoable(
+      context,
+      message: context.tr('This variant will be split. Tap Undo to cancel.'),
+      operation: () => _variantService.splitVariant(
         sourceVariantId: widget.sourceVariant.id,
         splits: splits,
-      );
+      ),
+      onCommitted: () async {
+        if (!mounted) return;
 
-      if (!mounted) return;
-
-      Navigator.pop(context, true);
-    } catch (e) {
-      if (!mounted) return;
-
-      _showError(friendlyErrorMessage(context, e));
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isSaving = false;
-        });
-      }
-    }
+        Navigator.pop(context, true);
+      },
+      onUndone: () {
+        if (mounted) {
+          setState(() {
+            _isSaving = false;
+          });
+        }
+      },
+    );
   }
 
   void _showError(String message) {

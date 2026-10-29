@@ -166,6 +166,8 @@ const Map<String, String> appStringsAr = <String, String>{
   'Choose how the app looks': 'اختر مظهر التطبيق',
   'Light': 'فاتح',
   'Dark': 'داكن',
+  'Classic': 'كلاسيكي',
+  'Emerald Depth': 'عمق الزمرد',
   'Your pinned shortcuts': 'اختصاراتك المثبّتة',
   'Pinned modules': 'الوحدات المثبّتة',
   'No modules pinned': 'لا توجد وحدات مثبّتة',
@@ -831,4 +833,43 @@ const Map<String, String> appStringsAr = <String, String>{
   '(items {0})': '(الأصناف {0})',
   '({0}% of {1})': '({0}% من {1})',
   '  Unit: {0} → {1}{2} · line -{3}': '  الوحدة: {0} → {1}{2} · السطر -{3}',
+
+  // ---- Timed undo ----
+  'Undo': 'تراجع',
+  'Skip': 'تخطي',
+  'Change undone.': 'تم التراجع عن التغيير.',
+  '"{0}" will be added. Tap Undo to cancel.':
+      'سيتم إضافة "{0}". اضغط تراجع للإلغاء.',
+  'Changes to "{0}" will be saved. Tap Undo to cancel.':
+      'سيتم حفظ التغييرات على "{0}". اضغط تراجع للإلغاء.',
+  '"{0}" will be deleted. Tap Undo to cancel.':
+      'سيتم حذف "{0}". اضغط تراجع للإلغاء.',
+  'This variant will be added. Tap Undo to cancel.':
+      'سيتم إضافة هذا الصنف. اضغط تراجع للإلغاء.',
+  'Changes to this variant will be saved. Tap Undo to cancel.':
+      'سيتم حفظ التغييرات على هذا الصنف. اضغط تراجع للإلغاء.',
+  'This variant will be deleted. Tap Undo to cancel.':
+      'سيتم حذف هذا الصنف. اضغط تراجع للإلغاء.',
+  'This variant will be split. Tap Undo to cancel.':
+      'سيتم تقسيم هذا الصنف. اضغط تراجع للإلغاء.',
+  'Stock will be added. Tap Undo to cancel.':
+      'سيتم إضافة المخزون. اضغط تراجع للإلغاء.',
+  'Payment for {0} will be recorded. Tap Undo to cancel.':
+      'سيتم تسجيل دفعة لـ {0}. اضغط تراجع للإلغاء.',
+  'Payment to {0} will be recorded. Tap Undo to cancel.':
+      'سيتم تسجيل دفعة إلى {0}. اضغط تراجع للإلغاء.',
+  'Payment will be recorded. Tap Undo to cancel.':
+      'سيتم تسجيل الدفعة. اضغط تراجع للإلغاء.',
+  'This transfer will be created. Tap Undo to cancel.':
+      'سيتم إنشاء هذا التحويل. اضغط تراجع للإلغاء.',
+  'Invoice will be created. Tap Undo to cancel.':
+      'سيتم إنشاء الفاتورة. اضغط تراجع للإلغاء.',
+  'Purchase invoice will be created. Tap Undo to cancel.':
+      'سيتم إنشاء فاتورة الشراء. اضغط تراجع للإلغاء.',
+  'Return will be created. Tap Undo to cancel.':
+      'سيتم إنشاء الإرجاع. اضغط تراجع للإلغاء.',
+  'Purchase return will be created. Tap Undo to cancel.':
+      'سيتم إنشاء إرجاع الشراء. اضغط تراجع للإلغاء.',
+  'Invoice #{0} created.': 'تم إنشاء الفاتورة #{0}.',
+  'Purchase invoice #{0} created.': 'تم إنشاء فاتورة الشراء #{0}.',
 };

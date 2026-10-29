@@ -128,38 +128,36 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
     final salary = double.parse(_salaryController.text.trim());
     final target = double.parse(_targetController.text.trim());
 
-    try {
-      if (_isEditing) {
-        await _employeeService.updateEmployee(
-          widget.employee!.id,
-          name: name,
-          salary: salary,
-          target: target,
-          bonus: double.parse(_bonusController.text.trim()),
-          bonusType: _bonusType,
-        );
-      } else {
-        await _employeeService.createEmployee(
-          name: name,
-          salary: salary,
-          target: target,
-        );
-      }
+    final operation = _isEditing
+        ? () async {
+            await _employeeService.updateEmployee(
+              widget.employee!.id,
+              name: name,
+              salary: salary,
+              target: target,
+              bonus: double.parse(_bonusController.text.trim()),
+              bonusType: _bonusType,
+            );
+          }
+        : () async {
+            await _employeeService.createEmployee(
+              name: name,
+              salary: salary,
+              target: target,
+            );
+          };
 
-      if (!mounted) return;
-
-      Navigator.of(context).pop(true);
-    } catch (e) {
-      if (!mounted) return;
-
-      setState(() {
-        _isSaving = false;
-      });
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(context, e))));
-    }
+    Navigator.of(context).pop(
+      DeferredCrud(
+        message: _isEditing
+            ? context.tr(
+                'Changes to "{0}" will be saved. Tap Undo to cancel.',
+                [name],
+              )
+            : context.tr('"{0}" will be added. Tap Undo to cancel.', [name]),
+        operation: operation,
+      ),
+    );
   }
 
   @override

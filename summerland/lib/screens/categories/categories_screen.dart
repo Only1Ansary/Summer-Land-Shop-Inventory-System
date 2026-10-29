@@ -46,17 +46,25 @@ class _CategoriesScreenState extends State<CategoriesScreen>
       return;
     }
 
-    try {
-      await _categoryService.updateCategory(category.id, name);
-
-      await _loadCategories();
-    } catch (e) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(context, e))));
-    }
+    scheduleUndoable(
+      context,
+      message: context.tr(
+        'Changes to "{0}" will be saved. Tap Undo to cancel.',
+        [name],
+      ),
+      operation: () => _categoryService.updateCategory(category.id, name),
+      onOptimistic: () async {
+        setState(() {
+          _categories = _categories
+              .map(
+                (c) => c.id == category.id ? Category(id: c.id, name: name) : c,
+              )
+              .toList();
+        });
+      },
+      onCommitted: _loadCategories,
+      onUndone: _loadCategories,
+    );
   }
 
   Future<void> _deleteCategory(Category category) async {
@@ -66,9 +74,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
       context: context,
       builder: (context) => AlertDialog(
         title: Text(context.tr('Delete category?')),
-        content: Text(
-          context.tr('Delete "{0}"? This cannot be undone.', [category.name]),
-        ),
+        content: Text(context.tr('Delete "{0}"?', [category.name])),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -86,25 +92,20 @@ class _CategoriesScreenState extends State<CategoriesScreen>
       return;
     }
 
-    try {
-      await _categoryService.deleteCategory(category.id);
-
-      if (!mounted) return;
-
-      await _loadCategories();
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.tr('{0} deleted.', [category.name]))),
-      );
-    } catch (e) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(context, e))));
-    }
+    scheduleUndoable(
+      context,
+      message: context.tr('"{0}" will be deleted. Tap Undo to cancel.', [
+        category.name,
+      ]),
+      operation: () => _categoryService.deleteCategory(category.id),
+      onOptimistic: () async {
+        setState(() {
+          _categories = _categories.where((c) => c.id != category.id).toList();
+        });
+      },
+      onCommitted: _loadCategories,
+      onUndone: _loadCategories,
+    );
   }
 
   Future<void> _addCategory() async {
@@ -121,16 +122,21 @@ class _CategoriesScreenState extends State<CategoriesScreen>
       return;
     }
 
-    try {
-      await _categoryService.createCategory(name);
-      await _loadCategories();
-    } catch (e) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(context, e))));
-    }
+    scheduleUndoable(
+      context,
+      message: context.tr('"{0}" will be added. Tap Undo to cancel.', [name]),
+      operation: () => _categoryService.createCategory(name),
+      onOptimistic: () async {
+        setState(() {
+          _categories = [
+            ..._categories,
+            Category(id: -DateTime.now().millisecondsSinceEpoch, name: name),
+          ];
+        });
+      },
+      onCommitted: _loadCategories,
+      onUndone: _loadCategories,
+    );
   }
 
   Future<void> _loadCategories() async {

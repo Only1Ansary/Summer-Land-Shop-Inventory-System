@@ -1,25 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Persists and broadcasts the app's light / dark / system choice.
+import '../models/app_theme_variant.dart';
+
+/// Persists and broadcasts the app's light / dark / system choice and its
+/// colour palette.
 ///
-/// A single shared [ValueNotifier] lets the root [MaterialApp] rebuild the
-/// moment the choice changes, so no state management package is needed.
+/// A single shared [ValueNotifier] per setting lets the root [MaterialApp]
+/// rebuild the moment either choice changes, so no state management package
+/// is needed.
 class ThemeService {
   ThemeService._();
 
   static final ThemeService instance = ThemeService._();
 
-  static const String _key = 'settings.themeMode';
+  static const String _modeKey = 'settings.themeMode';
+  static const String _variantKey = 'settings.themeVariant';
 
-  /// The current theme choice; defaults to following the system.
+  /// The current brightness choice; defaults to following the system.
   final ValueNotifier<ThemeMode> mode = ValueNotifier(ThemeMode.system);
 
-  /// Reads the stored choice and applies it. Safe to call once at startup.
+  /// The current colour palette; defaults to the original app theme.
+  final ValueNotifier<AppThemeVariant> variant = ValueNotifier(
+    AppThemeVariant.classic,
+  );
+
+  /// Reads the stored choices and applies them. Safe to call once at startup.
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
 
-    mode.value = _decode(prefs.getString(_key));
+    mode.value = _decode(prefs.getString(_modeKey));
+    variant.value = _decodeVariant(prefs.getString(_variantKey));
   }
 
   Future<void> setMode(ThemeMode value) async {
@@ -27,7 +38,15 @@ class ThemeService {
 
     final prefs = await SharedPreferences.getInstance();
 
-    await prefs.setString(_key, _encode(value));
+    await prefs.setString(_modeKey, _encode(value));
+  }
+
+  Future<void> setVariant(AppThemeVariant value) async {
+    variant.value = value;
+
+    final prefs = await SharedPreferences.getInstance();
+
+    await prefs.setString(_variantKey, _encodeVariant(value));
   }
 
   static ThemeMode _decode(String? value) {
@@ -49,6 +68,24 @@ class ThemeService {
         return 'dark';
       case ThemeMode.system:
         return 'system';
+    }
+  }
+
+  static AppThemeVariant _decodeVariant(String? value) {
+    switch (value) {
+      case 'emerald':
+        return AppThemeVariant.emeraldDepth;
+      default:
+        return AppThemeVariant.classic;
+    }
+  }
+
+  static String _encodeVariant(AppThemeVariant value) {
+    switch (value) {
+      case AppThemeVariant.classic:
+        return 'classic';
+      case AppThemeVariant.emeraldDepth:
+        return 'emerald';
     }
   }
 }

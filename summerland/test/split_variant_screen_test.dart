@@ -146,6 +146,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(find.widgetWithText(FilledButton, 'Split Variant'));
+    await tester.pump(const Duration(seconds: 6));
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
@@ -183,6 +184,7 @@ void main() {
     expect(find.text('XXL'), findsWidgets);
 
     await tester.tap(find.widgetWithText(FilledButton, 'Split Variant'));
+    await tester.pump(const Duration(seconds: 6));
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);

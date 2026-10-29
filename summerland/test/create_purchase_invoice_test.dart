@@ -159,6 +159,7 @@ void main() {
     expect(createButton, findsOneWidget);
 
     await tester.tap(createButton);
+    await tester.pump(const Duration(seconds: 6));
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
@@ -193,6 +194,7 @@ void main() {
       'Create Purchase Invoice',
     );
     await tester.tap(createButton);
+    await tester.pump(const Duration(seconds: 6));
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);

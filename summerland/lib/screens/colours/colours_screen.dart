@@ -77,16 +77,21 @@ class _ColoursScreenState extends State<ColoursScreen>
       return;
     }
 
-    try {
-      await _service.createColour(name);
-      await _loadColours();
-    } catch (e) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(context, e))));
-    }
+    scheduleUndoable(
+      context,
+      message: context.tr('"{0}" will be added. Tap Undo to cancel.', [name]),
+      operation: () => _service.createColour(name),
+      onOptimistic: () async {
+        setState(() {
+          _colours = [
+            ..._colours,
+            Colour(id: -DateTime.now().millisecondsSinceEpoch, name: name),
+          ];
+        });
+      },
+      onCommitted: _loadColours,
+      onUndone: _loadColours,
+    );
   }
 
   Future<void> _editColour(Colour colour) async {
@@ -104,17 +109,25 @@ class _ColoursScreenState extends State<ColoursScreen>
       return;
     }
 
-    try {
-      await _service.updateColour(colour.id, name);
-
-      await _loadColours();
-    } catch (e) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(context, e))));
-    }
+    scheduleUndoable(
+      context,
+      message: context.tr(
+        'Changes to "{0}" will be saved. Tap Undo to cancel.',
+        [name],
+      ),
+      operation: () => _service.updateColour(colour.id, name),
+      onOptimistic: () async {
+        setState(() {
+          _colours = _colours
+              .map(
+                (c) => c.id == colour.id ? Colour(id: c.id, name: name) : c,
+              )
+              .toList();
+        });
+      },
+      onCommitted: _loadColours,
+      onUndone: _loadColours,
+    );
   }
 
   @override

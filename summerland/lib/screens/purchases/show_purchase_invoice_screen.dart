@@ -152,14 +152,14 @@ class _ShowPurchaseInvoiceScreenState extends State<ShowPurchaseInvoiceScreen> {
 
     if (invoice == null) return;
 
-    final returned = await pushScreen<bool>(
+    final returned = await pushScreen<DeferredCrud>(
       context,
       (_) => ReturnPurchaseItemsScreen(invoice: invoice),
     );
 
-    if (returned == true && mounted) {
-      _retry();
-    }
+    if (returned == null || !mounted) return;
+
+    scheduleDeferredCrud(context, returned, onCommitted: () async => _retry());
   }
 
   Future<void> _payDebt() async {
@@ -222,24 +222,15 @@ class _ShowPurchaseInvoiceScreenState extends State<ShowPurchaseInvoiceScreen> {
       return;
     }
 
-    try {
-      await _purchaseInvoiceService.payDebt(
+    scheduleUndoable(
+      context,
+      message: context.tr('Payment will be recorded. Tap Undo to cancel.'),
+      operation: () => _purchaseInvoiceService.payDebt(
         invoiceId: invoice.id,
         amount: amount,
-      );
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.tr('Debt payment recorded.'))),
-      );
-
-      _retry();
-    } catch (e) {
-      if (!mounted) return;
-
-      _showMessage(friendlyErrorMessage(context, e));
-    }
+      ),
+      onCommitted: () async => _retry(),
+    );
   }
 
   void _showMessage(String message) {

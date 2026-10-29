@@ -251,42 +251,48 @@ class _CreateStockTransferScreenState extends State<CreateStockTransferScreen> {
       _isSubmitting = true;
     });
 
-    try {
-      await _transferService.createTransfer(
-        fromLocationId: _fromLocation!.id,
-        toLocationId: _toLocation!.id,
-        items: _lines
-            .map(
-              (line) => StockTransferLine(
-                productVariantId: line.variant.id,
-                quantity: line.quantity,
-              ),
-            )
-            .toList(),
-      );
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            context.tr('Transfer of {0} variant(s) created successfully.', [
-              _queuedCount,
-            ]),
+    final fromLocationId = _fromLocation!.id;
+    final toLocationId = _toLocation!.id;
+    final items = _lines
+        .map(
+          (line) => StockTransferLine(
+            productVariantId: line.variant.id,
+            quantity: line.quantity,
           ),
-        ),
-      );
+        )
+        .toList();
 
-      Navigator.pop(context, true);
-    } catch (e) {
-      if (!mounted) return;
+    scheduleUndoable(
+      context,
+      message: context.tr('This transfer will be created. Tap Undo to cancel.'),
+      operation: () => _transferService.createTransfer(
+        fromLocationId: fromLocationId,
+        toLocationId: toLocationId,
+        items: items,
+      ),
+      onCommitted: () async {
+        if (!mounted) return;
 
-      setState(() {
-        _isSubmitting = false;
-      });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              context.tr('Transfer of {0} variant(s) created successfully.', [
+                _queuedCount,
+              ]),
+            ),
+          ),
+        );
 
-      _showError(friendlyErrorMessage(context, e));
-    }
+        Navigator.pop(context, true);
+      },
+      onUndone: () {
+        if (mounted) {
+          setState(() {
+            _isSubmitting = false;
+          });
+        }
+      },
+    );
   }
 
   void _showError(String message) {

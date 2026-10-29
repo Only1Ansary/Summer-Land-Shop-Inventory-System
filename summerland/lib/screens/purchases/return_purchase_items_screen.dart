@@ -80,37 +80,32 @@ class _ReturnPurchaseItemsScreenState extends State<ReturnPurchaseItemsScreen> {
       _isSubmitting = true;
     });
 
-    try {
-      final items = _invoice.items
-          .where((item) => _returnQuantityFor(item) > 0)
-          .map((item) {
-            return {
-              'productId': item.productId,
-              'quantity': _returnQuantityFor(item),
-            };
-          })
-          .toList();
+    final items = _invoice.items
+        .where((item) => _returnQuantityFor(item) > 0)
+        .map((item) {
+          return {
+            'productId': item.productId,
+            'quantity': _returnQuantityFor(item),
+          };
+        })
+        .toList();
 
-      await _purchaseInvoiceService.createPurchaseReturn(
-        invoiceId: _invoice.id,
-        reason: _reasonController.text.trim().isEmpty
-            ? null
-            : _reasonController.text.trim(),
-        items: items,
-      );
+    final reason = _reasonController.text.trim().isEmpty
+        ? null
+        : _reasonController.text.trim();
 
-      if (!mounted) return;
-
-      Navigator.of(context).pop(true);
-    } catch (e) {
-      if (!mounted) return;
-
-      setState(() {
-        _isSubmitting = false;
-      });
-
-      _showError(friendlyErrorMessage(context, e));
-    }
+    Navigator.of(context).pop(
+      DeferredCrud(
+        message: context.tr(
+          'Purchase return will be created. Tap Undo to cancel.',
+        ),
+        operation: () => _purchaseInvoiceService.createPurchaseReturn(
+          invoiceId: _invoice.id,
+          reason: reason,
+          items: items,
+        ),
+      ),
+    );
   }
 
   void _showError(String message) {

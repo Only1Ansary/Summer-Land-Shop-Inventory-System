@@ -458,53 +458,81 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       _isCreating = true;
     });
 
-    try {
-      final items = <Map<String, dynamic>>[];
+    final items = <Map<String, dynamic>>[];
 
-      for (final cartItem in _cart) {
-        for (final allocation in cartItem.allocations) {
-          items.add({
-            'productVariantId': cartItem.variant.id,
-            'quantity': allocation.quantity,
-            'stockLocationId': allocation.location.id,
-            ...cartItem.discountPayload,
+    for (final cartItem in _cart) {
+      for (final allocation in cartItem.allocations) {
+        items.add({
+          'productVariantId': cartItem.variant.id,
+          'quantity': allocation.quantity,
+          'stockLocationId': allocation.location.id,
+          ...cartItem.discountPayload,
+        });
+      }
+    }
+
+    final locationId = _selectedCashierLocation!.id;
+    final employeeId = _selectedEmployee!.id;
+    final discountAmount = _discountIsPercent ? 0 : _discount;
+    final discountPercent = _discountIsPercent ? _discountEntry : 0;
+
+    Invoice? createdInvoice;
+
+    scheduleUndoable(
+      context,
+      message: context.tr('Invoice will be created. Tap Undo to cancel.'),
+      operation: () async {
+        try {
+          createdInvoice = await _invoiceService.createInvoice(
+            locationId: locationId,
+            employeeId: employeeId,
+            items: items,
+            discountAmount: discountAmount.toDouble(),
+            discountPercent: discountPercent.toDouble(),
+          );
+        } finally {
+          if (mounted) {
+            setState(() {
+              _isCreating = false;
+            });
+          }
+        }
+      },
+      onCommitted: () async {
+        if (!mounted) return;
+
+        setState(() {
+          _discountController.clear();
+          _discountIsPercent = false;
+          _isCartExpanded = false;
+          _cart.clear();
+        });
+
+        final invoice = createdInvoice;
+
+        if (invoice == null) return;
+
+        if (ModalRoute.of(context)?.isCurrent == true) {
+          await pushScreen(
+            context,
+            (_) => InvoiceDetailsScreen(invoice: invoice),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(context.tr('Invoice #{0} created.', [invoice.id])),
+            ),
+          );
+        }
+      },
+      onUndone: () {
+        if (mounted) {
+          setState(() {
+            _isCreating = false;
           });
         }
-      }
-
-      final invoice = await _invoiceService.createInvoice(
-        locationId: _selectedCashierLocation!.id,
-        employeeId: _selectedEmployee!.id,
-        items: items,
-        discountAmount: _discountIsPercent ? 0 : _discount,
-        discountPercent: _discountIsPercent ? _discountEntry : 0,
-      );
-
-      if (!mounted) return;
-
-      setState(() {
-        _isCreating = false;
-        _discountController.clear();
-        _discountIsPercent = false;
-        _isCartExpanded = false;
-      });
-
-      await pushScreen(context, (_) => InvoiceDetailsScreen(invoice: invoice));
-
-      if (!mounted) return;
-
-      setState(() {
-        _cart.clear();
-      });
-    } catch (e) {
-      if (!mounted) return;
-
-      setState(() {
-        _isCreating = false;
-      });
-
-      _showError(friendlyErrorMessage(context, e));
-    }
+      },
+    );
   }
 
   void _showError(String message) {

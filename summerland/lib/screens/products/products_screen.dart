@@ -238,14 +238,14 @@ class _ProductsScreenState extends State<ProductsScreen>
   Future<void> _openProductForm({Product? product}) async {
     if (!ensureOnlineForWrite(context)) return;
 
-    final result = await pushScreen(
+    final result = await pushScreen<DeferredCrud>(
       context,
       (_) => ProductFormScreen(product: product, categories: _categories),
     );
 
-    if (result == true) {
-      _refreshAfterChange();
-    }
+    if (result == null) return;
+
+    scheduleDeferredCrud(context, result, onCommitted: _refreshAfterChange);
   }
 
   Future<void> _openDetails(Product product) async {
@@ -267,23 +267,14 @@ class _ProductsScreenState extends State<ProductsScreen>
 
     if (!confirmed) return;
 
-    try {
-      await _productService.deleteProduct(product.id);
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.tr('Product deleted successfully.'))),
-      );
-
-      _refreshAfterChange();
-    } catch (e) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(context, e))));
-    }
+    scheduleUndoable(
+      context,
+      message: context.tr('"{0}" will be deleted. Tap Undo to cancel.', [
+        product.name,
+      ]),
+      operation: () => _productService.deleteProduct(product.id),
+      onCommitted: _refreshAfterChange,
+    );
   }
 
   @override

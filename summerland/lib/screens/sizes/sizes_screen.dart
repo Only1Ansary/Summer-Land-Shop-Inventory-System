@@ -77,16 +77,21 @@ class _SizesScreenState extends State<SizesScreen>
       return;
     }
 
-    try {
-      await _service.createSize(name);
-      await _loadSizeModels();
-    } catch (e) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(context, e))));
-    }
+    scheduleUndoable(
+      context,
+      message: context.tr('"{0}" will be added. Tap Undo to cancel.', [name]),
+      operation: () => _service.createSize(name),
+      onOptimistic: () async {
+        setState(() {
+          _sizes = [
+            ..._sizes,
+            SizeModel(id: -DateTime.now().millisecondsSinceEpoch, name: name),
+          ];
+        });
+      },
+      onCommitted: _loadSizeModels,
+      onUndone: _loadSizeModels,
+    );
   }
 
   Future<void> _editSizeModel(SizeModel size) async {
@@ -104,17 +109,25 @@ class _SizesScreenState extends State<SizesScreen>
       return;
     }
 
-    try {
-      await _service.updateSize(size.id, name);
-
-      await _loadSizeModels();
-    } catch (e) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(context, e))));
-    }
+    scheduleUndoable(
+      context,
+      message: context.tr(
+        'Changes to "{0}" will be saved. Tap Undo to cancel.',
+        [name],
+      ),
+      operation: () => _service.updateSize(size.id, name),
+      onOptimistic: () async {
+        setState(() {
+          _sizes = _sizes
+              .map(
+                (s) => s.id == size.id ? SizeModel(id: s.id, name: name) : s,
+              )
+              .toList();
+        });
+      },
+      onCommitted: _loadSizeModels,
+      onUndone: _loadSizeModels,
+    );
   }
 
   @override

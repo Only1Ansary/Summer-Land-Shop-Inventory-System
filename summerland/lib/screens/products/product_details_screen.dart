@@ -155,15 +155,21 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
 
     if (!mounted) return;
 
-    final result = await pushScreen(
+    final result = await pushScreen<DeferredCrud>(
       context,
       (_) => ProductFormScreen(product: updatedProduct, categories: categories),
     );
 
-    if (result == true) {
-      await _refreshProduct();
-      await _loadVariants();
-    }
+    if (result == null) return;
+
+    scheduleDeferredCrud(
+      context,
+      result,
+      onCommitted: () async {
+        await _refreshProduct();
+        await _loadVariants();
+      },
+    );
   }
 
   /// Reloads the product so edits are reflected without leaving the
@@ -201,7 +207,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
   Future<void> _addVariant() async {
     if (!ensureOnlineForWrite(context)) return;
 
-    final result = await pushScreen(
+    final result = await pushScreen<DeferredCrud>(
       context,
       (_) => ProductVariantFormScreen(
         product: _product,
@@ -210,15 +216,15 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
       ),
     );
 
-    if (result == true) {
-      _loadVariants();
-    }
+    if (result == null) return;
+
+    scheduleDeferredCrud(context, result, onCommitted: _loadVariants);
   }
 
   Future<void> _editVariant(ProductVariant variant) async {
     if (!ensureOnlineForWrite(context)) return;
 
-    final result = await pushScreen(
+    final result = await pushScreen<DeferredCrud>(
       context,
       (_) => ProductVariantFormScreen(
         product: _product,
@@ -228,9 +234,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
       ),
     );
 
-    if (result == true) {
-      _loadVariants();
-    }
+    if (result == null) return;
+
+    scheduleDeferredCrud(context, result, onCommitted: _loadVariants);
   }
 
   /// A variant with no size and no colour: stock created by a purchase before
@@ -242,7 +248,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
   Future<void> _splitVariant(ProductVariant variant) async {
     if (!ensureOnlineForWrite(context)) return;
 
-    final result = await pushScreen(
+    final result = await pushScreen<bool>(
       context,
       (_) => SplitVariantScreen(
         product: _product,
@@ -253,10 +259,6 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
     );
 
     if (result == true) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.tr('Variant split successfully.'))),
-      );
-
       _loadVariants();
     }
   }
@@ -272,23 +274,12 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
 
     if (!confirmed) return;
 
-    try {
-      await _variantService.deleteVariant(variant.id);
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.tr('Variant deleted successfully.'))),
-      );
-
-      _loadVariants();
-    } catch (e) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(context, e))));
-    }
+    scheduleUndoable(
+      context,
+      message: context.tr('This variant will be deleted. Tap Undo to cancel.'),
+      operation: () => _variantService.deleteVariant(variant.id),
+      onCommitted: _loadVariants,
+    );
   }
 
   @override

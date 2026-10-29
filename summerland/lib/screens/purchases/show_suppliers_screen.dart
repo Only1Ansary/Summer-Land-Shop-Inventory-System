@@ -88,27 +88,27 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen>
   Future<void> _addSupplier() async {
     if (!ensureOnlineForWrite(context)) return;
 
-    final added = await pushScreen<bool>(
+    final added = await pushScreen<DeferredCrud>(
       context,
       (_) => const AddSuppliersScreen(),
     );
 
-    if (added == true) {
-      _loadSuppliers();
-    }
+    if (added == null) return;
+
+    scheduleDeferredCrud(context, added, onCommitted: _loadSuppliers);
   }
 
   Future<void> _editSupplier(Supplier supplier) async {
     if (!ensureOnlineForWrite(context)) return;
 
-    final updated = await pushScreen<bool>(
+    final updated = await pushScreen<DeferredCrud>(
       context,
       (_) => AddSuppliersScreen(supplier: supplier),
     );
 
-    if (updated == true) {
-      _loadSuppliers();
-    }
+    if (updated == null) return;
+
+    scheduleDeferredCrud(context, updated, onCommitted: _loadSuppliers);
   }
 
   Future<void> _deleteSupplier(Supplier supplier) async {
@@ -122,25 +122,14 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen>
 
     if (!confirmed) return;
 
-    try {
-      await _supplierService.deleteSupplier(supplier.id);
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.tr('{0} deleted.', [supplier.supplierName])),
-        ),
-      );
-
-      _loadSuppliers();
-    } catch (e) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(context, e))));
-    }
+    scheduleUndoable(
+      context,
+      message: context.tr('"{0}" will be deleted. Tap Undo to cancel.', [
+        supplier.supplierName,
+      ]),
+      operation: () => _supplierService.deleteSupplier(supplier.id),
+      onCommitted: _loadSuppliers,
+    );
   }
 
   Future<void> _paySupplierDebt(Supplier supplier) async {
@@ -181,23 +170,16 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen>
       return;
     }
 
-    try {
-      await _supplierService.payDebt(supplierId: supplier.id, amount: amount);
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.tr('Debt payment recorded.'))),
-      );
-
-      _loadSuppliers();
-    } catch (e) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(context, e))));
-    }
+    scheduleUndoable(
+      context,
+      message: context.tr(
+        'Payment to {0} will be recorded. Tap Undo to cancel.',
+        [supplier.supplierName],
+      ),
+      operation: () =>
+          _supplierService.payDebt(supplierId: supplier.id, amount: amount),
+      onCommitted: _loadSuppliers,
+    );
   }
 
   void _toggleExpanded(int id) {

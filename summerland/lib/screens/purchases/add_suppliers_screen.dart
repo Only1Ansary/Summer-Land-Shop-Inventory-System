@@ -53,31 +53,29 @@ class _AddSuppliersScreenState extends State<AddSuppliersScreen> {
       _isSaving = true;
     });
 
-    try {
-      if (_isEditing) {
-        await _supplierService.updateSupplier(
-          widget.supplier!.id,
-          supplierName: name,
-          debt: widget.supplier!.debt,
-        );
-      } else {
-        await _supplierService.createSupplier(name);
-      }
+    final operation = _isEditing
+        ? () async {
+            await _supplierService.updateSupplier(
+              widget.supplier!.id,
+              supplierName: name,
+              debt: widget.supplier!.debt,
+            );
+          }
+        : () async {
+            await _supplierService.createSupplier(name);
+          };
 
-      if (!mounted) return;
-
-      Navigator.of(context).pop(true);
-    } catch (e) {
-      if (!mounted) return;
-
-      setState(() {
-        _isSaving = false;
-      });
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(context, e))));
-    }
+    Navigator.of(context).pop(
+      DeferredCrud(
+        message: _isEditing
+            ? context.tr(
+                'Changes to "{0}" will be saved. Tap Undo to cancel.',
+                [name],
+              )
+            : context.tr('"{0}" will be added. Tap Undo to cancel.', [name]),
+        operation: operation,
+      ),
+    );
   }
 
   @override

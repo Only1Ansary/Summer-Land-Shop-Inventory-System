@@ -44,14 +44,15 @@ class SummerlandApp extends StatelessWidget {
     return AnimatedBuilder(
       animation: Listenable.merge([
         ThemeService.instance.mode,
+        ThemeService.instance.variant,
         LanguageService.instance.language,
         ShopProfileService.instance.profile,
       ]),
       builder: (context, _) => MaterialApp(
         title: ShopProfileService.instance.profile.value.name,
         debugShowCheckedModeBanner: false,
-        theme: AppTheme.light(),
-        darkTheme: AppTheme.dark(),
+        theme: AppTheme.light(ThemeService.instance.variant.value),
+        darkTheme: AppTheme.dark(ThemeService.instance.variant.value),
         themeMode: ThemeService.instance.mode.value,
         locale: LanguageService.instance.locale,
         supportedLocales: const [Locale('en'), Locale('ar')],

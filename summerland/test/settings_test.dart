@@ -5,10 +5,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:summerland/main.dart';
+import 'package:summerland/models/app_theme_variant.dart';
 import 'package:summerland/screens/settings/settings_screen.dart';
 import 'package:summerland/services/language_service.dart';
 import 'package:summerland/services/shop_profile_service.dart';
 import 'package:summerland/services/theme_service.dart';
+import 'package:summerland/ui/app_theme.dart';
 import 'package:summerland/ui/home_modules.dart';
 
 /// Pumps the Settings screen on a tall surface so the whole list is laid out.
@@ -73,6 +75,35 @@ void main() {
     expect(prefs.getString('settings.themeMode'), 'dark');
   });
 
+  testWidgets('theme palette can be switched to Emerald Depth and persists', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    ThemeService.instance.variant.value = AppThemeVariant.classic;
+
+    await pumpSettings(tester);
+
+    await tester.tap(find.text('Emerald Depth'));
+    await tester.pumpAndSettle();
+
+    expect(ThemeService.instance.variant.value, AppThemeVariant.emeraldDepth);
+
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('settings.themeVariant'), 'emerald');
+  });
+
+  test('theme palette is loaded from preferences', () async {
+    SharedPreferences.setMockInitialValues({
+      'settings.themeVariant': 'emerald',
+    });
+
+    await ThemeService.instance.load();
+
+    expect(ThemeService.instance.variant.value, AppThemeVariant.emeraldDepth);
+
+    ThemeService.instance.variant.value = AppThemeVariant.classic;
+  });
+
   testWidgets('shop name can be renamed and persists', (tester) async {
     SharedPreferences.setMockInitialValues({});
     ShopProfileService.instance.profile.value = ShopProfile.defaults;
@@ -107,6 +138,31 @@ void main() {
     final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
     expect(app.themeMode, ThemeMode.dark);
     expect(app.darkTheme, isNotNull);
+  });
+
+  testWidgets('app root applies the selected theme palette', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    ThemeService.instance.mode.value = ThemeMode.light;
+    ThemeService.instance.variant.value = AppThemeVariant.emeraldDepth;
+
+    tester.view.physicalSize = const Size(800, 2000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(const SummerlandApp());
+    await tester.pump();
+
+    final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
+    expect(
+      app.theme!.colorScheme.primary,
+      AppTheme.light(AppThemeVariant.emeraldDepth).colorScheme.primary,
+    );
+    expect(
+      app.theme!.colorScheme.primary,
+      isNot(AppTheme.light().colorScheme.primary),
+    );
+
+    ThemeService.instance.variant.value = AppThemeVariant.classic;
   });
 
   testWidgets('language can be switched to Arabic and persists', (

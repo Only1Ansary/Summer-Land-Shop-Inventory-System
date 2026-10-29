@@ -1,8 +1,223 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../localization/app_strings.dart';
+import '../services/api_service.dart';
 import '../services/connectivity_service.dart';
 import 'app_theme.dart';
+
+/// How long a change waits before it is committed, leaving the user time to
+/// undo it from the snackbar.
+const Duration undoWindow = Duration(seconds: 5);
+
+/// A change that should be committed after [undoWindow] unless the user taps
+/// Undo first.
+///
+/// Forms return one of these instead of calling the service directly, so the
+/// screen that owns the list can show the undo snackbar and refresh once the
+/// change is committed.
+class DeferredCrud {
+  const DeferredCrud({required this.message, required this.operation});
+
+  /// The text shown in the undo snackbar.
+  final String message;
+
+  /// The actual create/update/delete call.
+  final Future<void> Function() operation;
+}
+
+/// Shows [message] with an Undo action and runs [operation] after
+/// [undoWindow] unless the user taps Undo (or Skip) first.
+///
+/// [onOptimistic] runs immediately so the change can be reflected in the UI
+/// before it reaches the backend. [onCommitted] runs after the operation
+/// succeeds, usually to reload the list. [onUndone] runs when the user
+/// cancels, so a screen can revert the optimistic change.
+void scheduleUndoable(
+  BuildContext context, {
+  required String message,
+  required Future<void> Function() operation,
+  Future<void> Function()? onOptimistic,
+  Future<void> Function()? onCommitted,
+  VoidCallback? onUndone,
+}) {
+  final messenger = ScaffoldMessenger.of(context);
+  final strings = AppStrings.of(context);
+
+  var undone = false;
+  var committed = false;
+  Timer? timer;
+
+  Future<void> commit() async {
+    if (committed || undone) return;
+    committed = true;
+    timer?.cancel();
+    messenger.hideCurrentSnackBar();
+
+    try {
+      await operation();
+      await onCommitted?.call();
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(strings.translate(friendlyError(e)))),
+      );
+    }
+  }
+
+  void undo() {
+    if (committed || undone) return;
+    undone = true;
+    timer?.cancel();
+    onUndone?.call();
+    messenger.hideCurrentSnackBar();
+
+    Future<void>.microtask(() {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(strings.translate('Change undone.')),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    });
+  }
+
+  if (onOptimistic != null) {
+    onOptimistic();
+  }
+
+  messenger
+    ..hideCurrentSnackBar()
+    ..showSnackBar(
+      SnackBar(
+        content: _UndoSnackBarContent(
+          message: message,
+          duration: undoWindow,
+          onUndo: undo,
+          onSkip: commit,
+        ),
+        duration: undoWindow,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+
+  timer = Timer(undoWindow, () {
+    if (undone || committed) return;
+
+    commit();
+  });
+}
+
+/// Convenience wrapper for a [DeferredCrud] returned by a form.
+void scheduleDeferredCrud(
+  BuildContext context,
+  DeferredCrud crud, {
+  Future<void> Function()? onOptimistic,
+  Future<void> Function()? onCommitted,
+  VoidCallback? onUndone,
+}) {
+  scheduleUndoable(
+    context,
+    message: crud.message,
+    operation: crud.operation,
+    onOptimistic: onOptimistic,
+    onCommitted: onCommitted,
+    onUndone: onUndone,
+  );
+}
+
+/// The content of the undo snackbar: message, a countdown indicator, and
+/// Undo / Skip actions.
+class _UndoSnackBarContent extends StatefulWidget {
+  const _UndoSnackBarContent({
+    required this.message,
+    required this.duration,
+    required this.onUndo,
+    required this.onSkip,
+  });
+
+  final String message;
+  final Duration duration;
+  final VoidCallback onUndo;
+  final VoidCallback onSkip;
+
+  @override
+  State<_UndoSnackBarContent> createState() => _UndoSnackBarContentState();
+}
+
+class _UndoSnackBarContentState extends State<_UndoSnackBarContent>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: widget.duration)
+      ..forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
+    final totalSeconds = widget.duration.inSeconds;
+
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        final progress = (1 - _controller.value).clamp(0.0, 1.0);
+        final remaining = (progress * totalSeconds).ceil().clamp(
+          0,
+          totalSeconds,
+        );
+        final theme = Theme.of(context);
+
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(widget.message),
+            const SizedBox(height: 6),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(value: progress, minHeight: 4),
+            ),
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text(
+                  '$remaining s',
+                  style: Theme.of(context).textTheme.labelSmall,
+                ),
+                const Spacer(),
+                TextButton(
+                  onPressed: widget.onUndo,
+                  child: Text(
+                    strings.translate('Undo'),
+                    style: TextStyle(color: theme.colorScheme.onPrimary),
+                  ),
+                ),
+                TextButton(
+                  onPressed: widget.onSkip,
+                  child: Text(
+                    strings.translate('Skip'),
+                    style: TextStyle(color: theme.colorScheme.onPrimary),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
 
 /// Renders a number as a two-decimal money string with the EGP currency.
 String money(num value) => '${value.toStringAsFixed(2)} EGP';

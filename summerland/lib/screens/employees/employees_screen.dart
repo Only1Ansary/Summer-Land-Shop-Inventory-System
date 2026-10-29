@@ -71,27 +71,27 @@ class _EmployeesScreenState extends State<EmployeesScreen>
   Future<void> _addEmployee() async {
     if (!ensureOnlineForWrite(context)) return;
 
-    final added = await pushScreen<bool>(
+    final added = await pushScreen<DeferredCrud>(
       context,
       (_) => const AddEmployeeScreen(),
     );
 
-    if (added == true) {
-      _loadEmployees();
-    }
+    if (added == null) return;
+
+    scheduleDeferredCrud(context, added, onCommitted: _loadEmployees);
   }
 
   Future<void> _editEmployee(Employee employee) async {
     if (!ensureOnlineForWrite(context)) return;
 
-    final updated = await pushScreen<bool>(
+    final updated = await pushScreen<DeferredCrud>(
       context,
       (_) => AddEmployeeScreen(employee: employee),
     );
 
-    if (updated == true) {
-      _loadEmployees();
-    }
+    if (updated == null) return;
+
+    scheduleDeferredCrud(context, updated, onCommitted: _loadEmployees);
   }
 
   void _openHistory(Employee employee) {
@@ -129,42 +129,27 @@ class _EmployeesScreenState extends State<EmployeesScreen>
 
     if (confirmed != true || !mounted) return;
 
-    try {
-      await _employeeService.deleteEmployee(employee.id);
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.tr('{0} was deleted.', [employee.name])),
-        ),
-      );
-      _loadEmployees();
-    } catch (e) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(context, e))));
-    }
+    scheduleUndoable(
+      context,
+      message: context.tr('"{0}" will be deleted. Tap Undo to cancel.', [
+        employee.name,
+      ]),
+      operation: () => _employeeService.deleteEmployee(employee.id),
+      onCommitted: _loadEmployees,
+    );
   }
 
   Future<void> _payEmployee(Employee employee) async {
     if (!ensureOnlineForWrite(context)) return;
 
-    final paid = await showDialog<bool>(
+    final payment = await showDialog<DeferredCrud>(
       context: context,
       builder: (_) => _PayEmployeeDialog(employee: employee),
     );
 
-    if (paid != true || !mounted) return;
+    if (payment == null || !mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(context.tr('Payment recorded for {0}.', [employee.name])),
-      ),
-    );
-    _loadEmployees();
+    scheduleDeferredCrud(context, payment, onCommitted: _loadEmployees);
   }
 
   @override
@@ -492,23 +477,19 @@ class _PayEmployeeDialogState extends State<_PayEmployeeDialog> {
       _error = null;
     });
 
-    try {
-      await _service.recordPayment(
-        widget.employee.id,
-        amount: amount,
-        paidAt: DateTime.now(),
-      );
-
-      if (!mounted) return;
-      Navigator.of(context).pop(true);
-    } catch (e) {
-      if (!mounted) return;
-
-      setState(() {
-        _saving = false;
-        _error = friendlyErrorMessage(context, e);
-      });
-    }
+    Navigator.of(context).pop(
+      DeferredCrud(
+        message: context.tr(
+          'Payment for {0} will be recorded. Tap Undo to cancel.',
+          [widget.employee.name],
+        ),
+        operation: () => _service.recordPayment(
+          widget.employee.id,
+          amount: amount,
+          paidAt: DateTime.now(),
+        ),
+      ),
+    );
   }
 
   @override

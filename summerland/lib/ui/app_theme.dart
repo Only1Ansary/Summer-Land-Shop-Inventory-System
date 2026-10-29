@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 
+import '../models/app_theme_variant.dart';
+
 /// Central colour palette for the whole app.
 ///
-/// Brand + neutral tones come from the Material 3 seed colour, while the
+/// Brand + neutral tones come from the selected [AppThemeVariant], while the
 /// semantic colours (success / warning / danger) are the single source of
 /// truth used by every screen instead of raw `Colors.*` values.
 class AppPalette {
   AppPalette._();
-
-  /// The single accent / brand seed colour for the whole app.
-  static const Color seed = Color(0xFF00275B);
 
   /// Positive states - in stock, added, normal.
   static const Color success = Color(0xFF2E7D32);
@@ -47,16 +46,44 @@ class AppTheme {
   static const double pageMaxWidth = 640;
   static const double contentMaxWidth = 900;
 
-  static ThemeData light() {
-    return _build(ColorScheme.fromSeed(seedColor: AppPalette.seed));
+  static ThemeData light([AppThemeVariant variant = AppThemeVariant.classic]) {
+    return _build(_scheme(variant, Brightness.light));
   }
 
-  static ThemeData dark() {
-    return _build(
-      ColorScheme.fromSeed(
-        seedColor: AppPalette.seed,
-        brightness: Brightness.dark,
-      ),
+  static ThemeData dark([AppThemeVariant variant = AppThemeVariant.classic]) {
+    return _build(_scheme(variant, Brightness.dark));
+  }
+
+  static ColorScheme _scheme(AppThemeVariant variant, Brightness brightness) {
+    final scheme = ColorScheme.fromSeed(
+      seedColor: variant.seed,
+      brightness: brightness,
+    );
+
+    if (variant != AppThemeVariant.emeraldDepth) {
+      return scheme;
+    }
+
+    // Give Emerald Depth its name: deeper, greener surfaces instead of the
+    // neutral grey containers the seed would otherwise produce.
+    if (brightness == Brightness.dark) {
+      return scheme.copyWith(
+        surface: const Color(0xFF07130F),
+        surfaceContainerLowest: const Color(0xFF030A08),
+        surfaceContainerLow: const Color(0xFF0C1B16),
+        surfaceContainer: const Color(0xFF10231D),
+        surfaceContainerHigh: const Color(0xFF162B24),
+        surfaceContainerHighest: const Color(0xFF1D342C),
+      );
+    }
+
+    return scheme.copyWith(
+      surface: const Color(0xFFF3FAF6),
+      surfaceContainerLowest: const Color(0xFFFFFFFF),
+      surfaceContainerLow: const Color(0xFFEAF5EF),
+      surfaceContainer: const Color(0xFFE4F1E9),
+      surfaceContainerHigh: const Color(0xFFDDECE3),
+      surfaceContainerHighest: const Color(0xFFD6E8DE),
     );
   }
 

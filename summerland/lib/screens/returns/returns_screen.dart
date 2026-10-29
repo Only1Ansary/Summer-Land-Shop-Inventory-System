@@ -4,6 +4,7 @@ import '../../localization/app_strings.dart';
 import '../../models/invoice.dart';
 import '../../models/location.dart';
 import '../../models/invoice_item.dart';
+import '../../models/return_model.dart';
 import '../../services/api_service.dart';
 import '../../services/invoice_service.dart';
 import '../../services/location_service.dart';
@@ -127,99 +128,108 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
     required InvoiceItem item,
     required _ReturnData data,
   }) async {
-    try {
-      final returnRecord = await _returnService.createReturn(
-        invoiceId: _invoice!.id,
-        productVariantId: item.productVariantId,
-        quantity: data.quantity,
-        stockLocationId: data.stockLocation.id,
-        reason: data.reason,
-      );
+    ReturnModel? returnRecord;
 
-      if (!mounted) return;
+    scheduleUndoable(
+      context,
+      message: context.tr('Return will be created. Tap Undo to cancel.'),
+      operation: () async {
+        returnRecord = await _returnService.createReturn(
+          invoiceId: _invoice!.id,
+          productVariantId: item.productVariantId,
+          quantity: data.quantity,
+          stockLocationId: data.stockLocation.id,
+          reason: data.reason,
+        );
+      },
+      onCommitted: () async {
+        if (!mounted) return;
 
-      await showDialog(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            title: Text(context.tr('Return Created')),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    StatusBadge(
-                      label: context.tr('DONE'),
-                      color: AppPalette.success,
-                      icon: Icons.check_circle_outline,
+        final record = returnRecord;
+
+        if (record == null) return;
+
+        await showDialog(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: Text(context.tr('Return Created')),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      StatusBadge(
+                        label: context.tr('DONE'),
+                        color: AppPalette.success,
+                        icon: Icons.check_circle_outline,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          record.productName,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  InfoTile(
+                    label: context.tr('Quantity'),
+                    value: '${record.quantity}',
+                  ),
+                  if (item.hasDiscount) ...[
+                    InfoTile(
+                      label: context.tr('Unit before discount'),
+                      value: money(item.unitPrice),
+                      valueStyle: TextStyle(
+                        decoration: TextDecoration.lineThrough,
+                        color: Theme.of(context).colorScheme.outline,
+                      ),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        returnRecord.productName,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
+                    InfoTile(
+                      label: context.tr('Unit after discount'),
+                      value: money(record.unitPrice),
+                      valueStyle: amountStyle(context, record.unitPrice),
+                    ),
+                    InfoTile(
+                      label: context.tr('Total before discount'),
+                      value: money(item.unitPrice * record.quantity),
+                      valueStyle: TextStyle(
+                        decoration: TextDecoration.lineThrough,
+                        color: Theme.of(context).colorScheme.outline,
                       ),
                     ),
                   ],
-                ),
-                const SizedBox(height: 12),
-                InfoTile(
-                  label: context.tr('Quantity'),
-                  value: '${returnRecord.quantity}',
-                ),
-                if (item.hasDiscount) ...[
                   InfoTile(
-                    label: context.tr('Unit before discount'),
-                    value: money(item.unitPrice),
-                    valueStyle: TextStyle(
-                      decoration: TextDecoration.lineThrough,
-                      color: Theme.of(context).colorScheme.outline,
-                    ),
+                    label: context.tr('Location'),
+                    value: record.locationName,
                   ),
                   InfoTile(
-                    label: context.tr('Unit after discount'),
-                    value: money(returnRecord.unitPrice),
-                    valueStyle: amountStyle(context, returnRecord.unitPrice),
-                  ),
-                  InfoTile(
-                    label: context.tr('Total before discount'),
-                    value: money(item.unitPrice * returnRecord.quantity),
-                    valueStyle: TextStyle(
-                      decoration: TextDecoration.lineThrough,
-                      color: Theme.of(context).colorScheme.outline,
-                    ),
+                    label: context.tr('Total'),
+                    value: money(record.totalAmount),
+                    valueStyle: amountStyle(context, record.totalAmount),
                   ),
                 ],
-                InfoTile(
-                  label: context.tr('Location'),
-                  value: returnRecord.locationName,
-                ),
-                InfoTile(
-                  label: context.tr('Total'),
-                  value: money(returnRecord.totalAmount),
-                  valueStyle: amountStyle(context, returnRecord.totalAmount),
+              ),
+              actions: [
+                FilledButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  child: Text(context.tr('OK')),
                 ),
               ],
-            ),
-            actions: [
-              FilledButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                child: Text(context.tr('OK')),
-              ),
-            ],
-          );
-        },
-      );
+            );
+          },
+        );
 
-      await _loadInvoice();
-    } catch (e) {
-      if (!mounted) return;
+        if (!mounted) return;
 
-      _showError(friendlyErrorMessage(context, e));
-    }
+        await _loadInvoice();
+      },
+    );
   }
 
   void _showError(String message) {

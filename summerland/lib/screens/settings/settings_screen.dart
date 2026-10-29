@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:file_selector/file_selector.dart';
 
 import '../../localization/app_strings.dart';
+import '../../models/app_theme_variant.dart';
 import '../../services/cache_store.dart';
 import '../../services/language_service.dart';
 import '../../services/pinned_modules_service.dart';
@@ -28,6 +29,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   int _maxPinned = PinnedModulesService.defaultMaxPinned;
   bool _loading = true;
   ThemeMode _themeMode = ThemeService.instance.mode.value;
+  AppThemeVariant _themeVariant = ThemeService.instance.variant.value;
   AppLanguage _language = LanguageService.instance.language.value;
 
   @override
@@ -86,6 +88,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
 
     await ThemeService.instance.setMode(value);
+  }
+
+  Future<void> _setThemeVariant(AppThemeVariant value) async {
+    setState(() {
+      _themeVariant = value;
+    });
+
+    await ThemeService.instance.setVariant(value);
   }
 
   Future<void> _setLanguage(AppLanguage value) async {
@@ -325,6 +335,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             selected: {_themeMode},
                             onSelectionChanged: (selection) =>
                                 _setThemeMode(selection.first),
+                          ),
+                        ),
+                        const Divider(height: 1),
+                        Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: SegmentedButton<AppThemeVariant>(
+                            segments: [
+                              for (final variant in AppThemeVariant.values)
+                                ButtonSegment(
+                                  value: variant,
+                                  label: Text(context.tr(variant.label)),
+                                ),
+                            ],
+                            selected: {_themeVariant},
+                            onSelectionChanged: (selection) =>
+                                _setThemeVariant(selection.first),
                           ),
                         ),
                         const Divider(height: 1),

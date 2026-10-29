@@ -345,43 +345,26 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
 
     if (quantity == null) return;
 
-    setState(() {
-      _isAddingStock = true;
-    });
+    final locationId = _selectedLocationId!;
+    final enteredText = _stockQuantityController.text;
 
-    try {
-      await _inventoryService.addInventory(
+    _stockQuantityController.clear();
+
+    scheduleUndoable(
+      context,
+      message: context.tr('Stock will be added. Tap Undo to cancel.'),
+      operation: () => _inventoryService.addInventory(
         productVariantId: widget.variant!.id,
-        locationId: _selectedLocationId!,
+        locationId: locationId,
         quantity: quantity,
-      );
-
-      if (!mounted) return;
-
-      _stockQuantityController.clear();
-
-      await _refreshStock();
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            context.tr('Stock added. Total is now {0}.', [_currentStock]),
-          ),
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-
-      _showError(friendlyErrorMessage(context, e));
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isAddingStock = false;
-        });
-      }
-    }
+      ),
+      onCommitted: _refreshStock,
+      onUndone: () {
+        if (mounted) {
+          _stockQuantityController.text = enteredText;
+        }
+      },
+    );
   }
 
   Future<void> _save() async {
@@ -421,56 +404,53 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
       _isSaving = true;
     });
 
-    try {
-      if (isEditing) {
-        await _variantService.updateVariant(
-          id: widget.variant!.id,
-          sizeId: _selectedSizeId,
-          colourId: _selectedColourId,
-          barcode: _barcodeController.text.trim(),
-          price: price,
-          lowStockThreshold: threshold,
-        );
-      } else {
-        final createdVariant = await _variantService.createVariant(
-          productId: widget.product.id,
-          sizeId: _selectedSizeId,
-          colourId: _selectedColourId,
-          barcodeType: _barcodeType,
-          barcode: _barcodeController.text.trim().isEmpty
-              ? null
-              : _barcodeController.text.trim(),
-          price: price,
-          lowStockThreshold: threshold,
-        );
+    final sizeId = _selectedSizeId;
+    final colourId = _selectedColourId;
+    final barcode = _barcodeController.text.trim();
+    final locationId = _selectedLocationId;
 
-        final initialStock = _stockQuantity();
+    final operation = isEditing
+        ? () async {
+            await _variantService.updateVariant(
+              id: widget.variant!.id,
+              sizeId: sizeId,
+              colourId: colourId,
+              barcode: barcode,
+              price: price,
+              lowStockThreshold: threshold,
+            );
+          }
+        : () async {
+            final createdVariant = await _variantService.createVariant(
+              productId: widget.product.id,
+              sizeId: sizeId,
+              colourId: colourId,
+              barcodeType: _barcodeType,
+              barcode: barcode.isEmpty ? null : barcode,
+              price: price,
+              lowStockThreshold: threshold,
+            );
 
-        if (initialStock != null) {
-          await _inventoryService.addInventory(
-            productVariantId: createdVariant.id,
-            locationId: _selectedLocationId!,
-            quantity: initialStock,
-          );
-        }
-      }
+            if (initialStock != null) {
+              await _inventoryService.addInventory(
+                productVariantId: createdVariant.id,
+                locationId: locationId!,
+                quantity: initialStock,
+              );
+            }
+          };
 
-      if (!mounted) return;
-
-      Navigator.pop(context, true);
-    } catch (e) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(context, e))));
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isSaving = false;
-        });
-      }
-    }
+    Navigator.pop(
+      context,
+      DeferredCrud(
+        message: isEditing
+            ? context.tr(
+                'Changes to this variant will be saved. Tap Undo to cancel.',
+              )
+            : context.tr('This variant will be added. Tap Undo to cancel.'),
+        operation: operation,
+      ),
+    );
   }
 
   Widget _buildStockSection() {

@@ -109,44 +109,48 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       _isSaving = true;
     });
 
-    try {
-      if (isEditing) {
-        await _productService.updateProduct(
-          id: widget.product!.id,
-          modelNumber: _modelController.text.trim(),
-          barcode: _barcodeController.text.trim(),
-          purchasePrice: _parseInt(_purchasePriceController.text)!,
-          profitMargin: _parseInt(_profitMarginController.text)!,
-          name: _nameController.text.trim(),
-          categoryId: _selectedCategoryId!,
-        );
-      } else {
-        await _productService.createProduct(
-          modelNumber: _modelController.text.trim(),
-          barcode: _barcodeController.text.trim(),
-          purchasePrice: _parseInt(_purchasePriceController.text)!,
-          profitMargin: _parseInt(_profitMarginController.text)!,
-          name: _nameController.text.trim(),
-          categoryId: _selectedCategoryId!,
-        );
-      }
+    final name = _nameController.text.trim();
+    final modelNumber = _modelController.text.trim();
+    final barcode = _barcodeController.text.trim();
+    final purchasePrice = _parseInt(_purchasePriceController.text)!;
+    final profitMargin = _parseInt(_profitMarginController.text)!;
+    final categoryId = _selectedCategoryId!;
 
-      if (!mounted) return;
+    final operation = isEditing
+        ? () async {
+            await _productService.updateProduct(
+              id: widget.product!.id,
+              modelNumber: modelNumber,
+              barcode: barcode,
+              purchasePrice: purchasePrice,
+              profitMargin: profitMargin,
+              name: name,
+              categoryId: categoryId,
+            );
+          }
+        : () async {
+            await _productService.createProduct(
+              modelNumber: modelNumber,
+              barcode: barcode,
+              purchasePrice: purchasePrice,
+              profitMargin: profitMargin,
+              name: name,
+              categoryId: categoryId,
+            );
+          };
 
-      Navigator.pop(context, true);
-    } catch (e) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(context, e))));
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isSaving = false;
-        });
-      }
-    }
+    Navigator.pop(
+      context,
+      DeferredCrud(
+        message: isEditing
+            ? context.tr(
+                'Changes to "{0}" will be saved. Tap Undo to cancel.',
+                [name],
+              )
+            : context.tr('"{0}" will be added. Tap Undo to cancel.', [name]),
+        operation: operation,
+      ),
+    );
   }
 
   @override

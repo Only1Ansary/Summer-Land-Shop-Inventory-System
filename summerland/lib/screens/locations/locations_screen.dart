@@ -77,16 +77,21 @@ class _LocationsScreenState extends State<LocationsScreen>
       return;
     }
 
-    try {
-      await _service.createLocation(name);
-      await _loadLocations();
-    } catch (e) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(context, e))));
-    }
+    scheduleUndoable(
+      context,
+      message: context.tr('"{0}" will be added. Tap Undo to cancel.', [name]),
+      operation: () => _service.createLocation(name),
+      onOptimistic: () async {
+        setState(() {
+          _locations = [
+            ..._locations,
+            Location(id: -DateTime.now().millisecondsSinceEpoch, name: name),
+          ];
+        });
+      },
+      onCommitted: _loadLocations,
+      onUndone: _loadLocations,
+    );
   }
 
   Future<void> _editLocation(Location location) async {
@@ -104,17 +109,25 @@ class _LocationsScreenState extends State<LocationsScreen>
       return;
     }
 
-    try {
-      await _service.updateLocation(location.id, name);
-
-      await _loadLocations();
-    } catch (e) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(context, e))));
-    }
+    scheduleUndoable(
+      context,
+      message: context.tr(
+        'Changes to "{0}" will be saved. Tap Undo to cancel.',
+        [name],
+      ),
+      operation: () => _service.updateLocation(location.id, name),
+      onOptimistic: () async {
+        setState(() {
+          _locations = _locations
+              .map(
+                (l) => l.id == location.id ? Location(id: l.id, name: name) : l,
+              )
+              .toList();
+        });
+      },
+      onCommitted: _loadLocations,
+      onUndone: _loadLocations,
+    );
   }
 
   Future<void> _deleteLocation(Location location) async {
@@ -124,9 +137,7 @@ class _LocationsScreenState extends State<LocationsScreen>
       context: context,
       builder: (context) => AlertDialog(
         title: Text(context.tr('Delete location?')),
-        content: Text(
-          context.tr('Delete "{0}"? This cannot be undone.', [location.name]),
-        ),
+        content: Text(context.tr('Delete "{0}"?', [location.name])),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -144,25 +155,20 @@ class _LocationsScreenState extends State<LocationsScreen>
       return;
     }
 
-    try {
-      await _service.deleteLocation(location.id);
-
-      if (!mounted) return;
-
-      await _loadLocations();
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.tr('{0} deleted.', [location.name]))),
-      );
-    } catch (e) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(context, e))));
-    }
+    scheduleUndoable(
+      context,
+      message: context.tr('"{0}" will be deleted. Tap Undo to cancel.', [
+        location.name,
+      ]),
+      operation: () => _service.deleteLocation(location.id),
+      onOptimistic: () async {
+        setState(() {
+          _locations = _locations.where((l) => l.id != location.id).toList();
+        });
+      },
+      onCommitted: _loadLocations,
+      onUndone: _loadLocations,
+    );
   }
 
   @override

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../localization/app_strings.dart';
 import '../../models/category.dart';
+import '../../models/purchase_invoice.dart';
 import '../../services/api_service.dart';
 import '../../services/category_service.dart';
 import '../../services/purchase_invoice_service.dart';
@@ -293,67 +294,95 @@ class _CreatePurchaseInvoiceScreenState
       _isCreating = true;
     });
 
-    try {
-      final items = _items.map((item) {
-        return {
-          'name': item.name,
-          'modelNumber': item.modelNumber,
-          'barcode': item.barcode,
-          'purchasePrice': item.purchasePrice,
-          'quantity': item.quantity,
-          'categoryId': item.categoryId,
-          'profitMargin': item.profitMargin,
-        };
-      }).toList();
+    final items = _items.map((item) {
+      return {
+        'name': item.name,
+        'modelNumber': item.modelNumber,
+        'barcode': item.barcode,
+        'purchasePrice': item.purchasePrice,
+        'quantity': item.quantity,
+        'categoryId': item.categoryId,
+        'profitMargin': item.profitMargin,
+      };
+    }).toList();
 
-      final fees = _fees
-          .map(
-            (fee) => {
-              'description': fee.description.trim(),
-              'amount': fee.amount,
-              'isPaid': fee.isPaid,
-            },
-          )
-          .toList();
+    final fees = _fees
+        .map(
+          (fee) => {
+            'description': fee.description.trim(),
+            'amount': fee.amount,
+            'isPaid': fee.isPaid,
+          },
+        )
+        .toList();
 
-      final invoice = await _purchaseInvoiceService.createPurchaseInvoice(
-        supplierName: supplierName,
-        date: _date,
-        totalPaid: totalPaid,
-        discount: discount,
-        items: items,
-        fees: fees,
-      );
+    final date = _date;
 
-      if (!mounted) return;
+    PurchaseInvoice? createdInvoice;
 
-      setState(() {
-        _isCreating = false;
-      });
+    scheduleUndoable(
+      context,
+      message: context.tr(
+        'Purchase invoice will be created. Tap Undo to cancel.',
+      ),
+      operation: () async {
+        try {
+          createdInvoice = await _purchaseInvoiceService.createPurchaseInvoice(
+            supplierName: supplierName,
+            date: date,
+            totalPaid: totalPaid,
+            discount: discount,
+            items: items,
+            fees: fees,
+          );
+        } finally {
+          if (mounted) {
+            setState(() {
+              _isCreating = false;
+            });
+          }
+        }
+      },
+      onCommitted: () async {
+        if (!mounted) return;
 
-      await pushScreen(
-        context,
-        (_) =>
-            ShowPurchaseInvoiceScreen(invoice: invoice, invoiceId: invoice.id),
-      );
+        setState(() {
+          _items.clear();
+          _fees.clear();
+          _totalPaidController.clear();
+          _discountController.clear();
+        });
 
-      if (!mounted) return;
+        final invoice = createdInvoice;
 
-      setState(() {
-        _items.clear();
-        _fees.clear();
-        _totalPaidController.clear();
-        _discountController.clear();
-      });
-    } catch (e) {
-      if (!mounted) return;
+        if (invoice == null) return;
 
-      setState(() {
-        _isCreating = false;
-      });
-
-      _showError(friendlyErrorMessage(context, e));
-    }
+        if (ModalRoute.of(context)?.isCurrent == true) {
+          await pushScreen(
+            context,
+            (_) => ShowPurchaseInvoiceScreen(
+              invoice: invoice,
+              invoiceId: invoice.id,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                context.tr('Purchase invoice #{0} created.', [invoice.id]),
+              ),
+            ),
+          );
+        }
+      },
+      onUndone: () {
+        if (mounted) {
+          setState(() {
+            _isCreating = false;
+          });
+        }
+      },
+    );
   }
 
   void _showError(String message) {

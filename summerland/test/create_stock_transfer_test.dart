@@ -220,6 +220,7 @@ void main() {
     await tester.tap(
       find.widgetWithText(FilledButton, 'Transfer 2 variant(s)'),
     );
+    await tester.pump(const Duration(seconds: 6));
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
