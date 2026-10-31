@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../models/category.dart';
 import '../../models/product.dart';
@@ -169,6 +170,8 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
             children: [
               TextFormField(
                 controller: _modelController,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 decoration: InputDecoration(
                   labelText: context.tr('Model Number'),
                   prefixIcon: const Icon(Icons.tag),
@@ -176,6 +179,10 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return context.tr('Model number is required.');
+                  }
+
+                  if (int.tryParse(value.trim()) == null) {
+                    return context.tr('Model number must be numbers only.');
                   }
 
                   return null;
@@ -186,10 +193,23 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
 
               TextFormField(
                 controller: _barcodeController,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 decoration: InputDecoration(
                   labelText: context.tr('Barcode (optional)'),
                   prefixIcon: const Icon(Icons.qr_code_2),
                 ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return null;
+                  }
+
+                  if (int.tryParse(value.trim()) == null) {
+                    return context.tr('Barcode must be numbers only.');
+                  }
+
+                  return null;
+                },
               ),
 
               const SizedBox(height: 16),

@@ -298,7 +298,7 @@ class _ProductsScreenState extends State<ProductsScreen>
 
   Widget _buildSearchSection() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 900),
@@ -332,27 +332,43 @@ class _ProductsScreenState extends State<ProductsScreen>
                 const SizedBox(height: 10),
                 const LinearProgressIndicator(minHeight: 2),
               ],
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
               Row(
                 children: [
-                  TextButton.icon(
-                    onPressed: () {
-                      setState(() {
-                        _showFilters = !_showFilters;
-                      });
-                    },
-                    icon: Icon(_showFilters ? Icons.expand_less : Icons.tune),
-                    label: Text(
-                      _showFilters
-                          ? context.tr('Hide Filters')
-                          : context.tr('Filters'),
+                  Flexible(
+                    child: TextButton.icon(
+                      style: TextButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _showFilters = !_showFilters;
+                        });
+                      },
+                      icon: Icon(_showFilters ? Icons.expand_less : Icons.tune),
+                      label: Text(
+                        _showFilters
+                            ? context.tr('Hide Filters')
+                            : context.tr('Filters'),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ),
-                  const Spacer(),
+                  const SizedBox(width: 8),
                   if (_hasActiveFilters)
-                    TextButton(
-                      onPressed: _clearFilters,
-                      child: Text(context.tr('Clear filters')),
+                    Flexible(
+                      child: TextButton(
+                        style: TextButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                        ),
+                        onPressed: _clearFilters,
+                        child: Text(
+                          context.tr('Clear filters'),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                     ),
                 ],
               ),
@@ -396,10 +412,11 @@ class _ProductsScreenState extends State<ProductsScreen>
 
     if (!_hasSearched) {
       return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: EmptyState(
-            icon: Icons.search,
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: EmptyState(
+              icon: Icons.search,
             title: context.tr('Search for products'),
             message: context.tr(
               'Enter a model, name or barcode, or use the filters, '
@@ -412,35 +429,44 @@ class _ProductsScreenState extends State<ProductsScreen>
             ),
           ),
         ),
-      );
+      ),
+    );
     }
 
     if (_products.isEmpty) {
       return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: EmptyState(
-            icon: Icons.inventory_2_outlined,
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: EmptyState(
+              icon: Icons.inventory_2_outlined,
             title: context.tr('No products found'),
             message: context.tr(
               'Try adjusting your search or add a new product.',
             ),
           ),
         ),
-      );
+      ),
+    );
     }
 
     return WideContent(
-      child: Column(
-        children: [
-          Expanded(
-            child: RefreshIndicator(
-              onRefresh: _search,
-              child: ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: _pageProducts.length,
-                itemBuilder: (context, index) {
-                  final product = _pageProducts[index];
+      child: RefreshIndicator(
+        onRefresh: _search,
+        child: ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: _pageProducts.length + 1,
+          itemBuilder: (context, index) {
+            if (index == _pageProducts.length) {
+              return PaginationBar(
+                page: _currentPage,
+                pageSize: _pageSize,
+                totalItems: _products.length,
+                onPageChanged: _goToPage,
+              );
+            }
+
+            final product = _pageProducts[index];
 
                   return Card(
                     margin: const EdgeInsets.only(bottom: 10),
@@ -500,16 +526,7 @@ class _ProductsScreenState extends State<ProductsScreen>
                 },
               ),
             ),
-          ),
-          PaginationBar(
-            page: _currentPage,
-            pageSize: _pageSize,
-            totalItems: _products.length,
-            onPageChanged: _goToPage,
-          ),
-        ],
-      ),
-    );
+          );
   }
 
   void _goToPage(int page) {

@@ -14,10 +14,10 @@ class ApiConfig {
   static const String _key = 'api.baseUrl';
 
   /// Dev-server URL used when running on this machine.
-  static const String desktopBaseUrl = 'https://localhost:7251';
+  static const String desktopBaseUrl = 'http://summerland.runasp.net';
 
   /// Base URL used on phones/tablets, reached over the local network.
-  static const String lanBaseUrl = 'http://192.168.100.137:5070';
+  static const String lanBaseUrl = 'http://summerland.runasp.net';
 
   static String _baseUrl = defaultBaseUrl;
 

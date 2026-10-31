@@ -147,6 +147,37 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('search finds a product by any of its variant barcodes', (
+    tester,
+  ) async {
+    await pumpSearch(tester);
+
+    // A barcode belonging to one of the T-shirt variants finds the product.
+    await tester.enterText(find.byType(TextField), '2222222222222');
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Cotton T-Shirt'), findsOneWidget);
+    expect(find.text('Slim Jeans'), findsNothing);
+
+    // A barcode belonging to the jeans finds those instead.
+    await tester.enterText(find.byType(TextField), '3333333333333');
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Slim Jeans'), findsOneWidget);
+    expect(find.text('Cotton T-Shirt'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('offers a camera action for scanning barcodes', (tester) async {
+    await pumpSearch(tester);
+
+    expect(find.byTooltip('Scan barcode'), findsOneWidget);
+    expect(find.byIcon(Icons.camera_alt_outlined), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('a product expands into per-location size breakdown', (
     tester,
   ) async {

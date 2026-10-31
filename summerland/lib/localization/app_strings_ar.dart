@@ -200,12 +200,22 @@ const Map<String, String> appStringsAr = <String, String>{
   'Inventory Search': 'البحث في المخزون',
   'Search products': 'ابحث عن المنتجات',
   'Name or model number': 'الاسم أو رقم الموديل',
+  'Name, model or barcode': 'الاسم أو الموديل أو الباركود',
+  'Scan barcode': 'مسح الباركود',
+  'Point the camera at a barcode to search for it.':
+      'وجّه الكاميرا نحو الباركود للبحث عنه.',
+  'Camera access was denied. Allow it in your device settings and try again.':
+      'تم رفض الوصول إلى الكاميرا. اسمح به من إعدادات جهازك ثم حاول مرة أخرى.',
+  'The camera could not be opened on this device.':
+      'تعذّر فتح الكاميرا على هذا الجهاز.',
   'Search for a product': 'ابحث عن منتج',
   'No products found': 'لا توجد منتجات',
   'No product with stock matches your search.':
       'لا يوجد منتج بمخزون يطابق بحثك.',
   'Type a product name or model number to see its stock.':
       'اكتب اسم منتج أو رقم موديل لعرض مخزونه.',
+  'Type a product name, model or barcode to see its stock.':
+      'اكتب اسم منتج أو موديل أو باركود لعرض مخزونه.',
   'One size': 'مقاس واحد',
   '{0} • Qty: {1}': '{0} • الكمية: {1}',
 

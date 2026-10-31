@@ -9,6 +9,7 @@ import '../../ui/app_shell.dart';
 import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
 import '../../ui/reconnect_reloader.dart';
+import 'barcode_scanner_screen.dart';
 
 /// The inventory report's product list, without the summary stats on top.
 ///
@@ -33,6 +34,7 @@ class _InventorySearchScreenState extends State<InventorySearchScreen>
 
   int _currentPage = 0;
   String _query = '';
+  final TextEditingController _searchController = TextEditingController();
   final Debouncer _searchDebounce = Debouncer();
 
   List<T> _pageSlice<T>(List<T> items) {
@@ -60,9 +62,33 @@ class _InventorySearchScreenState extends State<InventorySearchScreen>
     });
   }
 
+  /// Opens the camera, then searches for whatever barcode it reads.
+  Future<void> _scanBarcode() async {
+    final barcode = await pushScreen<String>(
+      context,
+      (_) => const BarcodeScannerScreen(),
+    );
+
+    if (!mounted || barcode == null || barcode.isEmpty) return;
+
+    // A scan is a complete search, so skip the typing debounce and apply it
+    // straight away.
+    _searchDebounce.cancel();
+    _searchController.text = barcode;
+    _searchController.selection = TextSelection.collapsed(
+      offset: barcode.length,
+    );
+
+    setState(() {
+      _query = barcode;
+      _currentPage = 0;
+    });
+  }
+
   @override
   void dispose() {
     _searchDebounce.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -113,6 +139,7 @@ class _InventorySearchScreenState extends State<InventorySearchScreen>
     final order = <String>[];
     final names = <String, String>{};
     final models = <String, String>{};
+    final barcodes = <String, Set<String>>{};
     final minPrices = <String, double>{};
     final maxPrices = <String, double>{};
     final quantities = <String, int>{};
@@ -128,6 +155,7 @@ class _InventorySearchScreenState extends State<InventorySearchScreen>
         order.add(key);
         names[key] = item.productName;
         models[key] = item.modelNumber;
+        barcodes[key] = {};
         minPrices[key] = item.price;
         maxPrices[key] = item.price;
         quantities[key] = 0;
@@ -144,6 +172,8 @@ class _InventorySearchScreenState extends State<InventorySearchScreen>
 
       quantities[key] = quantities[key]! + item.totalQuantity;
       sizeNames[key]!.add(sizeName);
+
+      if (item.barcode.isNotEmpty) barcodes[key]!.add(item.barcode);
 
       for (final location in item.locations) {
         final bySize = locations[key]!.putIfAbsent(
@@ -174,6 +204,7 @@ class _InventorySearchScreenState extends State<InventorySearchScreen>
       return _ProductStockRow(
         productName: names[key]!,
         modelNumber: models[key]!,
+        barcodes: barcodes[key]!.toList(),
         minPrice: minPrices[key]!,
         maxPrice: maxPrices[key]!,
         totalQuantity: quantities[key]!,
@@ -210,7 +241,10 @@ class _InventorySearchScreenState extends State<InventorySearchScreen>
         .where(
           (product) =>
               product.productName.toLowerCase().contains(query) ||
-              product.modelNumber.toLowerCase().contains(query),
+              product.modelNumber.toLowerCase().contains(query) ||
+              product.barcodes.any(
+                (barcode) => barcode.toLowerCase().contains(query),
+              ),
         )
         .toList();
   }
@@ -229,6 +263,13 @@ class _InventorySearchScreenState extends State<InventorySearchScreen>
     return AppShell(
       title: context.tr('Inventory Search'),
       destinationId: 'inventory-search',
+      actions: [
+        IconButton(
+          tooltip: context.tr('Scan barcode'),
+          onPressed: _scanBarcode,
+          icon: const Icon(Icons.camera_alt_outlined),
+        ),
+      ],
       body: _loading
           ? const LoadingState()
           : _error != null
@@ -239,9 +280,10 @@ class _InventorySearchScreenState extends State<InventorySearchScreen>
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                   child: WideContent(
                     child: TextField(
+                      controller: _searchController,
                       decoration: InputDecoration(
                         labelText: context.tr('Search products'),
-                        hintText: context.tr('Name or model number'),
+                        hintText: context.tr('Name, model or barcode'),
                         prefixIcon: const Icon(Icons.search_rounded),
                         border: const OutlineInputBorder(),
                       ),
@@ -270,8 +312,8 @@ class _InventorySearchScreenState extends State<InventorySearchScreen>
                                       'No product with stock matches your search.',
                                     )
                                   : context.tr(
-                                      'Type a product name or model number to '
-                                      'see its stock.',
+                                      'Type a product name, model or barcode '
+                                      'to see its stock.',
                                     ),
                             ),
                           ..._pageSlice(products).map((product) {
@@ -333,6 +375,7 @@ class _InventorySearchScreenState extends State<InventorySearchScreen>
 class _ProductStockRow {
   final String productName;
   final String modelNumber;
+  final List<String> barcodes;
   final double minPrice;
   final double maxPrice;
   final int totalQuantity;
@@ -341,6 +384,7 @@ class _ProductStockRow {
   _ProductStockRow({
     required this.productName,
     required this.modelNumber,
+    required this.barcodes,
     required this.minPrice,
     required this.maxPrice,
     required this.totalQuantity,
