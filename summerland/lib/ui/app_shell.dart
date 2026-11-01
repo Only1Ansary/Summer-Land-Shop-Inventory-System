@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../localization/app_strings.dart';
+import '../services/bottom_nav_service.dart';
 import 'app_destinations.dart';
 import 'app_widgets.dart';
 import 'shop_logo.dart';
@@ -343,7 +344,9 @@ class _AppNavPanelState extends State<_AppNavPanel> {
                     child: TextField(
                       controller: _searchController,
                       onChanged: (value) {
-                        _searchDebounce.run(() => setState(() => _query = value));
+                        _searchDebounce.run(
+                          () => setState(() => _query = value),
+                        );
                       },
                       decoration: InputDecoration(
                         hintText: context.tr('Search pages…'),
@@ -680,41 +683,55 @@ class _NavTile extends StatelessWidget {
   }
 }
 
-/// Bottom navigation bar for phones with the most-used destinations.
+/// Bottom navigation bar for phones with the user's chosen destinations.
 class _AppBottomNav extends StatelessWidget {
   const _AppBottomNav({required this.selectedId});
 
   final String selectedId;
 
-  int _selectedIndex() {
-    const order = AppDestinations.bottomNavIds;
-
-    if (AppDestinations.reportIds.contains(selectedId)) {
-      return 4;
-    }
-
-    final int index = order.indexOf(selectedId);
-    return index < 0 ? 0 : index;
-  }
-
   @override
   Widget build(BuildContext context) {
     final navigator = Navigator.of(context);
 
-    return NavigationBar(
-      selectedIndex: _selectedIndex(),
-      onDestinationSelected: (index) {
-        final String id = AppDestinations.bottomNavIds[index];
-        AppDestinations.open(navigator.context, id);
-      },
-      destinations: AppDestinations.bottomNavIds.map((id) {
-        final item = AppDestinations.byId(id);
-        return NavigationDestination(
-          icon: Icon(item.icon),
-          selectedIcon: Icon(item.selectedIcon),
-          label: context.tr(item.title),
+    return ValueListenableBuilder<List<String>>(
+      valueListenable: BottomNavService.instance.ids,
+      builder: (context, ids, _) {
+        return NavigationBar(
+          selectedIndex: _selectedIndex(ids),
+          onDestinationSelected: (index) {
+            if (index < 0 || index >= ids.length) return;
+
+            AppDestinations.open(navigator.context, ids[index]);
+          },
+          destinations: ids.map((id) {
+            final item = AppDestinations.byId(id);
+
+            return NavigationDestination(
+              icon: Icon(item.icon),
+              selectedIcon: Icon(item.selectedIcon),
+              label: context.tr(item.title),
+            );
+          }).toList(),
         );
-      }).toList(),
+      },
     );
+  }
+
+  int _selectedIndex(List<String> ids) {
+    final int direct = ids.indexOf(selectedId);
+
+    if (direct >= 0) return direct;
+
+    // A report screen opened from the drawer keeps the "All Reports" shortcut
+    // lit when that shortcut is in the bar.
+    if (AppDestinations.reportIds.contains(selectedId)) {
+      final int reports = ids.indexOf('reports');
+
+      if (reports >= 0) return reports;
+    }
+
+    // The current screen is not represented in the bar. Home is always first,
+    // so selecting it also keeps the index valid for [NavigationBar].
+    return 0;
   }
 }

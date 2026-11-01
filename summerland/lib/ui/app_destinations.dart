@@ -235,8 +235,8 @@ class AppDestinations {
     ),
   ];
 
-  /// Destinations surfaced in the mobile bottom navigation bar.
-  static const List<String> bottomNavIds = [
+  /// Destinations shown in the mobile bottom bar until the user customizes it.
+  static const List<String> defaultBottomNavIds = [
     'home',
     'products',
     'inventory-search',

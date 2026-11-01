@@ -3,12 +3,14 @@ import 'package:file_selector/file_selector.dart';
 
 import '../../localization/app_strings.dart';
 import '../../models/app_theme_variant.dart';
+import '../../services/bottom_nav_service.dart';
 import '../../services/cache_store.dart';
 import '../../services/language_service.dart';
 import '../../services/pinned_modules_service.dart';
 import '../../services/prefetch_service.dart';
 import '../../services/shop_profile_service.dart';
 import '../../services/theme_service.dart';
+import 'bottom_navigation_settings_screen.dart';
 import '../../ui/app_shell.dart';
 import '../../ui/app_widgets.dart';
 import '../../ui/home_modules.dart';
@@ -414,6 +416,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ),
                       ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  SectionHeader(
+                    title: context.tr('Navigation'),
+                    subtitle: context.tr('Shortcuts shown around the app'),
+                  ),
+                  const SizedBox(height: 8),
+                  Card(
+                    child: ValueListenableBuilder<List<String>>(
+                      valueListenable: BottomNavService.instance.ids,
+                      builder: (context, ids, _) => ListTile(
+                        leading: const Icon(Icons.navigation_outlined),
+                        title: Text(context.tr('Bottom navigation bar')),
+                        subtitle: Text(
+                          context.tr('{0} of {1} shortcuts selected', [
+                            ids.length,
+                            BottomNavService.maxDestinations,
+                          ]),
+                        ),
+                        trailing: TextButton(
+                          onPressed: () => pushScreen(
+                            context,
+                            (_) => const BottomNavigationSettingsScreen(),
+                          ),
+                          child: Text(context.tr('Customize')),
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 20),

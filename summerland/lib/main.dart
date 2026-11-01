@@ -4,9 +4,11 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'localization/app_strings.dart';
 import 'screens/home_screen.dart';
+import 'services/bottom_nav_service.dart';
 import 'services/cache_store.dart';
 import 'services/connectivity_service.dart';
 import 'services/language_service.dart';
+import 'services/low_stock_notification_service.dart';
 import 'services/prefetch_service.dart';
 import 'services/shop_profile_service.dart';
 import 'services/theme_service.dart';
@@ -19,9 +21,11 @@ Future<void> main() async {
   await CacheStore.instance.load();
   ThemeService.instance.load();
   LanguageService.instance.load();
+  BottomNavService.instance.load();
   ShopProfileService.instance.load();
   ConnectivityService.instance.start();
   PrefetchService.instance.start();
+  await LowStockNotificationService.instance.initialize();
 
   runApp(const SummerlandApp());
 }

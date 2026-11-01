@@ -46,6 +46,11 @@ kotlin {
     }
 }
 
+dependencies {
+    // Periodic low-stock checks that keep running while the app is closed.
+    implementation("androidx.work:work-runtime-ktx:2.9.1")
+}
+
 flutter {
     source = "../.."
 }

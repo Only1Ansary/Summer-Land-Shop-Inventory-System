@@ -13,6 +13,7 @@ import '../../services/employee_service.dart';
 import '../../services/invoice_service.dart';
 import '../../services/inventory_service.dart';
 import '../../services/location_service.dart';
+import '../../services/low_stock_notification_service.dart';
 import '../../services/physical_scanner_service.dart';
 import '../../services/product_variant_service.dart';
 import '../../utils/camera_scanner_support.dart';
@@ -37,6 +38,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   late final InventoryService _inventoryService;
   late final InvoiceService _invoiceService;
   late final EmployeeService _employeeService;
+  late final LowStockNotificationService _notifications;
 
   late final PhysicalScannerService _physicalScanner;
   StreamSubscription<String>? _physicalScanSubscription;
@@ -76,6 +78,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     _inventoryService = InventoryService(_apiService);
     _invoiceService = InvoiceService(_apiService);
     _employeeService = EmployeeService(_apiService);
+    _notifications = LowStockNotificationService.instance;
 
     _physicalScanner = PhysicalScannerService.instance;
     _physicalScanner.attach(shouldCapture: _acceptsPhysicalScans);
@@ -561,6 +564,16 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     final discountAmount = _discountIsPercent ? 0 : _discount;
     final discountPercent = _discountIsPercent ? _discountEntry : 0;
 
+    // Remember what the cart's variants looked like before the sale, so the
+    // fresh stock can be compared against it once the invoice is committed.
+    final variantsBeforeSale = <int, ProductVariant>{
+      for (final cartItem in _cart) cartItem.variant.id: cartItem.variant,
+    };
+
+    // Captured now so the alert can still be shown if the screen is left
+    // during the undo window.
+    final strings = AppStrings.of(context);
+
     Invoice? createdInvoice;
 
     scheduleUndoable(
@@ -575,6 +588,10 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
             discountAmount: discountAmount.toDouble(),
             discountPercent: discountPercent.toDouble(),
           );
+
+          // Persisted work: it still runs if the app is closed before the
+          // foreground alert below has a chance to finish.
+          await _notifications.scheduleBackgroundCheck();
         } finally {
           if (mounted) {
             setState(() {
@@ -584,6 +601,14 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         }
       },
       onCommitted: () async {
+        final invoice = createdInvoice;
+
+        // The alert does not depend on this screen still being open, so show
+        // it even if the cashier navigated away during the undo window.
+        if (invoice != null) {
+          await _notifyNewlyLowStock(variantsBeforeSale, strings);
+        }
+
         if (!mounted) return;
 
         setState(() {
@@ -592,8 +617,6 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
           _isCartExpanded = false;
           _cart.clear();
         });
-
-        final invoice = createdInvoice;
 
         if (invoice == null) return;
 
@@ -618,6 +641,55 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         }
       },
     );
+  }
+
+  /// Refreshes stock after a sale and notifies the user about any sold variant
+  /// that has just crossed into low stock.
+  ///
+  /// The refresh also keeps [_allVariants] current, so a later search does not
+  /// show the pre-sale quantity. Notification problems are ignored on purpose: a
+  /// missing permission must not turn a successful sale into an error.
+  Future<void> _notifyNewlyLowStock(
+    Map<int, ProductVariant> variantsBeforeSale,
+    AppStrings strings,
+  ) async {
+    List<ProductVariant> refreshed;
+
+    try {
+      refreshed = await _variantService.getVariants();
+    } catch (error) {
+      debugPrint('Could not refresh stock after the sale: $error');
+      return;
+    }
+
+    final becameLow = newlyLowStockVariants(
+      before: variantsBeforeSale.values,
+      after: refreshed,
+      soldVariantIds: variantsBeforeSale.keys.toSet(),
+    );
+
+    if (mounted) {
+      setState(() {
+        _allVariants = refreshed;
+      });
+      _searchVariants(_searchController.text);
+    }
+
+    for (final variant in becameLow) {
+      await _notifications.showLowStock(
+        variant: variant,
+        title: strings.translate('Low stock alert'),
+        body: strings.translate('{0} ({1}) is low on stock: {2} left.', [
+          variant.productName,
+          variant.modelNumber,
+          variant.totalQuantity,
+        ]),
+      );
+    }
+
+    // Tell the background checker these are already known, so it does not
+    // repeat the same alerts later.
+    await _notifications.rememberLowStock(refreshed);
   }
 
   void _showError(String message) {

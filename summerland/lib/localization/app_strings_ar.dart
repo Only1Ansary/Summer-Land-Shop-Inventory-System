@@ -710,6 +710,9 @@ const Map<String, String> appStringsAr = <String, String>{
   'Threshold': 'الحد',
   'Needs Reordering': 'يحتاج إعادة الطلب',
   'No low stock items': 'لا توجد أصناف منخفضة المخزون',
+  'Low stock alert': 'تنبيه انخفاض المخزون',
+  '{0} ({1}) is low on stock: {2} left.':
+      'مخزون {0} ({1}) منخفض: تبقّى {2} فقط.',
   'All variants are above their thresholds.': 'كل الاصناف أعلى من حدودها.',
   'Low Stock Report': 'تقرير المخزون المنخفض',
   'Tap a product to see stock by location':
@@ -888,4 +891,17 @@ const Map<String, String> appStringsAr = <String, String>{
       'سيتم إنشاء إرجاع الشراء. اضغط تراجع للإلغاء.',
   'Invoice #{0} created.': 'تم إنشاء الفاتورة #{0}.',
   'Purchase invoice #{0} created.': 'تم إنشاء فاتورة الشراء #{0}.',
+  'Navigation': 'التنقل',
+  'Shortcuts shown around the app': 'الاختصارات المعروضة في التطبيق',
+  'Bottom navigation bar': 'شريط التنقل السفلي',
+  '{0} of {1} shortcuts selected': '{0} من {1} اختصارات محددة',
+  'Customize': 'تخصيص',
+  'Shown in the bar': 'المعروض في الشريط',
+  'Home is always shown. Drag to reorder the rest.':
+      'تظهر الرئيسية دائمًا. اسحب لإعادة ترتيب الباقي.',
+  'Always shown': 'يظهر دائمًا',
+  'Add a shortcut': 'أضف اختصارًا',
+  'Every shortcut is already in the bar.':
+      'كل الاختصارات موجودة بالفعل في الشريط.',
+  'Tap a page to add it to the bar.': 'اضغط على صفحة لإضافتها إلى الشريط.',
 };
