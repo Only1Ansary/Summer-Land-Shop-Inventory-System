@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../localization/app_strings.dart';
@@ -11,11 +13,14 @@ import '../../services/employee_service.dart';
 import '../../services/invoice_service.dart';
 import '../../services/inventory_service.dart';
 import '../../services/location_service.dart';
+import '../../services/physical_scanner_service.dart';
 import '../../services/product_variant_service.dart';
+import '../../utils/camera_scanner_support.dart';
 
 import '../../ui/app_shell.dart';
 import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
+import '../inventory/barcode_scanner_screen.dart';
 
 class CreateInvoiceScreen extends StatefulWidget {
   const CreateInvoiceScreen({super.key});
@@ -32,6 +37,9 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   late final InventoryService _inventoryService;
   late final InvoiceService _invoiceService;
   late final EmployeeService _employeeService;
+
+  late final PhysicalScannerService _physicalScanner;
+  StreamSubscription<String>? _physicalScanSubscription;
 
   List<Location> _locations = [];
   List<ProductVariant> _allVariants = [];
@@ -69,11 +77,17 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     _invoiceService = InvoiceService(_apiService);
     _employeeService = EmployeeService(_apiService);
 
+    _physicalScanner = PhysicalScannerService.instance;
+    _physicalScanner.attach(shouldCapture: _acceptsPhysicalScans);
+    _physicalScanSubscription = _physicalScanner.scans.listen(_onPhysicalScan);
+
     _loadData();
   }
 
   @override
   void dispose() {
+    _physicalScanSubscription?.cancel();
+    _physicalScanner.detach();
     _searchDebounce.dispose();
     _searchController.dispose();
     _discountController.dispose();
@@ -134,6 +148,71 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
 
   void _onSearchChanged(String value) {
     _searchDebounce.run(() => _searchVariants(value));
+  }
+
+  /// Whether key events on this screen should be treated as scanner input.
+  ///
+  /// Input is ignored while the screen is loading or covered by another route
+  /// (a dialog or the camera scanner), so those screens keep normal keyboard
+  /// behaviour.
+  bool _acceptsPhysicalScans() {
+    if (!mounted || _isLoading) return false;
+
+    return ModalRoute.of(context)?.isCurrent ?? true;
+  }
+
+  void _onPhysicalScan(String barcode) {
+    if (!mounted || !_acceptsPhysicalScans()) return;
+
+    unawaited(_handleScannedBarcode(barcode));
+  }
+
+  /// Opens the camera and works the scanned barcode straight into the sale.
+  Future<void> _scanBarcode() async {
+    final scanned = await pushScreen<String>(
+      context,
+      (_) => const BarcodeScannerScreen(),
+    );
+
+    if (!mounted || scanned == null) return;
+
+    await _handleScannedBarcode(scanned);
+  }
+
+  /// Puts a scanned barcode into the sale.
+  ///
+  /// An exact match opens the usual add-item dialog, so the cashier still
+  /// picks the stock location and quantity. A barcode that is not in the
+  /// catalogue is shown in the search box instead, so the cashier can see
+  /// what was read and correct it.
+  Future<void> _handleScannedBarcode(String scanned) async {
+    final barcode = scanned.trim();
+
+    if (barcode.isEmpty) return;
+
+    final query = barcode.toLowerCase();
+
+    ProductVariant? match;
+    for (final variant in _allVariants) {
+      if (variant.barcode.trim().toLowerCase() == query) {
+        match = variant;
+        break;
+      }
+    }
+
+    _searchDebounce.cancel();
+    _searchController.text = barcode;
+    _searchController.selection = TextSelection.collapsed(
+      offset: barcode.length,
+    );
+    _searchVariants(barcode);
+
+    if (match == null) {
+      _showError(context.tr('No product matches this barcode.'));
+      return;
+    }
+
+    await _selectVariant(match);
   }
 
   Future<void> _selectVariant(ProductVariant variant) async {
@@ -551,24 +630,79 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       padding: const EdgeInsets.all(16),
       color: Theme.of(context).colorScheme.surface,
       child: WideContent(
-        child: TextField(
-          controller: _searchController,
-          onChanged: _onSearchChanged,
-          decoration: InputDecoration(
-            labelText: context.tr('Search Model / Name / Barcode'),
-            prefixIcon: const Icon(Icons.search),
-            suffixIcon: _searchController.text.isEmpty
-                ? null
-                : IconButton(
-                    onPressed: () {
-                      _searchController.clear();
-                      _searchVariants('');
-                    },
-                    icon: const Icon(Icons.clear),
-                  ),
-          ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: _searchController,
+              autofocus: true,
+              onChanged: _onSearchChanged,
+              decoration: InputDecoration(
+                labelText: context.tr('Search Model / Name / Barcode'),
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchController.text.isEmpty
+                    ? null
+                    : IconButton(
+                        onPressed: () {
+                          _searchController.clear();
+                          _searchVariants('');
+                        },
+                        icon: const Icon(Icons.clear),
+                      ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            _buildScannerStatus(),
+          ],
         ),
       ),
+    );
+  }
+
+  /// Shows whether a physical (keyboard-style) scanner is connected.
+  ///
+  /// The scanner cannot be enumerated from Flutter, so the label starts as
+  /// "not detected" and switches to "connected" as soon as the first scan is
+  /// read.
+  Widget _buildScannerStatus() {
+    return ListenableBuilder(
+      listenable: _physicalScanner,
+      builder: (context, _) {
+        final bool connected = _physicalScanner.isConnected;
+        final Color color = connected
+            ? Theme.of(context).colorScheme.primary
+            : Theme.of(context).colorScheme.onSurfaceVariant;
+
+        return Tooltip(
+          message: context.tr(
+            'Scanners connect like keyboards. Scan a barcode to check the '
+            'connection.',
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                connected ? Icons.keyboard : Icons.keyboard_outlined,
+                size: 16,
+                color: color,
+              ),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  context.tr(
+                    connected
+                        ? 'Physical scanner connected'
+                        : 'No physical scanner detected',
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall
+                      ?.copyWith(color: color),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -1193,6 +1327,14 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     return AppShell(
       title: context.tr('Sales'),
       destinationId: 'sales',
+      actions: [
+        if (supportsCameraBarcodeScanning)
+          IconButton(
+            tooltip: context.tr('Scan barcode'),
+            onPressed: _isLoading ? null : _scanBarcode,
+            icon: const Icon(Icons.camera_alt_outlined),
+          ),
+      ],
       body: _isLoading
           ? const LoadingState()
           : LayoutBuilder(

@@ -201,9 +201,9 @@ const Map<String, String> appStringsAr = <String, String>{
   'Search products': 'ابحث عن المنتجات',
   'Name or model number': 'الاسم أو رقم الموديل',
   'Name, model or barcode': 'الاسم أو الموديل أو الباركود',
-  'Scan barcode': 'مسح الباركود',
-  'Point the camera at a barcode to search for it.':
-      'وجّه الكاميرا نحو الباركود للبحث عنه.',
+  'Scan Barcode': 'مسح الباركود',
+  'Align the barcode inside the frame to scan it':
+      'وجّه الباركود داخل المربع للبحث عنه',
   'Camera access was denied. Allow it in your device settings and try again.':
       'تم رفض الوصول إلى الكاميرا. اسمح به من إعدادات جهازك ثم حاول مرة أخرى.',
   'The camera could not be opened on this device.':
@@ -377,6 +377,12 @@ const Map<String, String> appStringsAr = <String, String>{
   'Search invoices': 'ابحث في الفواتير',
   'Search for a Variant.': 'ابحث عن صنف.',
   'Search Model / Name / Barcode': 'ابحث بالموديل / الاسم / الباركود',
+  'No product matches this barcode.': 'لا يوجد صنف مطابق لهذا الباركود.',
+  'Physical scanner connected': 'الماسح الضوئي متصل',
+  'No physical scanner detected': 'لم يتم اكتشاف ماسح ضوئي',
+  'Scanners connect like keyboards. Scan a barcode to check the '
+          'connection.':
+      'تتصل الماسحات الضوئية كلوحات مفاتيح. امسح أي باركود للتحقق من الاتصال.',
   'New sale': 'بيع جديد',
   'Reset to today': 'إعادة الضبط إلى اليوم',
   'No invoices in this period': 'لا توجد فواتير في هذه الفترة',

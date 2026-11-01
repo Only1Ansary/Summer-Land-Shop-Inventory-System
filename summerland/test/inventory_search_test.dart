@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -176,6 +177,34 @@ void main() {
     expect(find.byTooltip('Scan barcode'), findsOneWidget);
     expect(find.byIcon(Icons.camera_alt_outlined), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('hides the camera action where the camera is unavailable', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+
+    try {
+      await pumpSearch(tester);
+
+      expect(find.byTooltip('Scan barcode'), findsNothing);
+      expect(find.byIcon(Icons.camera_alt_outlined), findsNothing);
+      expect(tester.takeException(), isNull);
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+    }
+  });
+
+  testWidgets('focuses the search field when opened', (tester) async {
+    await pumpSearch(tester);
+
+    expect(tester.widget<TextField>(find.byType(TextField)).autofocus, isTrue);
+    expect(
+      FocusManager.instance.primaryFocus?.context
+          ?.findAncestorWidgetOfExactType<EditableText>(),
+      isNotNull,
+      reason: 'typing should go straight into the search field',
+    );
   });
 
   testWidgets('a product expands into per-location size breakdown', (

@@ -9,6 +9,7 @@ import '../../ui/app_shell.dart';
 import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
 import '../../ui/reconnect_reloader.dart';
+import '../../utils/camera_scanner_support.dart';
 import 'barcode_scanner_screen.dart';
 
 /// The inventory report's product list, without the summary stats on top.
@@ -264,11 +265,12 @@ class _InventorySearchScreenState extends State<InventorySearchScreen>
       title: context.tr('Inventory Search'),
       destinationId: 'inventory-search',
       actions: [
-        IconButton(
-          tooltip: context.tr('Scan barcode'),
-          onPressed: _scanBarcode,
-          icon: const Icon(Icons.camera_alt_outlined),
-        ),
+        if (supportsCameraBarcodeScanning)
+          IconButton(
+            tooltip: context.tr('Scan barcode'),
+            onPressed: _scanBarcode,
+            icon: const Icon(Icons.camera_alt_outlined),
+          ),
       ],
       body: _loading
           ? const LoadingState()
@@ -281,6 +283,7 @@ class _InventorySearchScreenState extends State<InventorySearchScreen>
                   child: WideContent(
                     child: TextField(
                       controller: _searchController,
+                      autofocus: true,
                       decoration: InputDecoration(
                         labelText: context.tr('Search products'),
                         hintText: context.tr('Name, model or barcode'),
