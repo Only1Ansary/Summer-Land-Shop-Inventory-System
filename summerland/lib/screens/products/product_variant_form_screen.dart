@@ -484,6 +484,7 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
               DropdownButtonFormField<int>(
                 key: ValueKey('location-$_selectedLocationId'),
                 initialValue: _selectedLocationId,
+                isExpanded: true,
                 decoration: InputDecoration(
                   labelText: context.tr('Location'),
                   prefixIcon: const Icon(Icons.location_on_outlined),
@@ -497,6 +498,7 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
                             location.name,
                             _locationStock[location.id] ?? 0,
                           ]),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     )
@@ -624,6 +626,7 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
                     child: DropdownButtonFormField<int?>(
                       key: ValueKey('size-$_selectedSizeId'),
                       initialValue: _selectedSizeId,
+                      isExpanded: true,
                       decoration: InputDecoration(
                         labelText: context.tr('Size'),
                         prefixIcon: const Icon(Icons.straighten_outlined),
@@ -636,7 +639,10 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
                         ..._sizes.map(
                           (size) => DropdownMenuItem<int?>(
                             value: size.id,
-                            child: Text(size.name),
+                            child: Text(
+                              size.name,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                         ),
                       ],
@@ -665,6 +671,7 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
                     child: DropdownButtonFormField<int?>(
                       key: ValueKey('colour-$_selectedColourId'),
                       initialValue: _selectedColourId,
+                      isExpanded: true,
                       decoration: InputDecoration(
                         labelText: context.tr('Colour'),
                         prefixIcon: const Icon(Icons.palette_outlined),
@@ -677,7 +684,10 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
                         ..._colours.map(
                           (colour) => DropdownMenuItem<int?>(
                             value: colour.id,
-                            child: Text(colour.name),
+                            child: Text(
+                              colour.name,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                         ),
                       ],
@@ -703,6 +713,7 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
                 DropdownButtonFormField<int>(
                   key: ValueKey('barcode-type-$_barcodeType'),
                   initialValue: _barcodeType,
+                  isExpanded: true,
                   decoration: InputDecoration(
                     labelText: context.tr('Barcode Type'),
                     prefixIcon: const Icon(Icons.qr_code_2_outlined),

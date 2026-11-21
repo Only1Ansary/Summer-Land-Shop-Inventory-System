@@ -468,58 +468,99 @@ class _ProductsScreenState extends State<ProductsScreen>
 
             final product = _pageProducts[index];
 
+                  final theme = Theme.of(context);
+
                   return Card(
                     margin: const EdgeInsets.only(bottom: 10),
-                    child: ListTile(
-                      leading: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primary
-                              .withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(
-                          Icons.inventory_2_rounded,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
-                      title: Text(
-                        product.name,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      subtitle: Text(
-                        context.tr('Model: {0}\nCategory: {1}', [
-                          product.modelNumber,
-                          product.categoryName,
-                        ]),
-                      ),
-                      isThreeLine: true,
+                    clipBehavior: Clip.antiAlias,
+                    child: InkWell(
                       onTap: () => _openDetails(product),
-                      trailing: PopupMenuButton<String>(
-                        onSelected: (value) {
-                          if (value == 'details') {
-                            _openDetails(product);
-                          } else if (value == 'edit') {
-                            _openProductForm(product: product);
-                          } else if (value == 'delete') {
-                            _deleteProduct(product);
-                          }
-                        },
-                        itemBuilder: (_) => [
-                          PopupMenuItem(
-                            value: 'details',
-                            child: Text(context.tr('Details')),
-                          ),
-                          PopupMenuItem(
-                            value: 'edit',
-                            child: Text(context.tr('Edit')),
-                          ),
-                          PopupMenuItem(
-                            value: 'delete',
-                            child: Text(context.tr('Delete')),
-                          ),
-                        ],
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.primary.withValues(
+                                  alpha: 0.1,
+                                ),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Icon(
+                                Icons.inventory_2_rounded,
+                                color: theme.colorScheme.primary,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    product.name,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: theme.textTheme.titleSmall?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    context.tr('Model: {0}', [
+                                      product.modelNumber,
+                                    ]),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color:
+                                          theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    context.tr('Category: {0}', [
+                                      product.categoryName,
+                                    ]),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color:
+                                          theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            PopupMenuButton<String>(
+                              onSelected: (value) {
+                                if (value == 'details') {
+                                  _openDetails(product);
+                                } else if (value == 'edit') {
+                                  _openProductForm(product: product);
+                                } else if (value == 'delete') {
+                                  _deleteProduct(product);
+                                }
+                              },
+                              itemBuilder: (_) => [
+                                PopupMenuItem(
+                                  value: 'details',
+                                  child: Text(context.tr('Details')),
+                                ),
+                                PopupMenuItem(
+                                  value: 'edit',
+                                  child: Text(context.tr('Edit')),
+                                ),
+                                PopupMenuItem(
+                                  value: 'delete',
+                                  child: Text(context.tr('Delete')),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   );

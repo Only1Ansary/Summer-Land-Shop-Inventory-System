@@ -23,7 +23,6 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen>
   final SupplierService _supplierService = SupplierService(ApiService());
 
   List<Supplier> _suppliers = [];
-  final Set<int> _expanded = {};
   String _query = '';
   final Debouncer _searchDebounce = Debouncer();
 
@@ -198,14 +197,6 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen>
     );
   }
 
-  void _toggleExpanded(int id) {
-    setState(() {
-      if (!_expanded.remove(id)) {
-        _expanded.add(id);
-      }
-    });
-  }
-
   void _showPaymentHistory(Supplier supplier) {
     showModalBottomSheet<void>(
       context: context,
@@ -343,40 +334,98 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen>
                                 overflow: TextOverflow.ellipsis,
                               );
 
+                              final details = Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    DefaultTextStyle(
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleSmall!
+                                          .copyWith(
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      child: title,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    DefaultTextStyle(
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall!
+                                          .copyWith(
+                                            color: scheme.onSurfaceVariant,
+                                          ),
+                                      maxLines: 3,
+                                      overflow: TextOverflow.ellipsis,
+                                      child: subtitle,
+                                    ),
+                                  ],
+                                ),
+                              );
+
                               // ---------- WIDE: inline icon buttons ----------
                               if (isWide) {
-                                return ListTile(
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                                  leading: iconBox,
-                                  title: title,
-                                  subtitle: subtitle,
-                                  trailing: Row(
-                                    mainAxisSize: MainAxisSize.min,
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      if (supplier.debt > 0)
-                                        IconButton(
-                                          visualDensity: VisualDensity.compact,
-                                          icon: const Icon(Icons.payments_outlined),
-                                          tooltip: context.tr('Pay debt'),
-                                          onPressed: () => _paySupplierDebt(supplier),
-                                        ),
-                                      IconButton(
-                                        visualDensity: VisualDensity.compact,
-                                        icon: const Icon(Icons.history),
-                                        tooltip: context.tr('Payment history'),
-                                        onPressed: () => _showPaymentHistory(supplier),
-                                      ),
-                                      IconButton(
-                                        visualDensity: VisualDensity.compact,
-                                        icon: const Icon(Icons.edit_outlined),
-                                        tooltip: context.tr('Edit'),
-                                        onPressed: () => _editSupplier(supplier),
-                                      ),
-                                      IconButton(
-                                        visualDensity: VisualDensity.compact,
-                                        icon: const Icon(Icons.delete_outline),
-                                        tooltip: context.tr('Delete'),
-                                        onPressed: () => _deleteSupplier(supplier),
+                                      iconBox,
+                                      const SizedBox(width: 12),
+                                      details,
+                                      const SizedBox(width: 8),
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          if (supplier.debt > 0)
+                                            IconButton(
+                                              visualDensity:
+                                                  VisualDensity.compact,
+                                              icon: const Icon(
+                                                Icons.payments_outlined,
+                                              ),
+                                              tooltip:
+                                                  context.tr('Pay debt'),
+                                              onPressed: () =>
+                                                  _paySupplierDebt(supplier),
+                                            ),
+                                          IconButton(
+                                            visualDensity:
+                                                VisualDensity.compact,
+                                            icon: const Icon(Icons.history),
+                                            tooltip: context.tr(
+                                              'Payment history',
+                                            ),
+                                            onPressed: () =>
+                                                _showPaymentHistory(supplier),
+                                          ),
+                                          IconButton(
+                                            visualDensity:
+                                                VisualDensity.compact,
+                                            icon: const Icon(
+                                              Icons.edit_outlined,
+                                            ),
+                                            tooltip: context.tr('Edit'),
+                                            onPressed: () =>
+                                                _editSupplier(supplier),
+                                          ),
+                                          IconButton(
+                                            visualDensity:
+                                                VisualDensity.compact,
+                                            icon: const Icon(
+                                              Icons.delete_outline,
+                                            ),
+                                            tooltip: context.tr('Delete'),
+                                            onPressed: () =>
+                                                _deleteSupplier(supplier),
+                                          ),
+                                        ],
                                       ),
                                     ],
                                   ),
@@ -384,20 +433,28 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen>
                               }
 
                               // ---------- NARROW: pay button + overflow menu ----------
-                              return ListTile(
-                                contentPadding: const EdgeInsetsDirectional.only(start: 16, end: 4),
-                                leading: iconBox,
-                                title: title,
-                                subtitle: subtitle,
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
+                              return Padding(
+                                padding: const EdgeInsetsDirectional.only(
+                                  start: 12,
+                                  end: 4,
+                                  top: 8,
+                                  bottom: 8,
+                                ),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
+                                    iconBox,
+                                    const SizedBox(width: 12),
+                                    details,
                                     if (supplier.debt > 0)
                                       IconButton.filledTonal(
                                         visualDensity: VisualDensity.compact,
-                                        icon: const Icon(Icons.payments_outlined),
+                                        icon: const Icon(
+                                          Icons.payments_outlined,
+                                        ),
                                         tooltip: context.tr('Pay debt'),
-                                        onPressed: () => _paySupplierDebt(supplier),
+                                        onPressed: () =>
+                                            _paySupplierDebt(supplier),
                                       ),
                                     PopupMenuButton<String>(
                                       tooltip: context.tr('More'),
@@ -419,7 +476,9 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen>
                                             dense: true,
                                             contentPadding: EdgeInsets.zero,
                                             leading: const Icon(Icons.history),
-                                            title: Text(context.tr('Payment history')),
+                                            title: Text(
+                                              context.tr('Payment history'),
+                                            ),
                                           ),
                                         ),
                                         PopupMenuItem(
@@ -427,7 +486,9 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen>
                                           child: ListTile(
                                             dense: true,
                                             contentPadding: EdgeInsets.zero,
-                                            leading: const Icon(Icons.edit_outlined),
+                                            leading: const Icon(
+                                              Icons.edit_outlined,
+                                            ),
                                             title: Text(context.tr('Edit')),
                                           ),
                                         ),
@@ -436,10 +497,15 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen>
                                           child: ListTile(
                                             dense: true,
                                             contentPadding: EdgeInsets.zero,
-                                            leading: Icon(Icons.delete_outline, color: scheme.error),
+                                            leading: Icon(
+                                              Icons.delete_outline,
+                                              color: scheme.error,
+                                            ),
                                             title: Text(
                                               context.tr('Delete'),
-                                              style: TextStyle(color: scheme.error),
+                                              style: TextStyle(
+                                                color: scheme.error,
+                                              ),
                                             ),
                                           ),
                                         ),
@@ -472,48 +538,6 @@ class _ShowSuppliersScreenState extends State<ShowSuppliersScreen>
     });
   }
 
-  Widget _buildInvoices(Supplier supplier) {
-    if (supplier.purchaseInvoices.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        child: Align(
-          alignment: Alignment.centerLeft,
-          child: Text(
-            context.tr('No purchase invoices recorded for this supplier.'),
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-        ),
-      );
-    }
-
-    return Column(
-      children: [
-        const Divider(height: 1),
-        ...supplier.purchaseInvoices.map((invoice) {
-          return ListTile(
-            dense: true,
-            leading: const Icon(Icons.receipt_long_outlined, size: 20),
-            title: Text('#${invoice.id}'),
-            subtitle: Text(_formatDate(invoice.date)),
-            trailing: Text(
-              moneyNegative(invoice.debt),
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: amountColor(context, -invoice.debt),
-              ),
-            ),
-          );
-        }),
-        const SizedBox(height: 8),
-      ],
-    );
-  }
-
-  String _formatDate(DateTime? date) {
-    if (date == null) return '-';
-
-    return '${date.day}/${date.month}/${date.year}';
-  }
 }
 
 /// Bottom sheet that loads and lists a supplier's recorded payments.

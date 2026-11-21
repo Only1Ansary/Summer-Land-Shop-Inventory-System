@@ -32,6 +32,8 @@ public class ShopDbContext : DbContext
     public DbSet<Employee> Employees { get; set; }
     public DbSet<EmployeeMonth> EmployeeMonths { get; set; }
     public DbSet<EmployeePayment> EmployeePayments { get; set; }
+    public DbSet<Customer> Customers { get; set; }
+    public DbSet<CustomerPayment> CustomerPayments { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -40,6 +42,42 @@ public class ShopDbContext : DbContext
         modelBuilder.Entity<Product>()
             .HasIndex(p => p.ModelNumber)
             .IsUnique();
+
+        modelBuilder.Entity<Customer>()
+            .HasIndex(c => c.PhoneNumber)
+            .IsUnique();
+
+        modelBuilder.Entity<Customer>()
+            .Property(c => c.TotalPaid)
+            .HasColumnType("decimal(18,2)");
+
+        modelBuilder.Entity<Customer>()
+            .Property(c => c.TotalDebt)
+            .HasColumnType("decimal(18,2)");
+
+        modelBuilder.Entity<CustomerPayment>()
+            .Property(p => p.Amount)
+            .HasColumnType("decimal(18,2)");
+
+        // SaleInvoice -> Customer. Keeping the FK nullable lets old invoices
+        // (and invoices whose customer was removed) still be listed.
+        modelBuilder.Entity<SaleInvoice>()
+            .HasOne(i => i.Customer)
+            .WithMany(c => c.Invoices)
+            .HasForeignKey(i => i.CustomerId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<CustomerPayment>()
+            .HasOne(p => p.Customer)
+            .WithMany(c => c.Payments)
+            .HasForeignKey(p => p.CustomerId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<CustomerPayment>()
+            .HasOne(p => p.SaleInvoice)
+            .WithMany(i => i.Payments)
+            .HasForeignKey(p => p.SaleInvoiceId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<ProductVariant>()
             .HasIndex(v => v.Barcode)

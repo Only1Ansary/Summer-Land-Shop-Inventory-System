@@ -326,7 +326,7 @@ class _BestSellingReportScreenState extends State<BestSellingReportScreen>
                         ),
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 4),
                     Expanded(
                       child: RefreshIndicator(
                         onRefresh: _loadData,
@@ -342,40 +342,76 @@ class _BestSellingReportScreenState extends State<BestSellingReportScreen>
 
                             return Card(
                               margin: const EdgeInsets.only(bottom: 10),
-                              child: ListTile(
-                                leading: CircleAvatar(
-                                  backgroundColor: isTopThree
-                                      ? theme.colorScheme.primary
-                                      : theme
-                                            .colorScheme
-                                            .surfaceContainerHighest,
-                                  foregroundColor: isTopThree
-                                      ? theme.colorScheme.onPrimary
-                                      : theme.colorScheme.onSurfaceVariant,
-                                  child: Text(
-                                    '${index + 1}',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
+                              child: Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    CircleAvatar(
+                                      backgroundColor: isTopThree
+                                          ? theme.colorScheme.primary
+                                          : theme
+                                                .colorScheme
+                                                .surfaceContainerHighest,
+                                      foregroundColor: isTopThree
+                                          ? theme.colorScheme.onPrimary
+                                          : theme.colorScheme.onSurfaceVariant,
+                                      child: Text(
+                                        '${index + 1}',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                ),
-                                title: Text(item.productName),
-                                subtitle: Text(
-                                  context.tr('{0}\nSold: {1}', [
-                                    item.modelNumber,
-                                    item.totalQuantitySold,
-                                  ]),
-                                ),
-                                isThreeLine: true,
-                                trailing: Text(
-                                  money(item.totalSales),
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: amountColor(
-                                      context,
-                                      item.totalSales,
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            item.productName,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: theme.textTheme.titleSmall
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            context.tr('{0}\nSold: {1}', [
+                                              item.modelNumber,
+                                              item.totalQuantitySold,
+                                            ]),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: theme.textTheme.bodySmall,
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ),
+                                    const SizedBox(width: 12),
+                                    ConstrainedBox(
+                                      constraints: const BoxConstraints(
+                                        maxWidth: 120,
+                                      ),
+                                      child: FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        alignment: Alignment.centerRight,
+                                        child: Text(
+                                          money(item.totalSales),
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: amountColor(
+                                              context,
+                                              item.totalSales,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             );

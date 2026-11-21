@@ -497,6 +497,7 @@ class _PayEmployeeDialogState extends State<_PayEmployeeDialog> {
     final theme = Theme.of(context);
 
     return AlertDialog(
+      scrollable: true,
       title: Text(context.tr('Pay {0}', [widget.employee.name])),
       content: Column(
         mainAxisSize: MainAxisSize.min,

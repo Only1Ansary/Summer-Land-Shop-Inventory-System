@@ -63,6 +63,21 @@ class _LocationsScreenState extends State<LocationsScreen>
     _loadLocations();
   }
 
+  /// Runs a write operation immediately, then refreshes the list.
+  Future<void> _runWrite(Future<void> Function() operation) async {
+    try {
+      await operation();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(context, e))));
+    }
+
+    if (!mounted) return;
+    await _loadLocations();
+  }
+
   Future<void> _addLocation() async {
     if (!ensureOnlineForWrite(context)) return;
 
@@ -77,21 +92,7 @@ class _LocationsScreenState extends State<LocationsScreen>
       return;
     }
 
-    scheduleUndoable(
-      context,
-      message: context.tr('"{0}" will be added. Tap Undo to cancel.', [name]),
-      operation: () => _service.createLocation(name),
-      onOptimistic: () async {
-        setState(() {
-          _locations = [
-            ..._locations,
-            Location(id: -DateTime.now().millisecondsSinceEpoch, name: name),
-          ];
-        });
-      },
-      onCommitted: _loadLocations,
-      onUndone: _loadLocations,
-    );
+    await _runWrite(() => _service.createLocation(name));
   }
 
   Future<void> _editLocation(Location location) async {
@@ -109,25 +110,7 @@ class _LocationsScreenState extends State<LocationsScreen>
       return;
     }
 
-    scheduleUndoable(
-      context,
-      message: context.tr(
-        'Changes to "{0}" will be saved. Tap Undo to cancel.',
-        [name],
-      ),
-      operation: () => _service.updateLocation(location.id, name),
-      onOptimistic: () async {
-        setState(() {
-          _locations = _locations
-              .map(
-                (l) => l.id == location.id ? Location(id: l.id, name: name) : l,
-              )
-              .toList();
-        });
-      },
-      onCommitted: _loadLocations,
-      onUndone: _loadLocations,
-    );
+    await _runWrite(() => _service.updateLocation(location.id, name));
   }
 
   Future<void> _deleteLocation(Location location) async {
@@ -155,20 +138,7 @@ class _LocationsScreenState extends State<LocationsScreen>
       return;
     }
 
-    scheduleUndoable(
-      context,
-      message: context.tr('"{0}" will be deleted. Tap Undo to cancel.', [
-        location.name,
-      ]),
-      operation: () => _service.deleteLocation(location.id),
-      onOptimistic: () async {
-        setState(() {
-          _locations = _locations.where((l) => l.id != location.id).toList();
-        });
-      },
-      onCommitted: _loadLocations,
-      onUndone: _loadLocations,
-    );
+    await _runWrite(() => _service.deleteLocation(location.id));
   }
 
   @override
@@ -197,59 +167,77 @@ class _LocationsScreenState extends State<LocationsScreen>
         onRefresh: _loadLocations,
         child: _locations.isEmpty
             ? ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                children: [
-                  const SizedBox(height: 120),
-                  EmptyState(
-                    icon: Icons.location_on_outlined,
-                    title: context.tr('No locations yet'),
-                    message: context.tr('Add store locations to manage stock.'),
-                  ),
-                ],
-              )
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [
+            const SizedBox(height: 120),
+            EmptyState(
+              icon: Icons.location_on_outlined,
+              title: context.tr('No locations yet'),
+              message: context.tr('Add store locations to manage stock.'),
+            ),
+          ],
+        )
             : ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: _locations.length,
-                itemBuilder: (context, index) {
-                  final location = _locations[index];
+          padding: const EdgeInsets.all(16),
+          itemCount: _locations.length,
+          itemBuilder: (context, index) {
+            final location = _locations[index];
 
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    child: ListTile(
-                      leading: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primary
-                              .withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(
-                          Icons.location_on_rounded,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
+            return Card(
+              margin: const EdgeInsets.only(bottom: 8),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primary
+                            .withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                      title: Text(location.name),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            tooltip: context.tr('Edit'),
-                            icon: const Icon(Icons.edit_outlined),
-                            onPressed: () => _editLocation(location),
-                          ),
-                          IconButton(
-                            tooltip: context.tr('Delete'),
-                            icon: const Icon(Icons.delete_outline),
-                            color: theme.colorScheme.error,
-                            onPressed: () => _deleteLocation(location),
-                          ),
-                        ],
+                      child: Icon(
+                        Icons.location_on_rounded,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
-                  );
-                },
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        location.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          tooltip: context.tr('Edit'),
+                          icon: const Icon(Icons.edit_outlined),
+                          onPressed: () => _editLocation(location),
+                        ),
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          tooltip: context.tr('Delete'),
+                          icon: const Icon(Icons.delete_outline),
+                          color: theme.colorScheme.error,
+                          onPressed: () => _deleteLocation(location),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
+            );
+          },
+        ),
       ),
     );
   }

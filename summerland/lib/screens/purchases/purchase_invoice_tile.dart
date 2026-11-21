@@ -17,51 +17,87 @@ class PurchaseInvoiceTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(
-            Icons.receipt_long_rounded,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-        ),
-        title: Text(
-          invoice.supplierName,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: Text.rich(
-          TextSpan(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              TextSpan(
-                text: context.tr('{0} · {1} item{2} · ', [
-                  _formatDate(invoice.date),
-                  invoice.items.length,
-                  invoice.items.length == 1 ? '' : 's',
-                ]),
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  Icons.receipt_long_rounded,
+                  color: theme.colorScheme.primary,
+                ),
               ),
-              TextSpan(
-                text: money(invoice.totalCost),
-                style: const TextStyle(fontWeight: FontWeight.w600),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      invoice.supplierName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text: context.tr('{0} · {1} item{2} · ', [
+                              _formatDate(invoice.date),
+                              invoice.items.length,
+                              invoice.items.length == 1 ? '' : 's',
+                            ]),
+                          ),
+                          TextSpan(
+                            text: money(invoice.totalCost),
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 120),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    moneyNegative(invoice.debt),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: amountColor(context, -invoice.debt),
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
         ),
-        trailing: Text(
-          moneyNegative(invoice.debt),
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: amountColor(context, -invoice.debt),
-          ),
-        ),
-        onTap: onTap,
       ),
     );
   }

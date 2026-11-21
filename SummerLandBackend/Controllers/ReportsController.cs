@@ -108,6 +108,30 @@ public class ReportsController : ControllerBase
         var supplierCount = await _context.Suppliers.CountAsync(ct);
         var supplierDebtTotal = await _context.Suppliers.SumAsync(s => (decimal?)s.Debt, ct) ?? 0m;
 
+        // ---------- Customers (collections in this period, debt today) ----------
+        var customerCount = await _context.Customers.CountAsync(ct);
+
+        var periodPayments = await _context.CustomerPayments.AsNoTracking()
+            .Where(p => p.PaidAt >= fromDate && p.PaidAt <= toDate)
+            .GroupBy(p => p.Method)
+            .Select(g => new
+            {
+                Method = (int)g.Key,
+                Count = g.Count(),
+                Amount = g.Sum(p => p.Amount)
+            })
+            .ToListAsync(ct);
+
+        var customerSalesTotal = await _context.Invoices.AsNoTracking()
+            .Where(i => i.CustomerId != null)
+            .SumAsync(i => (decimal?)i.TotalAmount, ct) ?? 0m;
+
+        var customerPaidAllTime = await _context.CustomerPayments.AsNoTracking()
+            .SumAsync(p => (decimal?)p.Amount, ct) ?? 0m;
+
+        var customerDebtTotal = Math.Max(0,
+            customerSalesTotal - customerPaidAllTime);
+
         // ---------- Staff payments (salary + bonuses settled) ----------
         var employeePayments = await _context.EmployeePayments.AsNoTracking()
             .Where(p => p.PaidAt >= fromDate && p.PaidAt <= toDate)
@@ -146,6 +170,20 @@ public class ReportsController : ControllerBase
 
             SupplierCount = supplierCount,
             SupplierDebtTotal = supplierDebtTotal,
+
+            CustomerCount = customerCount,
+            CustomerPaymentCount = periodPayments.Sum(p => p.Count),
+            CustomerPaymentsTotal = periodPayments.Sum(p => p.Amount),
+            CustomerDebtTotal = customerDebtTotal,
+            PaymentsByMethod = periodPayments
+                .OrderBy(p => p.Method)
+                .Select(p => new PaymentMethodTotalDto
+                {
+                    Method = p.Method,
+                    MethodName = ((PaymentMethod)p.Method).ToString(),
+                    Amount = p.Amount
+                })
+                .ToList(),
 
             Profit = profit,
 

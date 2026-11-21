@@ -34,10 +34,30 @@
 
         public decimal SupplierDebtTotal { get; set; }
 
+        public int CustomerCount { get; set; }
+
+        public int CustomerPaymentCount { get; set; }
+
+        public decimal CustomerPaymentsTotal { get; set; }
+
+        public decimal CustomerDebtTotal { get; set; }
+
+        public List<PaymentMethodTotalDto> PaymentsByMethod { get; set; }
+            = new List<PaymentMethodTotalDto>();
+
         public decimal Profit { get; set; }
 
         public List<CategorySalesDto> CategorySales { get; set; }
             = new List<CategorySalesDto>();
+    }
+
+    public class PaymentMethodTotalDto
+    {
+        public int Method { get; set; }
+
+        public string MethodName { get; set; } = string.Empty;
+
+        public decimal Amount { get; set; }
     }
 
     public class CategorySalesDto

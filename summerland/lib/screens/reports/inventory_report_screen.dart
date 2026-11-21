@@ -166,10 +166,6 @@ class _InventoryReportScreenState extends State<InventoryReportScreen>
                                 label: context.tr('Inventory Value'),
                                 value: money(report.totalInventoryValue),
                                 icon: Icons.payments_outlined,
-                                valueColor: amountColor(
-                                  context,
-                                  report.totalInventoryValue,
-                                ),
                               ),
                               StatData(
                                 label: context.tr('Low Stock'),
@@ -191,18 +187,28 @@ class _InventoryReportScreenState extends State<InventoryReportScreen>
                             return Card(
                               margin: const EdgeInsets.only(bottom: 10),
                               child: ExpansionTile(
-                                title: Text(product.productName),
+                                title: Text(
+                                  product.productName,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                                 subtitle: Text(
                                   context.tr('{0} • Qty: {1}', [
                                     product.modelNumber,
                                     product.totalQuantity,
                                   ]),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                                 children: [
                                   const Divider(height: 1),
                                   ...product.locations.map(
                                     (location) => ListTile(
-                                      title: Text(location.locationName),
+                                      title: Text(
+                                        location.locationName,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                       trailing: Text(
                                         '${location.quantity}',
                                         style: const TextStyle(

@@ -12,6 +12,7 @@ class BottomNavigationSettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return AppShell(
       title: context.tr('Bottom navigation bar'),
       destinationId: 'settings',
@@ -42,11 +43,39 @@ class BottomNavigationSettingsScreen extends StatelessWidget {
                 Card(
                   child: Column(
                     children: [
-                      ListTile(
-                        leading: const Icon(Icons.home_rounded),
-                        title: Text(context.tr('Home')),
-                        subtitle: Text(context.tr('Always shown')),
-                        trailing: const Icon(Icons.lock_outline, size: 18),
+                      Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.home_rounded),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    context.tr('Home'),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: theme.textTheme.titleSmall?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    context.tr('Always shown'),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(Icons.lock_outline, size: 18),
+                          ],
+                        ),
                       ),
                       if (extras.isNotEmpty) ...[
                         const Divider(height: 1),
@@ -90,17 +119,36 @@ class BottomNavigationSettingsScreen extends StatelessWidget {
                   child: Column(
                     children: [
                       for (final item in available)
-                        ListTile(
-                          leading: Icon(item.icon),
-                          title: Text(context.tr(item.title)),
-                          trailing: const Icon(Icons.add),
-                          enabled: canAdd,
+                        InkWell(
                           onTap: canAdd
                               ? () => BottomNavService.instance.save([
-                                  ...ids,
-                                  item.id,
-                                ])
+                                    ...ids,
+                                    item.id,
+                                  ])
                               : null,
+                          child: Opacity(
+                            opacity: canAdd ? 1.0 : 0.5,
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Row(
+                                children: [
+                                  Icon(item.icon),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      context.tr(item.title),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: theme.textTheme.titleSmall?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                  const Icon(Icons.add),
+                                ],
+                              ),
+                            ),
+                          ),
                         ),
                     ],
                   ),
@@ -130,12 +178,23 @@ class _BarItemTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      leading: Icon(item.icon),
-      title: Text(context.tr(item.title)),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.all(12),
+      child: Row(
         children: [
+          Icon(item.icon),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              context.tr(item.title),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
           IconButton(
             tooltip: context.tr('Remove'),
             onPressed: canRemove ? onRemove : null,

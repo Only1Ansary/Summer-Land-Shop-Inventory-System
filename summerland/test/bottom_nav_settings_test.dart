@@ -86,7 +86,7 @@ void main() {
     await pumpCustomizer(tester);
 
     // Available items are present but their tiles are disabled.
-    final tile = tester.widget<ListTile>(find.widgetWithText(ListTile, 'Returns'));
-    expect(tile.enabled, isFalse);
+    final tile = tester.widget<InkWell>(find.widgetWithText(InkWell, 'Returns'));
+    expect(tile.onTap, isNull);
   });
 }

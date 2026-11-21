@@ -30,12 +30,20 @@ class InvoiceService {
     required int locationId,
     required int employeeId,
     required List<Map<String, dynamic>> items,
+    required String customerPhone,
+    String? customerName,
+    double paidAmount = 0.0,
+    int paymentMethod = 0,
     double discountAmount = 0.0,
     double discountPercent = 0.0,
   }) async {
     final data = await _apiService.post('/api/SaleInvoices', {
       'locationId': locationId,
       'employeeId': employeeId,
+      'customerPhone': customerPhone.trim(),
+      'customerName': customerName?.trim(),
+      'paidAmount': paidAmount,
+      'paymentMethod': paymentMethod,
       'items': items,
       'discountAmount': discountAmount,
       'discountPercent': discountPercent,
@@ -46,6 +54,20 @@ class InvoiceService {
 
   Future<Invoice> getInvoice(int id) async {
     final data = await _apiService.get('/api/SaleInvoices/$id');
+
+    return Invoice.fromJson(data);
+  }
+
+  /// Records a later payment against an existing invoice.
+  Future<Invoice> payInvoice({
+    required int invoiceId,
+    required double amount,
+    required int method,
+  }) async {
+    final data = await _apiService.post('/api/SaleInvoices/$invoiceId/payments', {
+      'amount': amount,
+      'method': method,
+    });
 
     return Invoice.fromJson(data);
   }

@@ -1393,3 +1393,396 @@ class Debouncer {
 
   void dispose() => _timer?.cancel();
 }
+
+/// Small rounded label used for model / size / colour / location details.
+class AppPill extends StatelessWidget {
+  const AppPill({super.key, required this.text, this.icon});
+
+  final String text;
+  final IconData? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 13, color: theme.colorScheme.onSurfaceVariant),
+            const SizedBox(width: 3),
+          ],
+          Flexible(
+            child: Text(
+              text,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Compact outlined quantity stepper: -  n  +.
+class AppQuantityStepper extends StatelessWidget {
+  const AppQuantityStepper({
+    super.key,
+    required this.quantity,
+    required this.onDecrement,
+    required this.onIncrement,
+    required this.decreaseTooltip,
+    required this.increaseTooltip,
+  });
+
+  final int quantity;
+  final VoidCallback? onDecrement;
+  final VoidCallback? onIncrement;
+  final String decreaseTooltip;
+  final String increaseTooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            onPressed: onDecrement,
+            tooltip: decreaseTooltip,
+            iconSize: 20,
+            visualDensity: VisualDensity.compact,
+            icon: const Icon(Icons.remove),
+          ),
+          ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: 28),
+            child: Text(
+              '$quantity',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+            ),
+          ),
+          IconButton(
+            onPressed: onIncrement,
+            tooltip: increaseTooltip,
+            iconSize: 20,
+            visualDensity: VisualDensity.compact,
+            icon: const Icon(Icons.add),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Compact segmented toggle between a money (EGP) and a percentage entry.
+class AppCurrencyPercentToggle extends StatelessWidget {
+  const AppCurrencyPercentToggle({
+    super.key,
+    required this.isPercent,
+    required this.onChanged,
+  });
+
+  final bool isPercent;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SegmentedButton<bool>(
+      showSelectedIcon: false,
+      style: const ButtonStyle(
+        visualDensity: VisualDensity.compact,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        padding: WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 10)),
+      ),
+      segments: const [
+        ButtonSegment<bool>(value: false, label: Text('EGP')),
+        ButtonSegment<bool>(value: true, label: Text('%')),
+      ],
+      selected: {isPercent},
+      onSelectionChanged: (selection) => onChanged(selection.first),
+    );
+  }
+}
+
+/// Centred, scroll-safe empty state.
+class AppEmptyState extends StatelessWidget {
+  const AppEmptyState({
+    super.key,
+    this.icon = Icons.inbox_outlined,
+    required this.message,
+  });
+
+  final IconData icon;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 48, color: theme.colorScheme.outline),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Card + InkWell wrapper for list rows, overflow-proof.
+class AppItemCard extends StatelessWidget {
+  const AppItemCard({
+    super.key,
+    required this.title,
+    this.pills = const <Widget>[],
+    this.secondary,
+    this.trailing,
+    this.onTap,
+  });
+
+  final Widget title;
+  final List<Widget> pills;
+  final Widget? secondary;
+  final Widget? trailing;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    DefaultTextStyle(
+                      style: theme.textTheme.titleSmall!.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      child: title,
+                    ),
+                    if (pills.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        children: pills,
+                      ),
+                    ],
+                    if (secondary != null) ...[
+                      const SizedBox(height: 6),
+                      DefaultTextStyle(
+                        style: theme.textTheme.bodySmall!.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        child: secondary!,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              if (trailing != null) ...[
+                const SizedBox(width: 12),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 120),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerRight,
+                    child: trailing!,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Slim bottom action bar: leading, label, value, one action button.
+class AppBottomActionBar extends StatelessWidget {
+  const AppBottomActionBar({
+    super.key,
+    this.leading,
+    required this.label,
+    required this.value,
+    required this.actionLabel,
+    this.onAction,
+    this.actionIcon,
+    this.enabled = true,
+  });
+
+  final Widget? leading;
+  final String label;
+  final Widget value;
+  final String actionLabel;
+  final VoidCallback? onAction;
+  final IconData? actionIcon;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Material(
+      color: theme.colorScheme.surface,
+      elevation: 8,
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+          child: Row(
+            children: [
+              if (leading != null) ...[leading!, const SizedBox(width: 14)],
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: value,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              FilledButton.icon(
+                onPressed: enabled ? onAction : null,
+                icon: Icon(actionIcon ?? Icons.chevron_right, size: 20),
+                label: Text(actionLabel),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Wrapper around [showModalBottomSheet] with a standard layout.
+Future<T?> showAppBottomSheet<T>(
+  BuildContext context, {
+  required String title,
+  required Widget body,
+  Widget? footer,
+  bool compactFooter = false,
+}) {
+  return showModalBottomSheet<T>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    showDragHandle: true,
+    builder: (sheetContext) {
+      final theme = Theme.of(sheetContext);
+      final keyboardHeight = MediaQuery.viewInsetsOf(sheetContext).bottom;
+      final maxHeight = MediaQuery.sizeOf(sheetContext).height * 0.92;
+
+      return ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: maxHeight),
+        child: Padding(
+          padding: EdgeInsets.only(bottom: keyboardHeight),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 8, 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.of(sheetContext).pop(),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                  children: [body],
+                ),
+              ),
+              if (footer != null) ...[
+                const Divider(height: 1),
+                Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    16,
+                    10,
+                    16,
+                    compactFooter ? 8 : 12,
+                  ),
+                  child: footer,
+                ),
+              ],
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}

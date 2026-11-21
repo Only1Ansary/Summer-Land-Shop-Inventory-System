@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart'
-    show ChangeNotifier, ValueListenable, ValueNotifier, visibleForTesting;
+    show ValueListenable, ValueNotifier, visibleForTesting;
 import 'package:flutter/widgets.dart' show BuildContext;
 import 'package:http/http.dart' as http;
 
@@ -148,11 +148,7 @@ class ApiService {
 
   /// The endpoint with its query string removed, e.g.
   /// `/api/SaleInvoices?from=...` -> `/api/SaleInvoices`.
-  static String _withoutQuery(String endpoint) {
-    final index = endpoint.indexOf('?');
-
-    return index < 0 ? endpoint : endpoint.substring(0, index);
-  }
+  
 
   Future<dynamic> post(String endpoint, Map<String, dynamic> body) {
     return _guardWrite(

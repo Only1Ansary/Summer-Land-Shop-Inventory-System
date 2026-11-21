@@ -4,6 +4,7 @@ import '../../localization/app_strings.dart';
 import '../../models/product.dart';
 import '../../models/purchase_invoice.dart';
 import '../../services/api_service.dart';
+import '../../services/invoice_printer.dart';
 import '../../services/product_service.dart';
 import '../../services/purchase_invoice_service.dart';
 import '../../ui/app_theme.dart';
@@ -127,6 +128,12 @@ class _ShowPurchaseInvoiceScreenState extends State<ShowPurchaseInvoiceScreen> {
               : context.tr('Purchase Invoice #{0}', [invoice.id]),
         ),
         actions: [
+          if (invoice != null)
+            IconButton(
+              tooltip: context.tr('Print'),
+              icon: const Icon(Icons.print_outlined),
+              onPressed: () => InvoicePrinter.printPurchaseInvoice(invoice),
+            ),
           if (invoice != null && invoice.items.isNotEmpty)
             IconButton(
               tooltip: context.tr('Return Items'),
@@ -177,6 +184,7 @@ class _ShowPurchaseInvoiceScreenState extends State<ShowPurchaseInvoiceScreen> {
     final amountText = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
+        scrollable: true,
         title: Text(context.tr('Pay Debt')),
         content: TextField(
           controller: controller,
@@ -295,35 +303,62 @@ class _ShowPurchaseInvoiceScreenState extends State<ShowPurchaseInvoiceScreen> {
 
               return Card(
                 margin: const EdgeInsets.only(bottom: 8),
-                child: ListTile(
-                  title: Text(displayName),
-                  subtitle: Text.rich(
-                    TextSpan(
-                      children: [
-                        TextSpan(
-                          text:
-                              '${model == null ? '' : '$model\n'}'
-                              '${context.tr('Qty: ')}',
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              displayName,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.titleSmall
+                                  ?.copyWith(fontWeight: FontWeight.w600),
+                            ),
+                            const SizedBox(height: 4),
+                            Text.rich(
+                              TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text:
+                                        '${model == null ? '' : '$model\n'}'
+                                        '${context.tr('Qty: ')}',
+                                  ),
+                                  TextSpan(text: '${item.quantity}'),
+                                  const TextSpan(text: ' × '),
+                                  TextSpan(
+                                    text: money(item.unitPurchasePrice),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ),
-                        TextSpan(text: '${item.quantity}'),
-                        const TextSpan(text: ' × '),
-                        TextSpan(
-                          text: money(item.unitPurchasePrice),
-                          style: TextStyle(
-                            color: amountColor(context, item.unitPurchasePrice),
-                            fontWeight: FontWeight.w600,
+                      ),
+                      const SizedBox(width: 12),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 120),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            money(item.totalPrice),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                  isThreeLine: model != null,
-                  trailing: Text(
-                    money(item.totalPrice),
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: amountColor(context, item.totalPrice),
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               );
@@ -341,35 +376,61 @@ class _ShowPurchaseInvoiceScreenState extends State<ShowPurchaseInvoiceScreen> {
 
               return Card(
                 margin: const EdgeInsets.only(bottom: 8),
-                child: ListTile(
-                  title: Text(
-                    ret.productName.isEmpty
-                        ? context.tr('Product #{0}', [ret.productId])
-                        : ret.productName,
-                  ),
-                  subtitle: Text.rich(
-                    TextSpan(
-                      children: [
-                        TextSpan(text: '${ret.quantity} × '),
-                        TextSpan(
-                          text: money(ret.unitPurchasePrice),
-                          style: TextStyle(
-                            color: amountColor(context, ret.unitPurchasePrice),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              ret.productName.isEmpty
+                                  ? context.tr('Product #{0}', [ret.productId])
+                                  : ret.productName,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.titleSmall
+                                  ?.copyWith(fontWeight: FontWeight.w600),
+                            ),
+                            const SizedBox(height: 4),
+                            Text.rich(
+                              TextSpan(
+                                children: [
+                                  TextSpan(text: '${ret.quantity} × '),
+                                  TextSpan(
+                                    text: money(ret.unitPurchasePrice),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600
+                                    ),
+                                  ),
+                                  if (ret.reason.isNotEmpty)
+                                    TextSpan(text: '\n${ret.reason}'),
+                                  if (date != null) TextSpan(text: '\n$date'),
+                                ],
+                              ),
+                              maxLines: 4,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 120),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            money(ret.totalPrice),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
-                        if (ret.reason.isNotEmpty)
-                          TextSpan(text: '\n${ret.reason}'),
-                        if (date != null) TextSpan(text: '\n$date'),
-                      ],
-                    ),
-                  ),
-                  isThreeLine: ret.reason.isNotEmpty || date != null,
-                  trailing: Text(
-                    money(ret.totalPrice),
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: amountColor(context, ret.totalPrice),
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               );
@@ -387,27 +448,64 @@ class _ShowPurchaseInvoiceScreenState extends State<ShowPurchaseInvoiceScreen> {
             ...invoice.fees.map(
               (fee) => Card(
                 margin: const EdgeInsets.only(bottom: 8),
-                child: ListTile(
-                  leading: Icon(
-                    fee.isPaid
-                        ? Icons.check_circle_outline
-                        : Icons.local_shipping_outlined,
-                    color: fee.isPaid
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.error,
-                  ),
-                  title: Text(fee.description),
-                  subtitle: Text(
-                    fee.isPaid
-                        ? context.tr('Paid (total cost)')
-                        : context.tr('Unpaid (debt)'),
-                  ),
-                  trailing: Text(
-                    money(fee.amount),
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: amountColor(context, fee.amount),
-                    ),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        fee.isPaid
+                            ? Icons.check_circle_outline
+                            : Icons.local_shipping_outlined,
+                        color: fee.isPaid
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.error,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              fee.description,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.titleSmall
+                                  ?.copyWith(fontWeight: FontWeight.w600),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              fee.isPaid
+                                  ? context.tr('Paid (total cost)')
+                                  : context.tr('Unpaid (debt)'),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 120),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            money(fee.amount),
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: amountColor(context, fee.amount),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),

@@ -156,4 +156,48 @@ void main() {
 
     await listener.close(force: true);
   });
+
+  test('sales report parses customer and payment fields', () async {
+    final listener = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+
+    listener.listen((request) async {
+      request.response
+        ..statusCode = 200
+        ..headers.contentType = ContentType.json
+        ..write(
+          jsonEncode({
+            'from': '2026-11-01T00:00:00Z',
+            'to': '2026-11-30T23:59:59Z',
+            'invoiceCount': 4,
+            'customerCount': 3,
+            'customerPaymentCount': 5,
+            'customerPaymentsTotal': 1750.0,
+            'customerDebtTotal': 2250.0,
+            'paymentsByMethod': [
+              {'method': 0, 'methodName': 'Cash', 'amount': 1000.0},
+              {'method': 2, 'methodName': 'InstaPay', 'amount': 750.0},
+            ],
+          }),
+        );
+
+      await request.response.close();
+    });
+
+    final service = ReportService(
+      ApiService(baseUrl: 'http://127.0.0.1:${listener.port}'),
+    );
+
+    final report = await service.getSalesReport();
+
+    expect(report.customerCount, 3);
+    expect(report.customerPaymentCount, 5);
+    expect(report.customerPaymentsTotal, 1750);
+    expect(report.customerDebtTotal, 2250);
+    expect(report.paymentsByMethod, hasLength(2));
+    expect(report.paymentsByMethod.first.method, 0);
+    expect(report.paymentsByMethod.first.methodName, 'Cash');
+    expect(report.paymentsByMethod.last.amount, 750);
+
+    await listener.close(force: true);
+  });
 }

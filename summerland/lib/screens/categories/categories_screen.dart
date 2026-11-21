@@ -31,6 +31,21 @@ class _CategoriesScreenState extends State<CategoriesScreen>
     _loadCategories();
   }
 
+  /// Runs a write operation immediately, then refreshes the list.
+  Future<void> _runWrite(Future<void> Function() operation) async {
+    try {
+      await operation();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(context, e))));
+    }
+
+    if (!mounted) return;
+    await _loadCategories();
+  }
+
   Future<void> _editCategory(Category category) async {
     if (!ensureOnlineForWrite(context)) return;
 
@@ -46,25 +61,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
       return;
     }
 
-    scheduleUndoable(
-      context,
-      message: context.tr(
-        'Changes to "{0}" will be saved. Tap Undo to cancel.',
-        [name],
-      ),
-      operation: () => _categoryService.updateCategory(category.id, name),
-      onOptimistic: () async {
-        setState(() {
-          _categories = _categories
-              .map(
-                (c) => c.id == category.id ? Category(id: c.id, name: name) : c,
-              )
-              .toList();
-        });
-      },
-      onCommitted: _loadCategories,
-      onUndone: _loadCategories,
-    );
+    await _runWrite(() => _categoryService.updateCategory(category.id, name));
   }
 
   Future<void> _deleteCategory(Category category) async {
@@ -92,20 +89,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
       return;
     }
 
-    scheduleUndoable(
-      context,
-      message: context.tr('"{0}" will be deleted. Tap Undo to cancel.', [
-        category.name,
-      ]),
-      operation: () => _categoryService.deleteCategory(category.id),
-      onOptimistic: () async {
-        setState(() {
-          _categories = _categories.where((c) => c.id != category.id).toList();
-        });
-      },
-      onCommitted: _loadCategories,
-      onUndone: _loadCategories,
-    );
+    await _runWrite(() => _categoryService.deleteCategory(category.id));
   }
 
   Future<void> _addCategory() async {
@@ -122,21 +106,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
       return;
     }
 
-    scheduleUndoable(
-      context,
-      message: context.tr('"{0}" will be added. Tap Undo to cancel.', [name]),
-      operation: () => _categoryService.createCategory(name),
-      onOptimistic: () async {
-        setState(() {
-          _categories = [
-            ..._categories,
-            Category(id: -DateTime.now().millisecondsSinceEpoch, name: name),
-          ];
-        });
-      },
-      onCommitted: _loadCategories,
-      onUndone: _loadCategories,
-    );
+    await _runWrite(() => _categoryService.createCategory(name));
   }
 
   Future<void> _loadCategories() async {
@@ -203,61 +173,79 @@ class _CategoriesScreenState extends State<CategoriesScreen>
         onRefresh: _loadCategories,
         child: _categories.isEmpty
             ? ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                children: [
-                  const SizedBox(height: 120),
-                  EmptyState(
-                    icon: Icons.category_outlined,
-                    title: context.tr('No categories yet'),
-                    message: context.tr(
-                      'Add a category to start organising products.',
-                    ),
-                  ),
-                ],
-              )
-            : ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: _categories.length,
-                itemBuilder: (context, index) {
-                  final category = _categories[index];
-
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    child: ListTile(
-                      leading: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primary
-                              .withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(
-                          Icons.category_rounded,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
-                      title: Text(category.name),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            tooltip: context.tr('Edit'),
-                            icon: const Icon(Icons.edit_outlined),
-                            onPressed: () => _editCategory(category),
-                          ),
-                          IconButton(
-                            tooltip: context.tr('Delete'),
-                            icon: const Icon(Icons.delete_outline),
-                            color: theme.colorScheme.error,
-                            onPressed: () => _deleteCategory(category),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [
+            const SizedBox(height: 120),
+            EmptyState(
+              icon: Icons.category_outlined,
+              title: context.tr('No categories yet'),
+              message: context.tr(
+                'Add a category to start organising products.',
               ),
+            ),
+          ],
+        )
+            : ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: _categories.length,
+          itemBuilder: (context, index) {
+            final category = _categories[index];
+
+            return Card(
+              margin: const EdgeInsets.only(bottom: 8),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primary
+                            .withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        Icons.category_rounded,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        category.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          tooltip: context.tr('Edit'),
+                          icon: const Icon(Icons.edit_outlined),
+                          onPressed: () => _editCategory(category),
+                        ),
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          tooltip: context.tr('Delete'),
+                          icon: const Icon(Icons.delete_outline),
+                          color: theme.colorScheme.error,
+                          onPressed: () => _deleteCategory(category),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
   }

@@ -2,14 +2,12 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
 import 'package:summerland/screens/invoices/create_invoice_screen.dart';
 import 'package:summerland/services/api_service.dart';
-import 'package:summerland/services/physical_scanner_service.dart';
 
 const _locations = [
   {'id': 1, 'name': 'Main Branch'},
@@ -84,32 +82,8 @@ http.Client _fakeBackend() {
   });
 }
 
-const _digitKeys = <String, LogicalKeyboardKey>{
-  '0': LogicalKeyboardKey.digit0,
-  '1': LogicalKeyboardKey.digit1,
-  '2': LogicalKeyboardKey.digit2,
-  '3': LogicalKeyboardKey.digit3,
-  '4': LogicalKeyboardKey.digit4,
-  '5': LogicalKeyboardKey.digit5,
-  '6': LogicalKeyboardKey.digit6,
-  '7': LogicalKeyboardKey.digit7,
-  '8': LogicalKeyboardKey.digit8,
-  '9': LogicalKeyboardKey.digit9,
-};
-
-/// Types [barcode] the way a physical scanner does: quickly, then Enter.
-Future<void> _physicalScan(WidgetTester tester, String barcode) async {
-  for (final character in barcode.split('')) {
-    await tester.sendKeyDownEvent(_digitKeys[character]!, character: character);
-  }
-
-  await tester.sendKeyDownEvent(LogicalKeyboardKey.enter);
-  await tester.pumpAndSettle();
-}
-
 void main() {
   setUp(() {
-    PhysicalScannerService.instance.resetForTest();
     ApiService.clientOverride = _fakeBackend();
   });
 
@@ -124,14 +98,11 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('new sale offers a camera action and shows scanner status', (
-    tester,
-  ) async {
+  testWidgets('new sale offers a camera action', (tester) async {
     await pumpScreen(tester);
 
     expect(find.byTooltip('Scan barcode'), findsOneWidget);
     expect(find.byIcon(Icons.camera_alt_outlined), findsOneWidget);
-    expect(find.text('No physical scanner detected'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -145,7 +116,6 @@ void main() {
 
       expect(find.byTooltip('Scan barcode'), findsNothing);
       expect(find.byIcon(Icons.camera_alt_outlined), findsNothing);
-      expect(find.text('No physical scanner detected'), findsOneWidget);
       expect(tester.takeException(), isNull);
     } finally {
       debugDefaultTargetPlatformOverride = null;
@@ -163,30 +133,5 @@ void main() {
       isNotNull,
       reason: 'typing should go straight into the search field',
     );
-  });
-
-  testWidgets('a physical scan opens the add-item dialog', (tester) async {
-    await pumpScreen(tester);
-
-    await _physicalScan(tester, '6201100117017');
-
-    expect(find.text('Add Item'), findsOneWidget);
-    expect(find.text('Summerland Cotton T-Shirt'), findsWidgets);
-    expect(find.text('Physical scanner connected'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('an unknown physical scan shows it and reports no match', (
-    tester,
-  ) async {
-    await pumpScreen(tester);
-
-    await _physicalScan(tester, '9999999999999');
-
-    expect(find.text('No product matches this barcode.'), findsOneWidget);
-
-    final field = tester.widget<TextField>(find.byType(TextField).first);
-    expect(field.controller?.text, '9999999999999');
-    expect(tester.takeException(), isNull);
   });
 }

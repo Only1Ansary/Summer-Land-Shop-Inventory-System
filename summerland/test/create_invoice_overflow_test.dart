@@ -165,18 +165,31 @@ Future<void> _buildCart(WidgetTester tester) async {
   await tester.tap(find.text('Items: 1'));
   await tester.pumpAndSettle();
 
-  // Fill in the required location/employee so the create button is live.
-  final dropdowns = find.byType(DropdownButtonFormField<int>);
-  expect(dropdowns, findsNWidgets(2));
+  // Fill in the required location/employee/customer so the create button is
+  // live. The payment method has its own key because the sheet now has three
+  // int dropdowns.
+  final cashierDropdown = find.byKey(
+    const ValueKey('cashier-location-null'),
+  );
+  final employeeDropdown = find.byKey(const ValueKey('invoice-employee-null'));
+  expect(cashierDropdown, findsOneWidget);
+  expect(employeeDropdown, findsOneWidget);
+  expect(find.byKey(const ValueKey('invoice-payment-method')), findsOneWidget);
 
-  await tester.tap(dropdowns.at(0));
+  await tester.tap(cashierDropdown);
   await tester.pumpAndSettle();
   await tester.tap(find.text('Main Branch').last);
   await tester.pumpAndSettle();
 
-  await tester.tap(dropdowns.at(1));
+  await tester.tap(employeeDropdown);
   await tester.pumpAndSettle();
   await tester.tap(find.text('Ahmed Mohamed Abdelrahman').last);
+  await tester.pumpAndSettle();
+
+  await tester.enterText(
+    find.byKey(const Key('invoice-customer-phone')),
+    '0123456789',
+  );
   await tester.pumpAndSettle();
 
   expect(find.text('Create Invoice'), findsOneWidget);

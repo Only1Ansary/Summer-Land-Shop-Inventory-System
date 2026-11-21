@@ -211,24 +211,77 @@ class _StockMovementsReportScreenState extends State<StockMovementsReportScreen>
                           ..._pageSlice(items).map(
                             (item) => Card(
                               margin: const EdgeInsets.only(bottom: 10),
-                              child: ListTile(
-                                isThreeLine: true,
-                                title: Text(item.productName),
-                                subtitle: Text(
-                                  '${item.modelNumber}\n'
-                                  '${item.locationName} • ${context.tr(item.reason)}\n'
-                                  '${item.createdAt}',
-                                ),
-                                trailing: StatusBadge(
-                                  label: item.quantityChange > 0
-                                      ? '+${item.quantityChange}'
-                                      : '${item.quantityChange}',
-                                  color: item.quantityChange > 0
-                                      ? AppPalette.success
-                                      : AppPalette.danger,
-                                  icon: item.quantityChange > 0
-                                      ? Icons.arrow_upward_rounded
-                                      : Icons.arrow_downward_rounded,
+                              child: Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            item.productName,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .titleSmall
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            item.modelNumber,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodySmall,
+                                          ),
+                                          Text(
+                                            '${item.locationName} \u2022 ${context.tr(item.reason)}',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodySmall,
+                                          ),
+                                          Text(
+                                            '${item.createdAt}',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodySmall,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    ConstrainedBox(
+                                      constraints: const BoxConstraints(
+                                        maxWidth: 120,
+                                      ),
+                                      child: FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        alignment: Alignment.centerRight,
+                                        child: StatusBadge(
+                                          label: item.quantityChange > 0
+                                              ? '+${item.quantityChange}'
+                                              : '${item.quantityChange}',
+                                          color: item.quantityChange > 0
+                                              ? AppPalette.success
+                                              : AppPalette.danger,
+                                          icon: item.quantityChange > 0
+                                              ? Icons.arrow_upward_rounded
+                                              : Icons.arrow_downward_rounded,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),

@@ -162,61 +162,57 @@ class _ReturnPurchaseItemsScreenState extends State<ReturnPurchaseItemsScreen> {
 
                   return Card(
                     margin: const EdgeInsets.only(bottom: 8),
-                    child: ListTile(
-                      title: Text(displayName),
-                      subtitle: Text.rich(
-                        TextSpan(
-                          children: [
-                            TextSpan(
-                              text:
-                                  '${model == null ? '' : '$model\n'}'
-                                  'Purchased: ',
-                            ),
-                            TextSpan(text: '${item.quantity}'),
-                            const TextSpan(text: ' × '),
-                            TextSpan(
-                              text: money(item.unitPurchasePrice),
-                              style: TextStyle(
-                                color: amountColor(
-                                  context,
-                                  item.unitPurchasePrice,
-                                ),
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      isThreeLine: model != null,
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          IconButton(
-                            tooltip: context.tr('Return one'),
-                            icon: const Icon(Icons.remove_circle_outline),
-                            onPressed: qty <= 0
-                                ? null
-                                : () => _changeQuantity(item, -1),
-                          ),
-                          SizedBox(
-                            width: 40,
-                            child: Text(
-                              '$qty',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: qty > 0
-                                    ? theme.colorScheme.primary
-                                    : null,
-                              ),
+                          Text(
+                            displayName,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                          IconButton(
-                            tooltip: context.tr('Return one more'),
-                            icon: const Icon(Icons.add_circle_outline),
-                            onPressed: qty >= item.quantity
-                                ? null
-                                : () => _changeQuantity(item, 1),
+                          const SizedBox(height: 6),
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 4,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              if (model != null) AppPill(text: model),
+                              AppPill(
+                                text:
+                                    '${context.tr('Purchased: ')}'
+                                    '${item.quantity}',
+                              ),
+                              Text(
+                                money(item.unitPurchasePrice),
+                                style: TextStyle(
+                                  color: amountColor(
+                                    context,
+                                    item.unitPurchasePrice,
+                                  ),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: AppQuantityStepper(
+                              quantity: qty,
+                              decreaseTooltip: context.tr('Return one'),
+                              increaseTooltip: context.tr('Return one more'),
+                              onDecrement: qty <= 0
+                                  ? null
+                                  : () => _changeQuantity(item, -1),
+                              onIncrement: qty >= item.quantity
+                                  ? null
+                                  : () => _changeQuantity(item, 1),
+                            ),
                           ),
                         ],
                       ),

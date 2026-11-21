@@ -6,7 +6,6 @@ import '../../models/reports/inventory_report.dart';
 
 import '../../localization/app_strings.dart';
 import '../../ui/app_shell.dart';
-import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
 import '../../ui/reconnect_reloader.dart';
 import '../../utils/camera_scanner_support.dart';
@@ -329,11 +328,7 @@ class _InventorySearchScreenState extends State<InventorySearchScreen>
                                     Text(
                                       product.priceLabel,
                                       style: TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        color: amountColor(
-                                          context,
-                                          product.maxPrice,
-                                        ),
+                                        fontWeight: FontWeight.w700,
                                       ),
                                     ),
                                   ],

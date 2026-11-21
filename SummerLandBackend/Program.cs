@@ -14,23 +14,28 @@ builder.Services.AddSwaggerGen();
 
 
 builder.Services.AddDbContext<ShopDbContext>(options =>
-    options.UseSqlite(
-        builder.Configuration.GetConnectionString("DefaultConnection")
-    )
-    .AddInterceptors(new SqliteBusyTimeoutInterceptor())
-);
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddScoped<BarcodeService>();
 builder.Services.AddScoped<EmployeeSalesService>();
 
 var app = builder.Build();
 
-// Apply any pending migrations automatically on startup so the schema
-// stays in sync with the models when the server is restarted.
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<ShopDbContext>();
-    db.Database.Migrate();
+    try
+    {
+        var db = scope.ServiceProvider.GetRequiredService<ShopDbContext>();
+        db.Database.Migrate();
+    }
+    catch (Exception ex)
+    {
+        // Written next to the app so it survives the crash
+        File.WriteAllText(
+            Path.Combine(AppContext.BaseDirectory, "startup-error.txt"),
+            DateTime.UtcNow + Environment.NewLine + ex);
+        // no 'throw': the site stays up so you can see the file
+    }
 }
 
 // Configure the HTTP request pipeline.

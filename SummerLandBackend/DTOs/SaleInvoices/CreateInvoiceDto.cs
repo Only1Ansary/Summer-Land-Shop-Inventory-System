@@ -13,6 +13,24 @@ namespace SummerLandBackend.DTOs.SaleInvoices
             ErrorMessage = "Choose an employee for the invoice.")]
         public int EmployeeId { get; set; }
 
+        [Required(ErrorMessage = "Enter the customer's phone number.")]
+        [StringLength(50, MinimumLength = 3,
+            ErrorMessage = "Enter a valid customer phone number.")]
+        public string CustomerPhone { get; set; } = string.Empty;
+
+        [StringLength(100,
+            ErrorMessage = "Customer name cannot be longer than 100 characters.")]
+        public string? CustomerName { get; set; }
+
+        // 0 means the customer is buying on credit; the rest is paid now.
+        [Range(0, double.MaxValue,
+            ErrorMessage = "Enter a valid paid amount.")]
+        public decimal PaidAmount { get; set; }
+
+        // 0 Cash, 1 Visa, 2 InstaPay, 3 VCash. Only used when PaidAmount > 0.
+        [Range(0, 3, ErrorMessage = "Choose a valid payment method.")]
+        public int PaymentMethod { get; set; }
+
         [Required(ErrorMessage = "Invoice must contain at least one item.")]
         [MinLength(1,
             ErrorMessage = "Invoice must contain at least one item.")]

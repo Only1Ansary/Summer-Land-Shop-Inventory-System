@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../screens/categories/categories_screen.dart';
+import '../screens/customers/customers_screen.dart';
 import '../screens/employees/employees_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/inventory/inventory_search_screen.dart';
@@ -120,6 +121,14 @@ class AppDestinations {
       selectedIcon: Icons.receipt_long_rounded,
       group: 'Sales',
       builder: _saleInvoices,
+    ),
+    const AppNavigationItem(
+      id: 'customers',
+      title: 'Customers',
+      icon: Icons.people_outline,
+      selectedIcon: Icons.people_rounded,
+      group: 'Sales',
+      builder: _customers,
     ),
     const AppNavigationItem(
       id: 'returns',
@@ -284,6 +293,7 @@ class AppDestinations {
   static Widget _transfers() => const StockTransfersScreen();
   static Widget _sales() => const CreateInvoiceScreen();
   static Widget _saleInvoices() => const ShowSaleInvoicesScreen();
+  static Widget _customers() => const CustomersScreen();
   static Widget _returns() => const ReturnsScreen();
   static Widget _addPurchase() => const CreatePurchaseInvoiceScreen();
   static Widget _purchaseInvoices() => const ShowPurchaseInvoicesScreen();

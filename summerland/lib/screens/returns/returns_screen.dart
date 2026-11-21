@@ -1,4 +1,7 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../localization/app_strings.dart';
 import '../../models/invoice.dart';
@@ -36,6 +39,9 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
   bool _isLoadingLocations = true;
   bool _isLoadingInvoice = false;
 
+  // Minimum width of the items table; narrower screens scroll sideways.
+  static const double _tableMinWidth = 880;
+
   @override
   void initState() {
     super.initState();
@@ -52,6 +58,10 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
     _invoiceIdController.dispose();
     super.dispose();
   }
+
+  // ---------------------------------------------------------------------------
+  // Logic (unchanged)
+  // ---------------------------------------------------------------------------
 
   Future<void> _loadLocations() async {
     try {
@@ -152,8 +162,30 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
         await showDialog(
           context: context,
           builder: (context) {
+            final scheme = Theme.of(context).colorScheme;
+
             return AlertDialog(
-              title: Text(context.tr('Return Created')),
+              scrollable: true,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppPalette.success.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.check_circle_rounded,
+                      color: AppPalette.success,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(child: Text(context.tr('Return Created'))),
+                ],
+              ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -169,52 +201,71 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
                       Expanded(
                         child: Text(
                           record.productName,
-                          style: const TextStyle(fontWeight: FontWeight.w600),
+                          style: const TextStyle(fontWeight: FontWeight.w700),
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 12),
-                  InfoTile(
-                    label: context.tr('Quantity'),
-                    value: '${record.quantity}',
-                  ),
-                  if (item.hasDiscount) ...[
-                    InfoTile(
-                      label: context.tr('Unit before discount'),
-                      value: money(item.unitPrice),
-                      valueStyle: TextStyle(
-                        decoration: TextDecoration.lineThrough,
-                        color: Theme.of(context).colorScheme.outline,
-                      ),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: scheme.surfaceContainerHighest
+                          .withValues(alpha: 0.4),
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                    InfoTile(
-                      label: context.tr('Unit after discount'),
-                      value: money(record.unitPrice),
-                      valueStyle: amountStyle(context, record.unitPrice),
+                    child: Column(
+                      children: [
+                        InfoTile(
+                          label: context.tr('Quantity'),
+                          value: '${record.quantity}',
+                        ),
+                        if (item.hasDiscount) ...[
+                          InfoTile(
+                            label: context.tr('Unit before discount'),
+                            value: money(item.unitPrice),
+                            valueStyle: TextStyle(
+                              decoration: TextDecoration.lineThrough,
+                              color: scheme.outline,
+                            ),
+                          ),
+                          InfoTile(
+                            label: context.tr('Unit after discount'),
+                            value: money(record.unitPrice),
+                            valueStyle: amountStyle(context, record.unitPrice),
+                          ),
+                          InfoTile(
+                            label: context.tr('Total before discount'),
+                            value: money(item.unitPrice * record.quantity),
+                            valueStyle: TextStyle(
+                              decoration: TextDecoration.lineThrough,
+                              color: scheme.outline,
+                            ),
+                          ),
+                        ],
+                        InfoTile(
+                          label: context.tr('Location'),
+                          value: record.locationName,
+                        ),
+                        const Divider(height: 18),
+                        InfoTile(
+                          label: context.tr('Total'),
+                          value: money(record.totalAmount),
+                          valueStyle: amountStyle(context, record.totalAmount),
+                        ),
+                      ],
                     ),
-                    InfoTile(
-                      label: context.tr('Total before discount'),
-                      value: money(item.unitPrice * record.quantity),
-                      valueStyle: TextStyle(
-                        decoration: TextDecoration.lineThrough,
-                        color: Theme.of(context).colorScheme.outline,
-                      ),
-                    ),
-                  ],
-                  InfoTile(
-                    label: context.tr('Location'),
-                    value: record.locationName,
-                  ),
-                  InfoTile(
-                    label: context.tr('Total'),
-                    value: money(record.totalAmount),
-                    valueStyle: amountStyle(context, record.totalAmount),
                   ),
                 ],
               ),
+              actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               actions: [
                 FilledButton(
+                  style: FilledButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
                   onPressed: () {
                     Navigator.pop(context);
                   },
@@ -233,45 +284,18 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
-  }
-
-  Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      color: Theme.of(context).colorScheme.surface,
-      child: WideContent(
-        child: Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _invoiceIdController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: context.tr('Invoice ID'),
-                  prefixIcon: const Icon(Icons.confirmation_number_outlined),
-                ),
-                onSubmitted: (_) => _loadInvoice(),
-              ),
-            ),
-            const SizedBox(width: 12),
-            FilledButton.icon(
-              onPressed: _isLoadingInvoice ? null : _loadInvoice,
-              icon: _isLoadingInvoice
-                  ? const SizedBox(
-                      height: 18,
-                      width: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.search_rounded),
-              label: Text(context.tr('Load')),
-            ),
-          ],
-        ),
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
+
+  // ---------------------------------------------------------------------------
+  // Build
+  // ---------------------------------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
@@ -281,137 +305,567 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
       body: _isLoadingLocations
           ? const LoadingState()
           : Column(
-              children: [
-                _buildHeader(),
-                const Divider(height: 1),
-                if (_invoice == null)
-                  Expanded(
-                    child: EmptyState(
-                      icon: Icons.assignment_return_outlined,
-                      title: context.tr(
-                        'Enter an invoice ID to start a return.',
-                      ),
-                      message: context.tr(
-                        'Load an invoice to return sold items.',
-                      ),
-                    ),
-                  )
-                else
-                  Expanded(child: _buildInvoice()),
-              ],
+        children: [
+          _buildHeader(),
+          Expanded(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250),
+              switchInCurve: Curves.easeOut,
+              transitionBuilder: (child, animation) =>
+                  FadeTransition(opacity: animation, child: child),
+              child: KeyedSubtree(
+                key: ValueKey(
+                  _isLoadingInvoice ? 'loading' : (_invoice?.id ?? 'empty'),
+                ),
+                child: _buildContent(),
+              ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContent() {
+    if (_isLoadingInvoice) return const LoadingState();
+
+    if (_invoice == null) {
+      return EmptyState(
+        icon: Icons.assignment_return_outlined,
+        title: context.tr('Enter an invoice ID to start a return.'),
+        message: context.tr('Load an invoice to return sold items.'),
+      );
+    }
+
+    return _buildInvoice();
+  }
+
+  Widget _buildHeader() {
+    final scheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      child: WideContent(
+        child: Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _invoiceIdController,
+                autofocus: true,
+                keyboardType: TextInputType.number,
+                textInputAction: TextInputAction.search,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                decoration: InputDecoration(
+                  labelText: context.tr('Invoice ID'),
+                  prefixIcon: const Icon(Icons.confirmation_number_outlined),
+                  filled: true,
+                  fillColor:
+                  scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(30),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(30),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(30),
+                    borderSide: BorderSide(color: scheme.primary, width: 1.6),
+                  ),
+                ),
+                onSubmitted: (_) => _loadInvoice(),
+              ),
+            ),
+            const SizedBox(width: 12),
+            SizedBox(
+              height: 52,
+              child: FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  textStyle: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                onPressed: _isLoadingInvoice ? null : _loadInvoice,
+                icon: _isLoadingInvoice
+                    ? const SizedBox(
+                  height: 18,
+                  width: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+                    : const Icon(Icons.search_rounded),
+                label: Text(context.tr('Load')),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Invoice view
+  // ---------------------------------------------------------------------------
+
+  Widget _metaChip(IconData icon, String text) {
+
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    final foregroundColor = isDark ?  scheme.primaryContainer : Colors.white;
+    final secondaryColor = isDark ? scheme.primaryContainer : Colors.white70;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: foregroundColor.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: secondaryColor),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              text,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: foregroundColor,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeroCard(Invoice invoice) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    final isDark = theme.brightness == Brightness.dark;
+
+    final foregroundColor = isDark ? scheme.primaryContainer : Colors.white;
+    final secondaryColor = isDark ? scheme.primaryContainer : Colors.white70;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            scheme.primary,
+            Color.lerp(scheme.primary, scheme.tertiary, 0.55) ?? scheme.primary,
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: scheme.primary.withValues(alpha: 0.28),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: foregroundColor.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(
+                  Icons.receipt_long_rounded,
+                  color: foregroundColor,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  context.tr('Invoice #{0}', [invoice.id]),
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    color: foregroundColor,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          Text(
+            context.tr('Invoice Total'),
+            style: TextStyle(color: secondaryColor, fontSize: 13),
+          ),
+          const SizedBox(height: 2),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(
+              money(invoice.totalAmount),
+              style: TextStyle(
+                color: foregroundColor,
+                fontSize: 34,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.5,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _metaChip(Icons.storefront_outlined, invoice.locationName),
+              _metaChip(Icons.event_outlined, '${invoice.createdAt}'),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildInvoice() {
     final invoice = _invoice!;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
 
     return WideContent(
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
         children: [
+          _buildHeroCard(invoice),
+          const SizedBox(height: 14),
           Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    context.tr('Invoice #{0}', [invoice.id]),
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const Divider(height: 22),
-                  InfoTile(
-                    label: context.tr('Cashier Location'),
-                    value: invoice.locationName,
-                  ),
-                  InfoTile(
-                    label: context.tr('Date'),
-                    value: '${invoice.createdAt}',
-                  ),
-                  InfoTile(
-                    label: context.tr('Invoice Total'),
-                    value: money(invoice.totalAmount),
-                    valueStyle: amountStyle(context, invoice.totalAmount),
-                  ),
-                ],
+            elevation: 0,
+            margin: EdgeInsets.zero,
+            clipBehavior: Clip.antiAlias,
+            color: scheme.surface,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(
+                color: scheme.outlineVariant.withValues(alpha: 0.6),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          SectionHeader(
-            title: context.tr('Invoice Items'),
-            subtitle: context.tr('Return an item with the Return button'),
-          ),
-          const SizedBox(height: 8),
-          ...invoice.items.map((item) {
-            final details = [
-              if (item.sizeName != null)
-                context.tr('Size: {0}', [item.sizeName]),
-              if (item.colourName != null)
-                context.tr('Colour: {0}', [item.colourName]),
-            ].join(' • ');
-
-            return Card(
-              margin: const EdgeInsets.only(bottom: 10),
-              child: ListTile(
-                title: Text(item.productName),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(item.modelNumber),
-                    if (details.isNotEmpty) Text(details),
-                    Text(context.tr('Sold: {0}', [item.quantity])),
-                    if (!item.hasDiscount)
-                      Text(
-                        context.tr('Unit Price: {0}', [money(item.unitPrice)]),
-                        style: TextStyle(
-                          color: amountColor(context, item.unitPrice),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: scheme.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                      )
-                    else ...[
-                      Text(
-                        context.tr('Unit Price: {0} → {1}', [
-                          money(item.unitPrice),
-                          money(item.unitPriceAfterDiscount),
-                        ]),
-                        style: TextStyle(
-                          color: amountColor(
-                            context,
-                            item.unitPriceAfterDiscount,
-                          ),
-                          fontWeight: FontWeight.w600,
+                        child: Icon(
+                          Icons.assignment_return_outlined,
+                          size: 20,
+                          color: scheme.primary,
                         ),
                       ),
-                      Text(
-                        context.tr('Discount: -{0}/unit{1}', [
-                          money(item.discountAmount),
-                          item.discountPercent == null
-                              ? ''
-                              : ' (${percentLabel(item.discountPercent!)})',
-                        ]),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: amountColor(context, -item.discountAmount),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              context.tr('Invoice Items'),
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            Text(
+                              context.tr(
+                                'Return an item with the Return button',
+                              ),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: scheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: scheme.primary.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          '${invoice.items.length}',
+                          style: TextStyle(
+                            color: scheme.primary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                     ],
-                  ],
+                  ),
                 ),
-                isThreeLine: true,
-                trailing: FilledButton.icon(
-                  onPressed: () => _showReturnDialog(item),
-                  icon: const Icon(Icons.assignment_return_outlined),
-                  label: Text(context.tr('Return')),
-                ),
-              ),
-            );
-          }),
+                if (invoice.items.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                    child: EmptyState(
+                      icon: Icons.assignment_return_outlined,
+                      title: context.tr('Fully returned'),
+                      message: context.tr(
+                        'Every item on this invoice was returned.',
+                      ),
+                    ),
+                  )
+                else
+                  _buildItemsTable(invoice),
+              ],
+            ),
+          ),
         ],
       ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Items table
+  // ---------------------------------------------------------------------------
+
+  Widget _headerCell(String text, {Alignment alignment = Alignment.centerLeft}) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+      child: Align(
+        alignment: alignment,
+        child: Text(
+          text,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 12.5,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.3,
+            color: scheme.onPrimaryContainer,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _cell(Widget child, {Alignment alignment = Alignment.centerLeft}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      child: Align(alignment: alignment, child: child),
+    );
+  }
+
+  Widget _textOrDash(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return Text(
+        '-',
+        style: TextStyle(color: Theme.of(context).colorScheme.outline),
+      );
+    }
+    return Text(value, maxLines: 2, overflow: TextOverflow.ellipsis);
+  }
+
+  TableRow _itemRow(int index, InvoiceItem item) {
+    final scheme = Theme.of(context).colorScheme;
+    final zebra = index.isOdd
+        ? scheme.surfaceContainerHighest.withValues(alpha: 0.3)
+        : Colors.transparent;
+
+    final Widget unitPriceCell;
+    if (!item.hasDiscount) {
+      unitPriceCell = Text(
+        money(item.unitPrice),
+        style: TextStyle(
+          fontWeight: FontWeight.w600,
+        ),
+      );
+    } else {
+      unitPriceCell = Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Text(
+            money(item.unitPrice),
+            style: TextStyle(
+              fontSize: 12,
+              decoration: TextDecoration.lineThrough,
+              color: scheme.outline,
+            ),
+          ),
+          Text(
+            money(item.unitPriceAfterDiscount),
+            style: TextStyle(
+              color: amountColor(context, item.unitPriceAfterDiscount),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      );
+    }
+
+    final Widget discountCell;
+    if (!item.hasDiscount) {
+      discountCell = _textOrDash(null);
+    } else {
+      final percent = item.discountPercent == null
+          ? ''
+          : ' (${percentLabel(item.discountPercent!)})';
+      discountCell = Text(
+        '-${money(item.discountAmount)}$percent',
+        style: TextStyle(
+          color: amountColor(context, -item.discountAmount),
+          fontWeight: FontWeight.w600,
+        ),
+      );
+    }
+
+    return TableRow(
+      decoration: BoxDecoration(color: zebra),
+      children: [
+        _cell(
+          Text(
+            '${index + 1}',
+            style: TextStyle(
+              color: scheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          alignment: Alignment.center,
+        ),
+        _cell(
+          Text(
+            item.productName,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+        ),
+        _cell(_textOrDash(item.modelNumber)),
+        _cell(_textOrDash(item.sizeName)),
+        _cell(_textOrDash(item.colourName)),
+        _cell(
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+            decoration: BoxDecoration(
+              color: scheme.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              '${item.quantity}',
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                color: scheme.primary,
+              ),
+            ),
+          ),
+          alignment: Alignment.center,
+        ),
+        _cell(unitPriceCell, alignment: Alignment.centerRight),
+        _cell(discountCell, alignment: Alignment.centerRight),
+        _cell(
+          FilledButton.tonalIcon(
+            style: FilledButton.styleFrom(
+              visualDensity: VisualDensity.compact,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onPressed: () => _showReturnDialog(item),
+            icon: const Icon(Icons.assignment_return_outlined, size: 15),
+            label: Text(context.tr('Return'),
+              style: TextStyle(fontWeight: FontWeight.w600),),
+          ),
+          alignment: Alignment.center,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildItemsTable(Invoice invoice) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = math.max(constraints.maxWidth, _tableMinWidth);
+
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: SizedBox(
+            width: width,
+            child: Table(
+              defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+              columnWidths: const {
+                0: FixedColumnWidth(48),
+                1: FlexColumnWidth(3),
+                2: FlexColumnWidth(1.7),
+                3: FlexColumnWidth(1.1),
+                4: FlexColumnWidth(1.4),
+                5: FixedColumnWidth(72),
+                6: FlexColumnWidth(1.7),
+                7: FlexColumnWidth(1.9),
+                8: FixedColumnWidth(130),
+              },
+              border: TableBorder(
+                horizontalInside: BorderSide(
+                  color: scheme.outlineVariant.withValues(alpha: 0.5),
+                ),
+              ),
+              children: [
+                TableRow(
+                  decoration: BoxDecoration(color: scheme.primaryContainer),
+                  children: [
+                    _headerCell('#', alignment: Alignment.center),
+                    _headerCell(context.tr('Product Name')),
+                    _headerCell(context.tr('Model')),
+                    _headerCell(context.tr('Size')),
+                    _headerCell(context.tr('Colour')),
+                    _headerCell(
+                      context.tr('Quantity'),
+                      alignment: Alignment.center,
+                    ),
+                    _headerCell(
+                      context.tr('Unit price'),
+                      alignment: Alignment.centerRight,
+                    ),
+                    _headerCell(
+                      context.tr('Discount'),
+                      alignment: Alignment.centerRight,
+                    ),
+                    _headerCell('', alignment: Alignment.center),
+                  ],
+                ),
+                for (var i = 0; i < invoice.items.length; i++)
+                  _itemRow(i, invoice.items[i]),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -459,6 +913,12 @@ class _ReturnItemDialogState extends State<_ReturnItemDialog> {
     super.dispose();
   }
 
+  void _changeQuantity(int delta) {
+    final current = int.tryParse(_quantityController.text.trim()) ?? 1;
+    final next = (current + delta).clamp(1, math.max(1, widget.item.quantity));
+    _quantityController.text = '$next';
+  }
+
   void _submit() {
     final navigator = Navigator.of(context);
     final item = widget.item;
@@ -499,77 +959,154 @@ class _ReturnItemDialogState extends State<_ReturnItemDialog> {
     );
   }
 
+  InputDecoration _fieldDecoration(
+      BuildContext context, {
+        required String label,
+        IconData? icon,
+        String? hint,
+        String? helper,
+      }) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+      helperText: helper,
+      prefixIcon: icon == null ? null : Icon(icon),
+      filled: true,
+      fillColor: scheme.surfaceContainerHighest.withValues(alpha: 0.4),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: scheme.primary, width: 1.6),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final item = widget.item;
+    final scheme = Theme.of(context).colorScheme;
 
     return AlertDialog(
-      title: Text(context.tr('Create Return')),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      title: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: scheme.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              Icons.assignment_return_outlined,
+              color: scheme.primary,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(child: Text(context.tr('Create Return'))),
+        ],
+      ),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              item.productName,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: scheme.surfaceContainerHighest.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.productName,
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: [
+                      AppPill(text: item.modelNumber),
+                      if (item.sizeName != null)
+                        AppPill(text: context.tr('Size: {0}', [item.sizeName])),
+                      if (item.colourName != null)
+                        AppPill(
+                          text: context.tr('Colour: {0}', [item.colourName]),
+                        ),
+                      AppPill(
+                        text: context.tr('Sold Quantity: {0}', [item.quantity]),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  if (!item.hasDiscount)
+                    Text(
+                      context.tr('Unit Price: {0}', [money(item.unitPrice)]),
+                      style: TextStyle(
+                        color: amountColor(context, item.unitPrice),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    )
+                  else ...[
+                    Text(
+                      context.tr('Unit price before discount: {0}', [
+                        money(item.unitPrice),
+                      ]),
+                      style: TextStyle(
+                        decoration: TextDecoration.lineThrough,
+                        color: scheme.outline,
+                      ),
+                    ),
+                    Text(
+                      context.tr('Unit price after discount: {0}', [
+                        money(item.unitPriceAfterDiscount),
+                      ]),
+                      style: TextStyle(
+                        color: amountColor(context, item.unitPriceAfterDiscount),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      context.tr('Discount: -{0}/unit{1}', [
+                        money(item.discountAmount),
+                        item.discountPercent == null
+                            ? ''
+                            : ' (${percentLabel(item.discountPercent!)})',
+                      ]),
+                      style: TextStyle(
+                        color: amountColor(context, -item.discountAmount),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
-            const SizedBox(height: 8),
-            Text(context.tr('Model: {0}', [item.modelNumber])),
-            if (item.sizeName != null)
-              Text(context.tr('Size: {0}', [item.sizeName])),
-            if (item.colourName != null)
-              Text(context.tr('Colour: {0}', [item.colourName])),
-            const SizedBox(height: 12),
-            Text(context.tr('Sold Quantity: {0}', [item.quantity])),
-            if (!item.hasDiscount)
-              Text(
-                context.tr('Unit Price: {0}', [money(item.unitPrice)]),
-                style: TextStyle(color: amountColor(context, item.unitPrice)),
-              )
-            else ...[
-              Text(
-                context.tr('Unit price before discount: {0}', [
-                  money(item.unitPrice),
-                ]),
-                style: TextStyle(
-                  decoration: TextDecoration.lineThrough,
-                  color: Theme.of(context).colorScheme.outline,
-                ),
-              ),
-              Text(
-                context.tr('Unit price after discount: {0}', [
-                  money(item.unitPriceAfterDiscount),
-                ]),
-                style: TextStyle(
-                  color: amountColor(context, item.unitPriceAfterDiscount),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              Text(
-                context.tr('Discount: -{0}/unit{1}', [
-                  money(item.discountAmount),
-                  item.discountPercent == null
-                      ? ''
-                      : ' (${percentLabel(item.discountPercent!)})',
-                ]),
-                style: TextStyle(
-                  color: amountColor(context, -item.discountAmount),
-                ),
-              ),
-            ],
             const SizedBox(height: 18),
             DropdownButtonFormField<int>(
               key: ValueKey('location-${_selectedLocation?.id}'),
               initialValue: _selectedLocation?.id,
-              decoration: InputDecoration(
-                labelText: context.tr('Return Stock Location'),
-                prefixIcon: const Icon(Icons.location_on_outlined),
+              isExpanded: true,
+              borderRadius: BorderRadius.circular(16),
+              decoration: _fieldDecoration(
+                context,
+                label: context.tr('Return Stock Location'),
+                icon: Icons.location_on_outlined,
               ),
               items: widget.locations.map((location) {
                 return DropdownMenuItem<int>(
                   value: location.id,
-                  child: Text(location.name),
+                  child: Text(location.name, overflow: TextOverflow.ellipsis),
                 );
               }).toList(),
               onChanged: (value) {
@@ -577,37 +1114,83 @@ class _ReturnItemDialogState extends State<_ReturnItemDialog> {
 
                 setState(() {
                   _selectedLocation = widget.locations.firstWhere(
-                    (location) => location.id == value,
+                        (location) => location.id == value,
                   );
                 });
               },
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _quantityController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                labelText: context.tr('Return Quantity'),
-              ),
+            const SizedBox(height: 14),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: IconButton.filledTonal(
+                    onPressed: () => _changeQuantity(-1),
+                    icon: const Icon(Icons.remove_rounded),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: TextField(
+                    controller: _quantityController,
+                    keyboardType: TextInputType.number,
+                    textAlign: TextAlign.center,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                    ),
+                    decoration: _fieldDecoration(
+                      context,
+                      label: context.tr('Return Quantity'),
+                      helper: context.tr(
+                        'Maximum returnable quantity: {0}',
+                        [item.quantity],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: IconButton.filledTonal(
+                    onPressed: () => _changeQuantity(1),
+                    icon: const Icon(Icons.add_rounded),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
             TextField(
               controller: _reasonController,
               maxLines: 3,
-              decoration: InputDecoration(
-                labelText: context.tr('Reason'),
-                hintText: context.tr('Enter return reason'),
+              decoration: _fieldDecoration(
+                context,
+                label: context.tr('Reason'),
+                hint: context.tr('Enter return reason'),
+                icon: Icons.notes_rounded,
               ),
             ),
           ],
         ),
       ),
+      actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
           child: Text(context.tr('Cancel')),
         ),
-        FilledButton(onPressed: _submit, child: Text(context.tr('Return'))),
+        FilledButton.icon(
+          style: FilledButton.styleFrom(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          onPressed: _submit,
+          icon: const Icon(Icons.assignment_return_outlined),
+          label: Text(context.tr('Return')),
+        ),
       ],
     );
   }

@@ -19,6 +19,15 @@
 
         public string? EmployeeName { get; set; }
 
+        // Null for older invoices recorded before customers were tracked.
+        public int? CustomerId { get; set; }
+
+        public Customer? Customer { get; set; }
+
+        // Method chosen when the invoice was created. Null when it was bought
+        // on credit; later payments carry their own method.
+        public PaymentMethod? PaymentMethod { get; set; }
+
         public decimal TotalAmount { get; set; }
 
         public decimal DiscountAmount { get; set; }
@@ -29,5 +38,8 @@
 
         public ICollection<SaleInvoiceItem> Items { get; set; }
             = new List<SaleInvoiceItem>();
+
+        public ICollection<CustomerPayment> Payments { get; set; }
+            = new List<CustomerPayment>();
     }
 }

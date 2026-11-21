@@ -283,19 +283,58 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
               const SizedBox(height: 16),
 
               if (_computedSellingPrice() > 0)
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.sell_outlined),
-                  title: Text(context.tr('Selling Price')),
-                  subtitle: Text(
-                    context.tr('Purchase price plus your profit margin'),
-                  ),
-                  trailing: Text(
-                    money(_computedSellingPrice()),
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: amountColor(context, _computedSellingPrice()),
+                Card(
+                  margin: EdgeInsets.zero,
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.sell_outlined),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                context.tr('Selling Price'),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleSmall
+                                    ?.copyWith(fontWeight: FontWeight.w600),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                context.tr(
+                                  'Purchase price plus your profit margin',
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 120),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerRight,
+                            child: Text(
+                              money(_computedSellingPrice()),
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: amountColor(
+                                  context,
+                                  _computedSellingPrice(),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -305,6 +344,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
               DropdownButtonFormField<int>(
                 key: ValueKey('category-$_selectedCategoryId'),
                 initialValue: _selectedCategoryId,
+                isExpanded: true,
                 decoration: InputDecoration(
                   labelText: context.tr('Category'),
                   prefixIcon: const Icon(Icons.category_outlined),
@@ -312,7 +352,10 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                 items: widget.categories.map((category) {
                   return DropdownMenuItem<int>(
                     value: category.id,
-                    child: Text(category.name),
+                    child: Text(
+                      category.name,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   );
                 }).toList(),
                 onChanged: (value) {

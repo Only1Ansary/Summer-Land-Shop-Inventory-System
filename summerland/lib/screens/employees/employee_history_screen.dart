@@ -220,6 +220,8 @@ class _CollapsibleSectionState extends State<_CollapsibleSection> {
                       children: [
                         Text(
                           widget.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
@@ -227,6 +229,8 @@ class _CollapsibleSectionState extends State<_CollapsibleSection> {
                         const SizedBox(height: 2),
                         Text(
                           widget.subtitle,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
@@ -305,15 +309,23 @@ class _PaymentTile extends StatelessWidget {
             Expanded(
               child: Text(
                 _formatDate(payment.paidAt),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ),
-            Text(
-              money(payment.amount),
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w700,
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                money(payment.amount),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.right,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ],
@@ -399,42 +411,87 @@ class EmployeeMonthTile extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.calendar_month_outlined,
-                  size: 20,
-                  color: theme.colorScheme.primary,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    record.label,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final badges = <Widget>[
+                  if (record.isCurrentMonth) ...[
+                    StatusBadge(
+                      label: context.tr('THIS MONTH'),
+                      color: theme.colorScheme.primary,
                     ),
-                  ),
-                ),
-                if (record.isCurrentMonth) ...[
-                  StatusBadge(
-                    label: context.tr('THIS MONTH'),
-                    color: theme.colorScheme.primary,
-                  ),
-                  const SizedBox(width: 8),
-                ],
-                record.reachedTarget(target)
-                    ? StatusBadge(
-                        label: context.tr('TARGET MET'),
-                        color: AppPalette.success,
-                        icon: Icons.check_circle_outline,
-                      )
-                    : StatusBadge(
-                        label: context.tr('BELOW TARGET'),
-                        color: theme.colorScheme.outline,
-                        icon: Icons.remove_circle_outline,
+                  ],
+                  record.reachedTarget(target)
+                      ? StatusBadge(
+                          label: context.tr('TARGET MET'),
+                          color: AppPalette.success,
+                          icon: Icons.check_circle_outline,
+                        )
+                      : StatusBadge(
+                          label: context.tr('BELOW TARGET'),
+                          color: theme.colorScheme.outline,
+                          icon: Icons.remove_circle_outline,
+                        ),
+                ];
+
+                if (constraints.maxWidth >= 520) {
+                  return Row(
+                    children: [
+                      Icon(
+                        Icons.calendar_month_outlined,
+                        size: 20,
+                        color: theme.colorScheme.primary,
                       ),
-              ],
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          record.label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      ...badges.expand(
+                        (badge) => [const SizedBox(width: 8), badge],
+                      ),
+                    ],
+                  );
+                }
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.calendar_month_outlined,
+                          size: 20,
+                          color: theme.colorScheme.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            record.label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      alignment: WrapAlignment.end,
+                      children: badges,
+                    ),
+                  ],
+                );
+              },
             ),
             const SizedBox(height: 12),
             Wrap(

@@ -202,6 +202,7 @@ class _SearchSaleInvoicesScreenState extends State<SearchSaleInvoicesScreen>
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           TextField(
+            autofocus: true,
             controller: _queryController,
             decoration: InputDecoration(
               labelText: context.tr('Invoice #, location or product'),

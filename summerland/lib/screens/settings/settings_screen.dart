@@ -244,6 +244,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return AppShell(
       title: context.tr('Settings'),
       destinationId: 'settings',
@@ -261,41 +262,99 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Card(
                     child: Column(
                       children: [
-                        ListTile(
-                          leading: ShopLogo(size: 48, radius: 10),
-                          title: Text(
-                            ShopProfileService.instance.profile.value.name,
-                          ),
-                          subtitle: Text(context.tr('Shop name')),
-                          trailing: TextButton(
-                            onPressed: _editShopName,
-                            child: Text(context.tr('Rename')),
+                        Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Row(
+                            children: [
+                              ShopLogo(size: 48, radius: 10),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      ShopProfileService.instance.profile.value.name,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: theme.textTheme.titleSmall?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      context.tr('Shop name'),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: theme.textTheme.bodySmall?.copyWith(
+                                        color: theme.colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              TextButton(
+                                onPressed: _editShopName,
+                                child: Text(context.tr('Rename')),
+                              ),
+                            ],
                           ),
                         ),
                         const Divider(height: 1),
-                        ListTile(
-                          leading: const Icon(Icons.image_outlined),
-                          title: Text(context.tr('Logo')),
-                          subtitle: Text(
-                            ShopProfileService.instance.profile.value.hasLogo
-                                ? context.tr('Custom logo')
-                                : context.tr('Using the default icon'),
-                          ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
+                        Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Row(
                             children: [
-                              if (ShopProfileService
-                                  .instance
-                                  .profile
-                                  .value
-                                  .hasLogo)
-                                TextButton(
-                                  onPressed: _removeLogo,
-                                  child: Text(context.tr('Remove')),
+                              const Icon(Icons.image_outlined),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      context.tr('Logo'),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: theme.textTheme.titleSmall?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      ShopProfileService
+                                              .instance
+                                              .profile
+                                              .value
+                                              .hasLogo
+                                          ? context.tr('Custom logo')
+                                          : context.tr('Using the default icon'),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: theme.textTheme.bodySmall?.copyWith(
+                                        color: theme.colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              TextButton(
-                                onPressed: _chooseLogo,
-                                child: Text(context.tr('Choose')),
+                              ),
+                              const SizedBox(width: 8),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (ShopProfileService
+                                      .instance
+                                      .profile
+                                      .value
+                                      .hasLogo)
+                                    TextButton(
+                                      onPressed: _removeLogo,
+                                      child: Text(context.tr('Remove')),
+                                    ),
+                                  TextButton(
+                                    onPressed: _chooseLogo,
+                                    child: Text(context.tr('Choose')),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
@@ -384,35 +443,89 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Card(
                     child: Column(
                       children: [
-                        ListTile(
-                          leading: const Icon(Icons.push_pin_outlined),
-                          title: Text(context.tr('Pinned modules')),
-                          subtitle: Text(
-                            _pinnedCount == 0
-                                ? context.tr('No modules pinned')
-                                : context.tr('{0} of {1} pinned', [
-                                    _pinnedCount,
-                                    _maxPinned,
-                                  ]),
-                          ),
-                          trailing: TextButton(
-                            onPressed: _pinnedCount == 0 ? null : _resetPins,
-                            child: Text(context.tr('Reset')),
+                        Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.push_pin_outlined),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      context.tr('Pinned modules'),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: theme.textTheme.titleSmall?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      _pinnedCount == 0
+                                          ? context.tr('No modules pinned')
+                                          : context.tr('{0} of {1} pinned', [
+                                              _pinnedCount,
+                                              _maxPinned,
+                                            ]),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: theme.textTheme.bodySmall?.copyWith(
+                                        color: theme.colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              TextButton(
+                                onPressed: _pinnedCount == 0 ? null : _resetPins,
+                                child: Text(context.tr('Reset')),
+                              ),
+                            ],
                           ),
                         ),
                         const Divider(height: 1),
-                        ListTile(
-                          leading: const Icon(Icons.star_outline_rounded),
-                          title: Text(context.tr('Maximum pinned modules')),
-                          subtitle: Text(
-                            context.tr('Currently {0} of {1}', [
-                              _maxPinned,
-                              _moduleCount,
-                            ]),
-                          ),
-                          trailing: TextButton(
-                            onPressed: _editMaxPinned,
-                            child: Text(context.tr('Edit')),
+                        Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.star_outline_rounded),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      context.tr('Maximum pinned modules'),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: theme.textTheme.titleSmall?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      context.tr('Currently {0} of {1}', [
+                                        _maxPinned,
+                                        _moduleCount,
+                                      ]),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: theme.textTheme.bodySmall?.copyWith(
+                                        color: theme.colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              TextButton(
+                                onPressed: _editMaxPinned,
+                                child: Text(context.tr('Edit')),
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -427,21 +540,48 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Card(
                     child: ValueListenableBuilder<List<String>>(
                       valueListenable: BottomNavService.instance.ids,
-                      builder: (context, ids, _) => ListTile(
-                        leading: const Icon(Icons.navigation_outlined),
-                        title: Text(context.tr('Bottom navigation bar')),
-                        subtitle: Text(
-                          context.tr('{0} of {1} shortcuts selected', [
-                            ids.length,
-                            BottomNavService.maxDestinations,
-                          ]),
-                        ),
-                        trailing: TextButton(
-                          onPressed: () => pushScreen(
-                            context,
-                            (_) => const BottomNavigationSettingsScreen(),
-                          ),
-                          child: Text(context.tr('Customize')),
+                      builder: (context, ids, _) => Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.navigation_outlined),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    context.tr('Bottom navigation bar'),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: theme.textTheme.titleSmall?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    context.tr('{0} of {1} shortcuts selected', [
+                                      ids.length,
+                                      BottomNavService.maxDestinations,
+                                    ]),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            TextButton(
+                              onPressed: () => pushScreen(
+                                context,
+                                (_) => const BottomNavigationSettingsScreen(),
+                              ),
+                              child: Text(context.tr('Customize')),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -455,17 +595,75 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Card(
                     child: Column(
                       children: [
-                        ListTile(
-                          leading: const Icon(Icons.cached_outlined),
-                          title: Text(context.tr('Cache size')),
-                          subtitle: Text(_cacheSizeLabel()),
+                        Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.cached_outlined),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      context.tr('Cache size'),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: theme.textTheme.titleSmall?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      _cacheSizeLabel(),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: theme.textTheme.bodySmall?.copyWith(
+                                        color: theme.colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                         const Divider(height: 1),
-                        ListTile(
-                          leading: const Icon(Icons.delete_outline),
-                          title: Text(context.tr('Clear cache')),
-                          subtitle: Text(context.tr('Remove all cached data')),
+                        InkWell(
                           onTap: _clearCache,
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.delete_outline),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        context.tr('Clear cache'),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: theme.textTheme.titleSmall?.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        context.tr('Remove all cached data'),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: theme.textTheme.bodySmall?.copyWith(
+                                          color: theme.colorScheme.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -479,18 +677,72 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Card(
                     child: Column(
                       children: [
-                        ListTile(
-                          leading: ShopLogo(size: 48, radius: 10),
-                          title: Text(
-                            ShopProfileService.instance.profile.value.name,
+                        Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Row(
+                            children: [
+                              ShopLogo(size: 48, radius: 10),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      ShopProfileService.instance.profile.value.name,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: theme.textTheme.titleSmall?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      context.tr('Inventory & POS'),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: theme.textTheme.bodySmall?.copyWith(
+                                        color: theme.colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
-                          subtitle: Text(context.tr('Inventory & POS')),
                         ),
                         const Divider(height: 1),
-                        ListTile(
-                          leading: const Icon(Icons.info_outline),
-                          title: Text(context.tr('Version')),
-                          subtitle: Text(context.tr('1.0.0')),
+                        Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.info_outline),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      context.tr('Version'),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: theme.textTheme.titleSmall?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      context.tr('1.0.0'),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: theme.textTheme.bodySmall?.copyWith(
+                                        color: theme.colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -528,6 +780,7 @@ class _ShopNameDialogState extends State<_ShopNameDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
+      scrollable: true,
       title: Text(context.tr('Shop name')),
       content: TextField(
         controller: _controller,
@@ -600,6 +853,7 @@ class _MaxPinnedDialogState extends State<_MaxPinnedDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
+      scrollable: true,
       title: Text(context.tr('Maximum pinned modules')),
       content: TextField(
         controller: _controller,

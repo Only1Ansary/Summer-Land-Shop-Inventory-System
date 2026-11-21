@@ -121,15 +121,24 @@ class _AddSuppliersScreenState extends State<AddSuppliersScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(context.tr('Current debt')),
-                      Text(
-                        moneyNegative(_currentDebt),
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: amountColor(context, -_currentDebt),
+                      Expanded(
+                        child: Text(context.tr('Current debt')),
+                      ),
+                      const SizedBox(width: 12),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 160),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            moneyNegative(_currentDebt),
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: amountColor(context, -_currentDebt),
+                            ),
+                          ),
                         ),
                       ),
                     ],

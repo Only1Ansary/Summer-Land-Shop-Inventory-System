@@ -27,7 +27,7 @@ const List<HomeModule> homeModules = [
   ),
   HomeModule(
     title: 'Inventory',
-    subtitle: 'Search stock by product',
+    subtitle: 'Search for a variant',
     icon: Icons.warehouse_rounded,
     destinationId: 'inventory-search',
   ),
@@ -42,6 +42,12 @@ const List<HomeModule> homeModules = [
     subtitle: 'View & search invoices',
     icon: Icons.receipt_long_rounded,
     destinationId: 'sale-invoices',
+  ),
+  HomeModule(
+    title: 'Customers',
+    subtitle: 'View & search customers',
+    icon: Icons.people_rounded,
+    destinationId: 'customers',
   ),
   HomeModule(
     title: 'Stock Transfers',

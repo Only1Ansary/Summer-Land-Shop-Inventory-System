@@ -136,17 +136,29 @@ Future<void> _buildOneItemCart(WidgetTester tester) async {
   await tester.tap(find.text('Items: 1'));
   await tester.pumpAndSettle();
 
-  final dropdowns = find.byType(DropdownButtonFormField<int>);
-  expect(dropdowns, findsNWidgets(2));
+  final cashierDropdown = find.byKey(
+    const ValueKey('cashier-location-null'),
+  );
+  final employeeDropdown = find.byKey(const ValueKey('invoice-employee-null'));
+  expect(cashierDropdown, findsOneWidget);
+  expect(employeeDropdown, findsOneWidget);
+  expect(find.byKey(const ValueKey('invoice-payment-method')), findsOneWidget);
 
-  await tester.tap(dropdowns.at(0));
+  await tester.tap(cashierDropdown);
   await tester.pumpAndSettle();
   await tester.tap(find.text('Main Branch').last);
   await tester.pumpAndSettle();
 
-  await tester.tap(dropdowns.at(1));
+  await tester.tap(employeeDropdown);
   await tester.pumpAndSettle();
   await tester.tap(find.text('Ahmed Mohamed').last);
+  await tester.pumpAndSettle();
+
+  // A phone is required for every sale; payment can stay at 0 (pay later).
+  await tester.enterText(
+    find.byKey(const Key('invoice-customer-phone')),
+    '0123456789',
+  );
   await tester.pumpAndSettle();
 }
 

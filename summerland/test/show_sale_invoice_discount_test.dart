@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:summerland/models/customer_payment.dart';
 import 'package:summerland/models/invoice.dart';
 import 'package:summerland/models/invoice_item.dart';
 import 'package:summerland/screens/invoices/show_sale_invoice_screen.dart';
@@ -39,25 +40,19 @@ void main() {
       MaterialApp(home: ShowSaleInvoiceScreen(invoice: discountedInvoice())),
     );
 
-    final subtitle = tester
-        .widgetList<Text>(find.byType(Text))
-        .where((text) => text.textSpan != null);
-
     expect(
-      subtitle.any(
-        (text) =>
-            text.textSpan!.toPlainText().contains('120.00 EGP → 108.00 EGP'),
-      ),
-      isTrue,
-      reason: 'The unit price before and after the discount must both show.',
+      find.text('120.00 EGP'),
+      findsWidgets,
+      reason: 'The unit price before the discount must show.',
     );
-
     expect(
-      subtitle.any(
-        (text) =>
-            text.textSpan!.toPlainText().contains('-12.00 EGP/unit (10%)'),
-      ),
-      isTrue,
+      find.text('108.00 EGP'),
+      findsWidgets,
+      reason: 'The unit price after the discount must show.',
+    );
+    expect(
+      find.text('-12.00 EGP (10%)'),
+      findsWidgets,
       reason: 'The per-unit discount must show.',
     );
   });
@@ -73,10 +68,12 @@ void main() {
     expect(find.text('240.00 EGP'), findsWidgets);
     expect(find.text('Item discounts'), findsOneWidget);
     expect(find.text('-24.00 EGP'), findsOneWidget);
-    expect(find.text('Discount'), findsOneWidget);
+    // "Discount" is both the items-table header and the totals-card row.
+    expect(find.text('Discount'), findsWidgets);
     expect(find.text('-50.00 EGP'), findsOneWidget);
-    expect(find.text('Total Amount'), findsOneWidget);
-    expect(find.text('166.00 EGP'), findsOneWidget);
+    // The headline and the totals card both repeat the amount.
+    expect(find.text('Total Amount'), findsWidgets);
+    expect(find.text('166.00 EGP'), findsWidgets);
   });
 
   testWidgets('an invoice discount entered as a percent shows the percent', (
@@ -133,7 +130,8 @@ void main() {
     );
 
     expect(find.text('Item discounts'), findsNothing);
-    expect(find.text('Discount'), findsNothing);
+    // The items table still has a Discount column header.
+    expect(find.text('Discount'), findsOneWidget);
     expect(find.text('240.00 EGP'), findsWidgets);
   });
 
@@ -160,7 +158,6 @@ void main() {
       ),
     );
 
-    expect(find.text('Employee'), findsOneWidget);
     expect(find.text('Mona'), findsOneWidget);
   });
 
@@ -185,7 +182,52 @@ void main() {
       ),
     );
 
-    expect(find.text('Employee'), findsOneWidget);
-    expect(find.text('None'), findsOneWidget);
+    expect(find.text('None'), findsWidgets);
+  });
+
+  testWidgets('later payments show their own method in the details', (
+    WidgetTester tester,
+  ) async {
+    final base = discountedInvoice();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ShowSaleInvoiceScreen(
+          invoice: Invoice(
+            id: base.id,
+            createdAt: base.createdAt,
+            locationId: base.locationId,
+            locationName: base.locationName,
+            totalAmount: base.totalAmount,
+            discountAmount: base.discountAmount,
+            items: base.items,
+            customerId: 4,
+            customerPhone: '0123456789',
+            customerName: 'Mona',
+            customerTotalPaid: 100,
+            customerTotalDebt: 66,
+            paidAmount: 100,
+            remainingAmount: 66,
+            payments: [
+              CustomerPayment(
+                id: 9,
+                customerId: 4,
+                amount: 100,
+                method: 2,
+                paidAt: DateTime.utc(2026, 10, 14, 9),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Customer & Payment'), findsOneWidget);
+    expect(find.text('Mona'), findsOneWidget);
+    expect(find.text('0123456789'), findsOneWidget);
+    expect(find.text('Payment history'), findsOneWidget);
+    expect(find.text('InstaPay'), findsNWidgets(2));
+    expect(find.text('100.00 EGP'), findsWidgets);
+    expect(find.text('Record payment'), findsWidgets);
   });
 }

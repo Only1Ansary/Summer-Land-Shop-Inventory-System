@@ -10,6 +10,7 @@ import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
 import '../../ui/category_pie_chart.dart';
 import '../../ui/reconnect_reloader.dart';
+import '../../utils/payment_method.dart';
 
 class SalesReportScreen extends StatefulWidget {
   const SalesReportScreen({super.key});
@@ -206,11 +207,25 @@ class _SalesReportScreenState extends State<SalesReportScreen>
                             label: context.tr('Purchase Cost'),
                             value: money(report.purchaseTotalCost),
                             icon: Icons.local_shipping_outlined,
+                            color: report.purchaseTotalCost > 0
+                                ? AppPalette.danger
+                                : null,
+                            valueColor: amountColor(
+                              context,
+                              -report.purchaseTotalCost,
+                            ),
                           ),
                           StatData(
                             label: context.tr('Purchase Paid'),
                             value: money(report.purchaseTotalPaid),
                             icon: Icons.payments_outlined,
+                            color: report.purchaseTotalPaid > 0
+                                ? AppPalette.danger
+                                : null,
+                            valueColor: amountColor(
+                              context,
+                              -report.purchaseTotalPaid,
+                            ),
                           ),
                           StatData(
                             label: context.tr('Unpaid On Purchases'),
@@ -219,10 +234,6 @@ class _SalesReportScreenState extends State<SalesReportScreen>
                             color: report.purchaseDebt > 0
                                 ? AppPalette.danger
                                 : null,
-                            valueColor: amountColor(
-                              context,
-                              -report.purchaseDebt,
-                            ),
                           ),
                         ],
                       ),
@@ -247,7 +258,7 @@ class _SalesReportScreenState extends State<SalesReportScreen>
                             icon: Icons.payments_outlined,
                             valueColor: amountColor(
                               context,
-                              report.employeePaymentTotal,
+                              -report.employeePaymentTotal,
                             ),
                           ),
                         ],
@@ -272,11 +283,70 @@ class _SalesReportScreenState extends State<SalesReportScreen>
                             color: report.supplierDebtTotal > 0
                                 ? AppPalette.danger
                                 : null,
-                            valueColor: amountColor(
-                              context,
-                              -report.supplierDebtTotal,
-                            ),
                           ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    CollapsibleSection(
+                      title: context.tr('Customers & Payments'),
+                      subtitle: context.tr(
+                        'Collections in this period and customer balances',
+                      ),
+                      initiallyExpanded: true,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          StatGrid(
+                            stats: [
+                              StatData(
+                                label: context.tr('Customers'),
+                                value: '${report.customerCount}',
+                                icon: Icons.people_outline,
+                              ),
+                              StatData(
+                                label: context.tr('Payments Collected'),
+                                value: money(report.customerPaymentsTotal),
+                                icon: Icons.payments_outlined,
+                                valueColor: amountColor(
+                                  context,
+                                  report.customerPaymentsTotal,
+                                ),
+                              ),
+                              StatData(
+                                label: context.tr('Customer Debt'),
+                                value: moneyNegative(report.customerDebtTotal),
+                                icon: Icons.balance_outlined,
+                                color: report.customerDebtTotal > 0
+                                    ? AppPalette.danger
+                                    : null,
+                              ),
+                            ],
+                          ),
+                          if (report.paymentsByMethod.isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            Text(
+                              context.tr('By payment method'),
+                              style: Theme.of(context).textTheme.titleSmall,
+                            ),
+                            const SizedBox(height: 4),
+                            for (final entry in report.paymentsByMethod)
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 3,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        paymentMethodLabel(context, entry.method),
+                                      ),
+                                    ),
+                                    Text(money(entry.amount)),
+                                  ],
+                                ),
+                              ),
+                          ],
                         ],
                       ),
                     ),

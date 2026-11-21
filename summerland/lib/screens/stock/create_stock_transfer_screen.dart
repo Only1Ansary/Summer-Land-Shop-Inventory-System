@@ -405,26 +405,61 @@ class _CreateStockTransferScreenState extends State<CreateStockTransferScreen> {
                       final queued = _isQueued(variant);
 
                       return Card(
-                        child: ListTile(
-                          enabled: !queued,
-                          title: Text(_variantDisplayName(variant)),
-                          subtitle: Text(
-                            context.tr(
-                              'Model: {0}\nQuantity: {1}\nBarcode: {2}',
-                              [
-                                variant.modelNumber,
-                                variant.totalQuantity,
-                                variant.barcode,
-                              ],
-                            ),
-                          ),
-                          trailing: queued
-                              ? const Icon(Icons.check_circle_rounded)
-                              : IconButton(
-                                  tooltip: context.tr('Add to transfer'),
-                                  icon: const Icon(Icons.add_circle_outline),
-                                  onPressed: () => _queueVariant(variant),
+                        margin: const EdgeInsets.only(bottom: 8),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _variantDisplayName(variant),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        color: queued
+                                            ? Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurfaceVariant
+                                            : null,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Wrap(
+                                      spacing: 6,
+                                      runSpacing: 4,
+                                      children: [
+                                        AppPill(text: variant.modelNumber),
+                                        AppPill(
+                                          text: context.tr('Quantity: {0}', [
+                                            variant.totalQuantity,
+                                          ]),
+                                        ),
+                                        AppPill(text: variant.barcode),
+                                      ],
+                                    ),
+                                  ],
                                 ),
+                              ),
+                              queued
+                                  ? const Padding(
+                                      padding: EdgeInsets.all(8),
+                                      child: Icon(Icons.check_circle_rounded),
+                                    )
+                                  : IconButton(
+                                      tooltip: context.tr('Add to transfer'),
+                                      icon: const Icon(
+                                        Icons.add_circle_outline,
+                                      ),
+                                      onPressed: () => _queueVariant(variant),
+                                    ),
+                            ],
+                          ),
                         ),
                       );
                     },
@@ -640,6 +675,7 @@ class _QuantityDialogState extends State<_QuantityDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
+      scrollable: true,
       title: Text(widget.title),
       content: TextField(
         controller: _controller,

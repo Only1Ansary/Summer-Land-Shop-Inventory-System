@@ -84,8 +84,13 @@ void main() {
 
   tearDown(() => ApiService.clientOverride = null);
 
-  Future<void> pumpScreen(WidgetTester tester) async {
-    tester.view.physicalSize = const Size(800, 1600);
+  Future<void> pumpScreen(
+    WidgetTester tester, {
+    Size size = const Size(1400, 1600),
+  }) async {
+    // AppShell uses a side rail above 960px, so go wider to leave this screen
+    // above its own 900px breakpoint and show the docked fee breakdown.
+    tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
 
@@ -121,7 +126,9 @@ void main() {
   }
 
   testWidgets('rejects an invoice with no items and no fees', (tester) async {
-    await pumpScreen(tester);
+    // On narrow screens the whole totals bar (including the create button) is
+    // hidden until there is something to create.
+    await pumpScreen(tester, size: const Size(800, 1600));
 
     await tester.enterText(
       find.widgetWithText(TextField, 'Supplier Name'),
@@ -162,6 +169,13 @@ void main() {
     await tester.pump(const Duration(seconds: 6));
     await tester.pumpAndSettle();
 
+    // Dismiss the print prompt introduced for created invoices.
+    final cancelButton = find.text('Cancel');
+    if (cancelButton.evaluate().isNotEmpty) {
+      await tester.tap(cancelButton);
+      await tester.pumpAndSettle();
+    }
+
     expect(tester.takeException(), isNull);
     // Reached the show screen for the created invoice.
     expect(find.textContaining('Purchase Invoice #'), findsWidgets);
@@ -196,6 +210,12 @@ void main() {
     await tester.tap(createButton);
     await tester.pump(const Duration(seconds: 6));
     await tester.pumpAndSettle();
+
+    final cancelButton = find.text('Cancel');
+    if (cancelButton.evaluate().isNotEmpty) {
+      await tester.tap(cancelButton);
+      await tester.pumpAndSettle();
+    }
 
     expect(tester.takeException(), isNull);
     expect(find.textContaining('Purchase Invoice #'), findsWidgets);

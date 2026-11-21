@@ -18,6 +18,12 @@ class SalesReport {
   final double profit;
   final List<CategorySales> categorySales;
 
+  final int customerCount;
+  final int customerPaymentCount;
+  final double customerPaymentsTotal;
+  final double customerDebtTotal;
+  final List<PaymentMethodTotal> paymentsByMethod;
+
   SalesReport({
     required this.from,
     required this.to,
@@ -37,6 +43,11 @@ class SalesReport {
     required this.supplierDebtTotal,
     required this.profit,
     required this.categorySales,
+    this.customerCount = 0,
+    this.customerPaymentCount = 0,
+    this.customerPaymentsTotal = 0.0,
+    this.customerDebtTotal = 0.0,
+    this.paymentsByMethod = const [],
   });
 
   factory SalesReport.fromJson(Map<String, dynamic> json) {
@@ -63,6 +74,34 @@ class SalesReport {
       categorySales: (json['categorySales'] as List<dynamic>? ?? [])
           .map((e) => CategorySales.fromJson(e as Map<String, dynamic>))
           .toList(),
+      customerCount: json['customerCount'] ?? 0,
+      customerPaymentCount: json['customerPaymentCount'] ?? 0,
+      customerPaymentsTotal: amount('customerPaymentsTotal'),
+      customerDebtTotal: amount('customerDebtTotal'),
+      paymentsByMethod: (json['paymentsByMethod'] as List<dynamic>? ?? [])
+          .map((e) =>
+              PaymentMethodTotal.fromJson(e as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+}
+
+class PaymentMethodTotal {
+  final int method;
+  final String methodName;
+  final double amount;
+
+  PaymentMethodTotal({
+    required this.method,
+    required this.methodName,
+    required this.amount,
+  });
+
+  factory PaymentMethodTotal.fromJson(Map<String, dynamic> json) {
+    return PaymentMethodTotal(
+      method: json['method'] as int? ?? 0,
+      methodName: json['methodName'] as String? ?? '',
+      amount: (json['amount'] as num? ?? 0).toDouble(),
     );
   }
 }

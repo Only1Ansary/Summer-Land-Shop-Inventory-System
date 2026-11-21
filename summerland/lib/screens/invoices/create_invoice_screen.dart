@@ -3,25 +3,29 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../localization/app_strings.dart';
+import '../../models/customer.dart';
 import '../../models/employee.dart';
 import '../../models/inventory.dart';
 import '../../models/invoice.dart';
 import '../../models/location.dart';
 import '../../models/product_variant.dart';
 import '../../services/api_service.dart';
+import '../../services/customer_service.dart';
 import '../../services/employee_service.dart';
+import '../../services/invoice_printer.dart';
 import '../../services/invoice_service.dart';
 import '../../services/inventory_service.dart';
 import '../../services/location_service.dart';
 import '../../services/low_stock_notification_service.dart';
-import '../../services/physical_scanner_service.dart';
 import '../../services/product_variant_service.dart';
 import '../../utils/camera_scanner_support.dart';
+import '../../utils/payment_method.dart';
 
 import '../../ui/app_shell.dart';
 import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
 import '../inventory/barcode_scanner_screen.dart';
+import 'show_sale_invoice_screen.dart';
 
 class CreateInvoiceScreen extends StatefulWidget {
   const CreateInvoiceScreen({super.key});
@@ -38,10 +42,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   late final InventoryService _inventoryService;
   late final InvoiceService _invoiceService;
   late final EmployeeService _employeeService;
+  late final CustomerService _customerService;
   late final LowStockNotificationService _notifications;
-
-  late final PhysicalScannerService _physicalScanner;
-  StreamSubscription<String>? _physicalScanSubscription;
 
   List<Location> _locations = [];
   List<ProductVariant> _allVariants = [];
@@ -53,7 +55,19 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   Location? _selectedCashierLocation;
   Employee? _selectedEmployee;
 
+  // A phone is required for every sale. The customer is created on the server
+  // the first time a number is used; [lookup] only prefills the name/balance.
+  Customer? _matchedCustomer;
+
   final TextEditingController _searchController = TextEditingController();
+
+  final TextEditingController _customerPhoneController =
+      TextEditingController();
+  final TextEditingController _customerNameController = TextEditingController();
+  final TextEditingController _paidAmountController = TextEditingController();
+
+  int _paymentMethod = paymentMethodCash;
+  bool _isLookingUpCustomer = false;
 
   final TextEditingController _discountController = TextEditingController();
 
@@ -65,9 +79,16 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   final Debouncer _searchDebounce = Debouncer();
   bool _isIncrementing = false;
 
-  // The cart panel starts collapsed so it never covers the variant
-  // results while items are being picked.
-  bool _isCartExpanded = false;
+  // The cart lives in a bottom sheet instead of a panel squeezed under the
+  // results. The sheet is a separate route, so it listens to this notifier to
+  // rebuild whenever the cart (which belongs to this State) changes.
+  final ValueNotifier<int> _revision = ValueNotifier<int>(0);
+  bool _isSheetOpen = false;
+
+  // Errors raised while the sheet is open are shown inside the sheet, because
+  // a SnackBar on this screen would be hidden behind it.
+  String? _sheetMessage;
+  Timer? _sheetMessageTimer;
 
   @override
   void initState() {
@@ -78,28 +99,36 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     _inventoryService = InventoryService(_apiService);
     _invoiceService = InvoiceService(_apiService);
     _employeeService = EmployeeService(_apiService);
+    _customerService = CustomerService(_apiService);
     _notifications = LowStockNotificationService.instance;
-
-    _physicalScanner = PhysicalScannerService.instance;
-    _physicalScanner.attach(shouldCapture: _acceptsPhysicalScans);
-    _physicalScanSubscription = _physicalScanner.scans.listen(_onPhysicalScan);
 
     _loadData();
   }
 
   @override
   void dispose() {
-    _physicalScanSubscription?.cancel();
-    _physicalScanner.detach();
     _searchDebounce.dispose();
+    _sheetMessageTimer?.cancel();
     _searchController.dispose();
+    _customerPhoneController.dispose();
+    _customerNameController.dispose();
+    _paidAmountController.dispose();
     _discountController.dispose();
+    _revision.dispose();
 
     for (final item in _cart) {
       item.dispose();
     }
 
     super.dispose();
+  }
+
+  /// Rebuilds this screen and, if it is open, the cart sheet.
+  void _refresh([VoidCallback? change]) {
+    if (!mounted) return;
+
+    setState(change ?? () {});
+    _revision.value++;
   }
 
   Future<void> _loadData() async {
@@ -135,7 +164,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
 
     setState(() {
       if (query.isEmpty) {
-        _filteredVariants.clear();
+        _filteredVariants = [];
         return;
       }
 
@@ -150,31 +179,19 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   }
 
   void _onSearchChanged(String value) {
-    _searchDebounce.run(() => _searchVariants(value));
-  }
-
-  /// Whether key events on this screen should be treated as scanner input.
-  ///
-  /// Input is ignored while the screen is loading or covered by another route
-  /// (a dialog or the camera scanner), so those screens keep normal keyboard
-  /// behaviour.
-  bool _acceptsPhysicalScans() {
-    if (!mounted || _isLoading) return false;
-
-    return ModalRoute.of(context)?.isCurrent ?? true;
-  }
-
-  void _onPhysicalScan(String barcode) {
-    if (!mounted || !_acceptsPhysicalScans()) return;
-
-    unawaited(_handleScannedBarcode(barcode));
+    // Rebuild right away so the clear button appears/disappears instantly;
+    // filtering is applied immediately so search results stay in sync with
+    // the field (important for tests and for small catalogues).
+    setState(() {
+      _searchVariants(value);
+    });
   }
 
   /// Opens the camera and works the scanned barcode straight into the sale.
   Future<void> _scanBarcode() async {
     final scanned = await pushScreen<String>(
       context,
-      (_) => const BarcodeScannerScreen(),
+          (_) => const BarcodeScannerScreen(),
     );
 
     if (!mounted || scanned == null) return;
@@ -233,9 +250,9 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   }
 
   Future<void> _showVariantDialog(
-    ProductVariant variant,
-    List<Inventory> inventory,
-  ) async {
+      ProductVariant variant,
+      List<Inventory> inventory,
+      ) async {
     final availableInventory = inventory
         .where((item) => item.quantity > 0)
         .toList();
@@ -272,10 +289,16 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         .fold(0, (total, allocation) => total + allocation.quantity);
   }
 
+  int _variantCartQuantity(int variantId) {
+    final itemIndex = _cart.indexWhere((item) => item.variant.id == variantId);
+
+    return itemIndex == -1 ? 0 : _cart[itemIndex].totalQuantity;
+  }
+
   void _addToCart(ProductVariant variant, Location location, int quantity) {
     final itemIndex = _cart.indexWhere((item) => item.variant.id == variant.id);
 
-    setState(() {
+    _refresh(() {
       if (itemIndex == -1) {
         _cart.add(
           _InvoiceCartItem(
@@ -292,7 +315,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       final cartItem = _cart[itemIndex];
 
       final allocationIndex = cartItem.allocations.indexWhere(
-        (allocation) => allocation.location.id == location.id,
+            (allocation) => allocation.location.id == location.id,
       );
 
       if (allocationIndex == -1) {
@@ -309,13 +332,19 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   }
 
   void _removeCartItem(int index) {
-    setState(() {
-      _cart.removeAt(index).dispose();
+    late final _InvoiceCartItem removed;
 
-      if (_cart.isEmpty) {
-        _isCartExpanded = false;
-      }
+    _refresh(() {
+      removed = _cart.removeAt(index);
     });
+
+    // The row's TextField is still in the tree for this frame, so the
+    // controller is disposed once the frame is done.
+    WidgetsBinding.instance.addPostFrameCallback((_) => removed.dispose());
+
+    if (_cart.isEmpty && _isSheetOpen) {
+      Navigator.of(context).pop();
+    }
   }
 
   // Adds one unit to a cart line, taking it from the first location that
@@ -326,7 +355,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
 
     final item = _cart[index];
 
-    setState(() {
+    _refresh(() {
       _isIncrementing = true;
     });
 
@@ -342,13 +371,13 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
 
       for (final entry in inventory) {
         final locationIndex = _locations.indexWhere(
-          (location) => location.id == entry.locationId,
+              (location) => location.id == entry.locationId,
         );
 
         if (locationIndex == -1) continue;
 
         final alreadyInCart = item.allocations.any(
-          (allocation) => allocation.location.id == entry.locationId,
+              (allocation) => allocation.location.id == entry.locationId,
         );
 
         if (alreadyInCart) {
@@ -364,7 +393,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         if (entry.quantity - inCart <= 0) continue;
 
         final location = _locations.firstWhere(
-          (location) => location.id == entry.locationId,
+              (location) => location.id == entry.locationId,
         );
 
         _addToCart(item.variant, location, 1);
@@ -382,7 +411,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       _showError(friendlyErrorMessage(context, e));
     } finally {
       if (mounted) {
-        setState(() {
+        _refresh(() {
           _isIncrementing = false;
         });
       }
@@ -397,7 +426,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
 
     if (item.totalQuantity <= 1) return;
 
-    setState(() {
+    _refresh(() {
       for (var i = item.allocations.length - 1; i >= 0; i--) {
         final allocation = item.allocations[i];
 
@@ -421,7 +450,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   double get _cartTotal {
     return _cart.fold(
       0,
-      (total, item) => total + (item.variant.price * item.totalQuantity),
+          (total, item) => total + (item.variant.price * item.totalQuantity),
     );
   }
 
@@ -438,6 +467,16 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       double.tryParse(_discountController.text.trim()) ?? 0;
 
   bool get _discountEntryInvalid => _discountIsPercent && _discountEntry > 100;
+
+  bool get _hasDiscountErrors {
+    if (_discountEntryInvalid || _discountEntry < 0) return true;
+
+    if (!_discountIsPercent && _discountEntry > _cartTotalAfterItemDiscounts) {
+      return true;
+    }
+
+    return _cart.any((item) => item.hasDiscountError);
+  }
 
   // Invoice-level discount, taken on top of the per-item discounts and
   // clamped so the payable can never go below zero.
@@ -461,12 +500,65 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
 
   double get _netTotal => _cartTotalAfterItemDiscounts - _discount;
 
-  // The invoice needs a cashier location, an employee and at least one item
-  // before it can be created.
+  // Digits only, matching the server's phone normalisation.
+  String get _customerPhoneDigits =>
+      _customerPhoneController.text.replaceAll(RegExp(r'\D'), '');
+
+  bool get _hasPhone => _customerPhoneDigits.length >= 3;
+
+  double get _paidEntry =>
+      double.tryParse(_paidAmountController.text.trim()) ?? 0;
+
+  bool get _hasPaymentErrors =>
+      _paidEntry < 0 || _paidEntry > _netTotal;
+
+  Future<void> _lookupCustomer() async {
+    if (!_hasPhone) {
+      _showError(context.tr('Enter a valid phone number.'));
+      return;
+    }
+
+    setState(() {
+      _isLookingUpCustomer = true;
+    });
+
+    try {
+      final customer = await _customerService.lookupByPhone(
+        _customerPhoneDigits,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _matchedCustomer = customer;
+
+        if (customer != null &&
+            customer.name != null &&
+            _customerNameController.text.trim().isEmpty) {
+          _customerNameController.text = customer.name!;
+        }
+      });
+    } catch (e) {
+      if (!mounted) return;
+      _showError(friendlyErrorMessage(context, e));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLookingUpCustomer = false;
+        });
+      }
+    }
+  }
+
+  // The invoice needs a cashier location, an employee, a customer phone,
+  // valid payment details and at least one item before it can be created.
   bool get _canCreate =>
       _selectedCashierLocation != null &&
-      _selectedEmployee != null &&
-      _cart.isNotEmpty;
+          _selectedEmployee != null &&
+          _cart.isNotEmpty &&
+          !_hasDiscountErrors &&
+          _hasPhone &&
+          !_hasPaymentErrors;
 
   // What the user still has to do before the invoice can be created.
   String get _createHint {
@@ -489,6 +581,18 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
 
     if (_cart.isEmpty) {
       return context.tr('Add at least one item to create the invoice.');
+    }
+
+    if (_hasDiscountErrors) {
+      return context.tr('Fix the highlighted discounts to create the invoice.');
+    }
+
+    if (!_hasPhone) {
+      return context.tr('Enter the customer phone number to create the invoice.');
+    }
+
+    if (_hasPaymentErrors) {
+      return context.tr('Fix the paid amount to create the invoice.');
     }
 
     return '';
@@ -542,6 +646,25 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       }
     }
 
+    if (!_hasPhone) {
+      _showError(context.tr('Please enter the customer phone number.'));
+      return;
+    }
+
+    if (_paidEntry < 0) {
+      _showError(context.tr('Paid amount cannot be negative.'));
+      return;
+    }
+
+    if (_paidEntry > _netTotal) {
+      _showError(
+        context.tr('Paid amount cannot exceed the invoice total of {0}.', [
+          money(_netTotal),
+        ]),
+      );
+      return;
+    }
+
     setState(() {
       _isCreating = true;
     });
@@ -585,6 +708,12 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
             locationId: locationId,
             employeeId: employeeId,
             items: items,
+            customerPhone: _customerPhoneDigits,
+            customerName: _customerNameController.text.trim().isEmpty
+                ? null
+                : _customerNameController.text.trim(),
+            paidAmount: _paidEntry,
+            paymentMethod: _paidEntry > 0 ? _paymentMethod : paymentMethodCash,
             discountAmount: discountAmount.toDouble(),
             discountPercent: discountPercent.toDouble(),
           );
@@ -614,16 +743,50 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         setState(() {
           _discountController.clear();
           _discountIsPercent = false;
-          _isCartExpanded = false;
+          _customerPhoneController.clear();
+          _customerNameController.clear();
+          _paidAmountController.clear();
+          _paymentMethod = paymentMethodCash;
+          _matchedCustomer = null;
+
+          for (final item in _cart) {
+            item.dispose();
+          }
           _cart.clear();
         });
 
         if (invoice == null) return;
 
         if (ModalRoute.of(context)?.isCurrent == true) {
+          final shouldPrint = await showDialog<bool>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: Text(ctx.tr('Print invoice?')),
+              content: Text(ctx.tr('Invoice #{0} created.', [invoice.id])),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(false),
+                  child: Text(ctx.tr('Cancel')),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.of(ctx).pop(true),
+                  child: Text(ctx.tr('Print')),
+                ),
+              ],
+            ),
+          );
+
+          if (shouldPrint == true) {
+            await InvoicePrinter.printSaleInvoice(
+              invoice,
+            );
+          }
+
+          if (!mounted) return;
+
           await pushScreen(
             context,
-            (_) => InvoiceDetailsScreen(invoice: invoice),
+                (_) => ShowSaleInvoiceScreen(invoice: invoice),
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -650,9 +813,9 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   /// show the pre-sale quantity. Notification problems are ignored on purpose: a
   /// missing permission must not turn a successful sale into an error.
   Future<void> _notifyNewlyLowStock(
-    Map<int, ProductVariant> variantsBeforeSale,
-    AppStrings strings,
-  ) async {
+      Map<int, ProductVariant> variantsBeforeSale,
+      AppStrings strings,
+      ) async {
     List<ProductVariant> refreshed;
 
     try {
@@ -693,703 +856,994 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   }
 
   void _showError(String message) {
+    if (!mounted) return;
+
+    if (_isSheetOpen) {
+      _sheetMessageTimer?.cancel();
+      _sheetMessage = message;
+      _revision.value++;
+
+      _sheetMessageTimer = Timer(const Duration(seconds: 3), () {
+        _sheetMessage = null;
+
+        if (_isSheetOpen) _revision.value++;
+      });
+
+      return;
+    }
+
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text(message)));
   }
 
+  // ---------------------------------------------------------------------------
+  // Main screen: search + results + a slim checkout bar
+  // ---------------------------------------------------------------------------
+
   Widget _buildHeader() {
+    final theme = Theme.of(context);
+
     return Container(
-      padding: const EdgeInsets.all(16),
-      color: Theme.of(context).colorScheme.surface,
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+      color: theme.colorScheme.surface,
       child: WideContent(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: _searchController,
               autofocus: true,
+              textInputAction: TextInputAction.search,
               onChanged: _onSearchChanged,
               decoration: InputDecoration(
                 labelText: context.tr('Search Model / Name / Barcode'),
+                isDense: true,
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _searchController.text.isEmpty
                     ? null
                     : IconButton(
-                        onPressed: () {
-                          _searchController.clear();
-                          _searchVariants('');
-                        },
-                        icon: const Icon(Icons.clear),
-                      ),
+                  onPressed: () {
+                    _searchController.clear();
+                    _searchDebounce.cancel();
+                    _searchVariants('');
+                  },
+                  icon: const Icon(Icons.clear),
+                ),
               ),
             ),
-            const SizedBox(height: 8),
-            _buildScannerStatus(),
           ],
         ),
       ),
     );
   }
 
-  /// Shows whether a physical (keyboard-style) scanner is connected.
-  ///
-  /// The scanner cannot be enumerated from Flutter, so the label starts as
-  /// "not detected" and switches to "connected" as soon as the first scan is
-  /// read.
-  Widget _buildScannerStatus() {
-    return ListenableBuilder(
-      listenable: _physicalScanner,
-      builder: (context, _) {
-        final bool connected = _physicalScanner.isConnected;
-        final Color color = connected
-            ? Theme.of(context).colorScheme.primary
-            : Theme.of(context).colorScheme.onSurfaceVariant;
+  Widget _buildEmptyState({required IconData icon, required String message}) {
+    final theme = Theme.of(context);
 
-        return Tooltip(
-          message: context.tr(
-            'Scanners connect like keyboards. Scan a barcode to check the '
-            'connection.',
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                connected ? Icons.keyboard : Icons.keyboard_outlined,
-                size: 16,
-                color: color,
-              ),
-              const SizedBox(width: 6),
-              Flexible(
-                child: Text(
-                  context.tr(
-                    connected
-                        ? 'Physical scanner connected'
-                        : 'No physical scanner detected',
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodySmall
-                      ?.copyWith(color: color),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 48, color: theme.colorScheme.outline),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   Widget _buildVariantResults() {
     if (_filteredVariants.isEmpty) {
-      return Center(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.search),
-            Text(context.tr('Search for a Variant.')),
-          ],
-        ),
+      final hasQuery = _searchController.text.trim().isNotEmpty;
+
+      return _buildEmptyState(
+        icon: hasQuery ? Icons.search_off : Icons.search,
+        message: hasQuery
+            ? context.tr('No variants match your search.')
+            : context.tr('Search for a Variant.'),
       );
     }
 
     return WideContent(
       child: ListView.builder(
-        padding: const EdgeInsets.all(16),
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
         itemCount: _filteredVariants.length,
-        itemBuilder: (context, index) {
-          final variant = _filteredVariants[index];
-
-          final inCart = _cart.any((item) => item.variant.id == variant.id);
-
-          final cartQuantity = inCart
-              ? _cart
-                    .firstWhere((item) => item.variant.id == variant.id)
-                    .totalQuantity
-              : 0;
-
-          return Card(
-            margin: const EdgeInsets.only(bottom: 10),
-            child: ListTile(
-              leading: Icon(
-                Icons.inventory_2_outlined,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              title: Text(variant.productName),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(context.tr('Model: {0}', [variant.modelNumber])),
-                  if (variant.sizeName != null)
-                    Text(context.tr('Size: {0}', [variant.sizeName])),
-                  if (variant.colourName != null)
-                    Text(context.tr('Colour: {0}', [variant.colourName])),
-                  Text(context.tr('Barcode: {0}', [variant.barcode])),
-                ],
-              ),
-              trailing: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    money(variant.price),
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: amountColor(context, variant.price),
-                    ),
-                  ),
-                  if (inCart)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        context.tr('Qty: {0}', [cartQuantity]),
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              onTap: () => _selectVariant(variant),
-            ),
-          );
-        },
+        itemBuilder: (context, index) =>
+            _buildVariantCard(_filteredVariants[index]),
       ),
     );
   }
 
-  Widget _buildInvoiceSummary(double availableHeight) {
+  Widget _buildVariantCard(ProductVariant variant) {
     final theme = Theme.of(context);
+    final cartQuantity = _variantCartQuantity(variant.id);
 
-    // Height the expanded panel may reach. The search bar, the toggle row
-    // and the create button are all fixed, so they are taken off the space
-    // first - otherwise the panel can push the bottom bar past the end of
-    // the screen (seen on phones as a black/yellow overflow strip).
-    final double panelMaxHeight = availableHeight - 300;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        border: Border(
-          top: BorderSide(color: theme.colorScheme.outlineVariant),
-        ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Divider(height: 1),
-          InkWell(
-            onTap: () {
-              setState(() {
-                _isCartExpanded = !_isCartExpanded;
-              });
-            },
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.shopping_cart_outlined,
-                    size: 20,
-                    color: theme.colorScheme.primary,
-                  ),
-                  const SizedBox(width: 8),
-                  Flexible(
-                    child: Text(
-                      context.tr('Items: {0}', [_cart.length]),
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => _selectVariant(variant),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      variant.productName,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
+                      style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      children: [
+                        AppPill(
+                          text: context.tr('Model: {0}', [variant.modelNumber]),
+                        ),
+                        if (variant.sizeName != null)
+                          AppPill(
+                            text: context.tr('Size: {0}', [variant.sizeName]),
+                          ),
+                        if (variant.colourName != null)
+                          AppPill(
+                            text: context.tr('Colour: {0}', [
+                              variant.colourName,
+                            ]),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      context.tr('Barcode: {0}', [variant.barcode]),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 110),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        money(variant.price),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    if (cartQuantity > 0)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primaryContainer,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            context.tr('Qty: {0}', [cartQuantity]),
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: theme.colorScheme.onPrimaryContainer,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCheckoutBar() {
+    final theme = Theme.of(context);
+
+    return Material(
+      color: theme.colorScheme.surface,
+      elevation: 8,
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+          child: WideContent(
+            child: Row(
+              children: [
+                Badge(
+                  isLabelVisible: _cart.isNotEmpty,
+                  label: Text('${_cart.length}'),
+                  child: Icon(
+                    Icons.shopping_cart_outlined,
+                    color: theme.colorScheme.primary,
                   ),
-                  const Spacer(),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: _cart.isEmpty ? null : _openCart,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          context.tr('Items: {0}', [_cart.length]),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            money(_netTotal),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 22,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                FilledButton.icon(
+                  onPressed: (_cart.isEmpty || _isCreating) ? null : _openCart,
+                  icon: _isCreating
+                      ? const SizedBox(
+                    height: 18,
+                    width: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                      : const Icon(Icons.shopping_cart_checkout, size: 20),
+                  label: Text(context.tr('Review Order')),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Cart sheet: everything needed to finish the sale, in one scrollable place
+  // ---------------------------------------------------------------------------
+
+  Future<void> _openCart() async {
+    if (_cart.isEmpty) return;
+
+    FocusManager.instance.primaryFocus?.unfocus();
+
+    _isSheetOpen = true;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return ListenableBuilder(
+          listenable: _revision,
+          builder: (context, _) => _buildCartSheet(context),
+        );
+      },
+    );
+
+    _isSheetOpen = false;
+    _sheetMessageTimer?.cancel();
+    _sheetMessage = null;
+  }
+
+  Widget _buildCartSheet(BuildContext sheetContext) {
+    final theme = Theme.of(sheetContext);
+    final keyboardHeight = MediaQuery.viewInsetsOf(sheetContext).bottom;
+    final maxHeight = MediaQuery.sizeOf(sheetContext).height * 0.92;
+    final keyboardOpen = keyboardHeight > 0;
+
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: maxHeight),
+      child: Padding(
+        // Lifts the whole sheet above the keyboard; the list in the middle
+        // simply gets shorter, so nothing can overflow.
+        padding: EdgeInsets.only(bottom: keyboardHeight),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 8, 8),
+              child: Row(
+                children: [
                   Expanded(
                     child: Text(
-                      context.tr('Total: {0}', [money(_netTotal)]),
-                      style: TextStyle(
+                      context.tr('Review Order'),
+                      style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: amountColor(context, _netTotal),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Icon(
-                    _isCartExpanded ? Icons.expand_less : Icons.expand_more,
-                    color: theme.colorScheme.onSurfaceVariant,
+                  IconButton(
+                    onPressed: () => Navigator.of(sheetContext).pop(),
+                    icon: const Icon(Icons.close),
                   ),
                 ],
               ),
             ),
+            const Divider(height: 1),
+            Flexible(
+              child: ListView(
+                shrinkWrap: true,
+                keyboardDismissBehavior:
+                ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                children: [
+                  _buildSaleDetails(),
+                  const SizedBox(height: 16),
+                  _buildCustomerAndPayment(),
+                  const SizedBox(height: 16),
+                  for (var i = 0; i < _cart.length; i++)
+                    _buildCartItemCard(i),
+                  const SizedBox(height: 4),
+                  _buildInvoiceDiscountField(),
+                  const SizedBox(height: 16),
+                  _buildTotals(),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            _buildSheetFooter(sheetContext, compact: keyboardOpen),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSaleDetails() {
+    return Column(
+      children: [
+        DropdownButtonFormField<int>(
+          key: ValueKey('cashier-location-${_selectedCashierLocation?.id}'),
+          initialValue: _selectedCashierLocation?.id,
+          isDense: true,
+          isExpanded: true,
+          decoration: InputDecoration(
+            labelText: context.tr('Cashier'),
+            prefixIcon: const Icon(Icons.storefront_outlined),
           ),
-          if (_isCartExpanded && panelMaxHeight > 0)
-            ConstrainedBox(
-              constraints: BoxConstraints(maxHeight: panelMaxHeight),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 460),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: DropdownButtonFormField<int>(
-                                key: ValueKey(
-                                  'cashier-location-'
-                                  '${_selectedCashierLocation?.id}',
-                                ),
-                                initialValue: _selectedCashierLocation?.id,
-                                isDense: true,
-                                isExpanded: true,
-                                decoration: InputDecoration(
-                                  labelText: context.tr('Cashier Location'),
-                                  prefixIcon: const Icon(
-                                    Icons.storefront_outlined,
-                                  ),
-                                ),
-                                items: _locations.map((location) {
-                                  return DropdownMenuItem<int>(
-                                    value: location.id,
-                                    child: Text(
-                                      location.name,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  );
-                                }).toList(),
-                                onChanged: (value) {
-                                  if (value == null) return;
+          items: _locations.map((location) {
+            return DropdownMenuItem<int>(
+              value: location.id,
+              child: Text(location.name, overflow: TextOverflow.ellipsis),
+            );
+          }).toList(),
+          onChanged: (value) {
+            if (value == null) return;
 
-                                  setState(() {
-                                    _selectedCashierLocation = _locations
-                                        .firstWhere(
-                                          (location) => location.id == value,
-                                        );
-                                  });
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: DropdownButtonFormField<int>(
-                                key: ValueKey(
-                                  'invoice-employee-${_selectedEmployee?.id}',
-                                ),
-                                initialValue: _selectedEmployee?.id,
-                                isDense: true,
-                                isExpanded: true,
-                                decoration: InputDecoration(
-                                  labelText: context.tr('Employee'),
-                                  prefixIcon: const Icon(Icons.badge_outlined),
-                                ),
-                                items: _employees.map((employee) {
-                                  return DropdownMenuItem<int>(
-                                    value: employee.id,
-                                    child: Text(
-                                      employee.name,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  );
-                                }).toList(),
-                                onChanged: (value) {
-                                  if (value == null) return;
+            _refresh(() {
+              _selectedCashierLocation = _locations.firstWhere(
+                    (location) => location.id == value,
+              );
+            });
+          },
+        ),
+        const SizedBox(height: 12),
+        DropdownButtonFormField<int>(
+          key: ValueKey('invoice-employee-${_selectedEmployee?.id}'),
+          initialValue: _selectedEmployee?.id,
+          isDense: true,
+          isExpanded: true,
+          decoration: InputDecoration(
+            labelText: context.tr('Employee'),
+            prefixIcon: const Icon(Icons.badge_outlined),
+          ),
+          items: _employees.map((employee) {
+            return DropdownMenuItem<int>(
+              value: employee.id,
+              child: Text(employee.name, overflow: TextOverflow.ellipsis),
+            );
+          }).toList(),
+          onChanged: (value) {
+            if (value == null) return;
 
-                                  setState(() {
-                                    _selectedEmployee = _employees.firstWhere(
-                                      (employee) => employee.id == value,
-                                    );
-                                  });
-                                },
-                              ),
-                            ),
-                          ],
+            _refresh(() {
+              _selectedEmployee = _employees.firstWhere(
+                    (employee) => employee.id == value,
+              );
+            });
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCustomerAndPayment() {
+    final theme = Theme.of(context);
+
+    String? phoneError;
+    if (_customerPhoneController.text.trim().isNotEmpty && !_hasPhone) {
+      phoneError = context.tr('Enter at least 3 digits.');
+    }
+
+    String? paidError;
+    if (_paidEntry < 0) {
+      paidError = context.tr('Paid amount cannot be negative.');
+    } else if (_paidEntry > _netTotal) {
+      paidError = context.tr('Cannot exceed {0}.', [money(_netTotal)]);
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          context.tr('Customer & Payment'),
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: TextField(
+                key: const Key('invoice-customer-phone'),
+                controller: _customerPhoneController,
+                keyboardType: TextInputType.phone,
+                textInputAction: TextInputAction.next,
+                onChanged: (_) {
+                  if (_matchedCustomer != null) {
+                    _refresh(() => _matchedCustomer = null);
+                  } else {
+                    _refresh();
+                  }
+                },
+                decoration: InputDecoration(
+                  labelText: context.tr('Customer phone'),
+                  prefixIcon: const Icon(Icons.phone_outlined),
+                  isDense: true,
+                  errorText: phoneError,
+                  errorMaxLines: 2,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            IconButton.filledTonal(
+              tooltip: context.tr('Lookup customer'),
+              onPressed: _isLookingUpCustomer ? null : _lookupCustomer,
+              icon: _isLookingUpCustomer
+                  ? const SizedBox(
+                height: 18,
+                width: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+                  : const Icon(Icons.person_search_outlined),
+            ),
+          ],
+        ),
+        if (_matchedCustomer != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: 8,
+              ),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.secondaryContainer,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                context.tr('{0} · Outstanding: {1}', [
+                  _matchedCustomer!.displayName,
+                  money(_matchedCustomer!.totalDebt),
+                ]),
+                style: TextStyle(
+                  color: theme.colorScheme.onSecondaryContainer,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ),
+        const SizedBox(height: 12),
+        TextField(
+          key: const Key('invoice-customer-name'),
+          controller: _customerNameController,
+          textInputAction: TextInputAction.next,
+          textCapitalization: TextCapitalization.words,
+          onChanged: (_) => _refresh(),
+          decoration: InputDecoration(
+            labelText: context.tr('Customer name (optional)'),
+            prefixIcon: const Icon(Icons.badge_outlined),
+            isDense: true,
+          ),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          key: const Key('invoice-paid-amount'),
+          controller: _paidAmountController,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          textInputAction: TextInputAction.next,
+          onChanged: (_) => _refresh(),
+          decoration: InputDecoration(
+            labelText: context.tr('Paid now'),
+            prefixIcon: const Icon(Icons.payments_outlined),
+            isDense: true,
+            errorText: paidError,
+            errorMaxLines: 2,
+            helperText: context.tr('0 = pay later'),
+            helperMaxLines: 2,
+          ),
+        ),
+        const SizedBox(height: 12),
+        DropdownButtonFormField<int>(
+          key: const ValueKey('invoice-payment-method'),
+          initialValue: _paymentMethod,
+          isDense: true,
+          isExpanded: true,
+          decoration: InputDecoration(
+            labelText: context.tr('Payment method'),
+            prefixIcon: const Icon(Icons.credit_card_outlined),
+          ),
+          items: paymentMethodValues.map((method) {
+            return DropdownMenuItem<int>(
+              value: method,
+              child: Text(paymentMethodLabel(context, method)),
+            );
+          }).toList(),
+          onChanged: (value) {
+            if (value == null) return;
+            _refresh(() => _paymentMethod = value);
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCartItemCard(int index) {
+    final item = _cart[index];
+    final theme = Theme.of(context);
+
+    final gross = item.variant.price * item.totalQuantity;
+    final net = gross - item.discountTotal;
+    final discountError = item.discountError(context);
+
+    final variantSummary = [
+      item.variant.modelNumber,
+      if (item.variant.sizeName != null)
+        context.tr('Size: {0}', [item.variant.sizeName]),
+      if (item.variant.colourName != null)
+        context.tr('Colour: {0}', [item.variant.colourName]),
+    ].join(' • ');
+
+    return Card(
+      key: ObjectKey(item),
+      margin: const EdgeInsets.only(bottom: 10),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 12, 4, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.variant.productName,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
+                      const SizedBox(height: 2),
+                      Text(
+                        variantSummary,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => _removeCartItem(index),
+                  visualDensity: VisualDensity.compact,
+                  icon: const Icon(Icons.delete_outline),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                children: [
+                  for (final allocation in item.allocations)
+                    AppPill(
+                      icon: Icons.place_outlined,
+                      text: '${allocation.location.name} × '
+                          '${allocation.quantity}',
                     ),
-                    const SizedBox(height: 16),
-                    if (_itemDiscountTotal > 0)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 6),
-                        child: Wrap(
-                          spacing: 8,
-                          runSpacing: 2,
-                          crossAxisAlignment: WrapCrossAlignment.center,
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Row(
+                children: [
+                  AppQuantityStepper(
+                    quantity: item.totalQuantity,
+                    decreaseTooltip: context.tr('Decrease quantity'),
+                    increaseTooltip: context.tr('Increase quantity'),
+                    onDecrement: item.totalQuantity > 1
+                        ? () => _decrementCartItem(index)
+                        : null,
+                    onIncrement: !_isIncrementing
+                        ? () => _incrementCartItem(index)
+                        : null,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerRight,
+                        child: item.discountTotal > 0
+                            ? Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
-                              context.tr('Items {0}', [money(_cartTotal)]),
+                              money(gross),
                               style: TextStyle(
-                                fontSize: 13,
+                                fontSize: 12,
                                 decoration: TextDecoration.lineThrough,
                                 color: theme.colorScheme.outline,
                               ),
                             ),
                             Text(
-                              context.tr('Item discounts -{0}', [
-                                money(_itemDiscountTotal),
-                              ]),
+                              money(net),
                               style: TextStyle(
-                                fontSize: 13,
-                                color: amountColor(
-                                  context,
-                                  -_itemDiscountTotal,
-                                ),
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ],
-                        ),
-                      ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _discountController,
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true,
-                            ),
-                            onChanged: (_) => setState(() {}),
-                            decoration: InputDecoration(
-                              labelText: _discountIsPercent
-                                  ? context.tr('Invoice discount %')
-                                  : context.tr('Invoice discount'),
-                              prefixText: _discountIsPercent ? null : 'EGP ',
-                              isDense: true,
-                              suffixIcon: _discountController.text.isEmpty
-                                  ? null
-                                  : IconButton(
-                                      onPressed: () {
-                                        _discountController.clear();
-                                        setState(() {});
-                                      },
-                                      icon: const Icon(Icons.clear),
-                                    ),
-                            ),
+                        )
+                            : Text(
+                          money(net),
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        ChoiceChip(
-                          label: const Text('EGP'),
-                          selected: !_discountIsPercent,
-                          visualDensity: VisualDensity.compact,
-                          materialTapTargetSize:
-                              MaterialTapTargetSize.shrinkWrap,
-                          onSelected: (_) {
-                            setState(() {
-                              _discountIsPercent = false;
-                              _discountController.clear();
-                            });
-                          },
-                        ),
-                        const SizedBox(width: 6),
-                        ChoiceChip(
-                          label: const Text('%'),
-                          selected: _discountIsPercent,
-                          visualDensity: VisualDensity.compact,
-                          materialTapTargetSize:
-                              MaterialTapTargetSize.shrinkWrap,
-                          onSelected: (_) {
-                            setState(() {
-                              _discountIsPercent = true;
-                              _discountController.clear();
-                            });
-                          },
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      _discountEntryInvalid
-                          ? context.tr('Enter a percentage up to 100.')
-                          : _discount > 0
-                          ? context.tr('Discount applied: -{0} {1}', [
-                              money(_discount),
-                              _discountIsPercent
-                                  ? context.tr('({0}% of {1})', [
-                                      _discountController.text.trim(),
-                                      money(_cartTotalAfterItemDiscounts),
-                                    ])
-                                  : context.tr('(items {0})', [
-                                      money(_cartTotalAfterItemDiscounts),
-                                    ]),
-                            ])
-                          : context.tr(
-                              'Invoice discount, applied after item discounts.',
-                            ),
-                      style: TextStyle(
-                        color: _discountEntryInvalid
-                            ? theme.colorScheme.error
-                            : _discount > 0
-                            ? amountColor(context, -_discount)
-                            : theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _cart.length,
-                      itemBuilder: (context, index) {
-                        final item = _cart[index];
-                        final gross = item.variant.price * item.totalQuantity;
-                        final net = gross - item.discountTotal;
-                        final discountError = item.discountError(context);
-
-                        return ListTile(
-                          dense: true,
-                          title: Text(item.variant.productName),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      item.variant.modelNumber,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  IconButton(
-                                    onPressed: item.totalQuantity > 1
-                                        ? () => _decrementCartItem(index)
-                                        : null,
-                                    iconSize: 20,
-                                    visualDensity: VisualDensity.compact,
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(
-                                      minWidth: 36,
-                                      minHeight: 36,
-                                    ),
-                                    tooltip: context.tr('Decrease quantity'),
-                                    icon: const Icon(
-                                      Icons.remove_circle_outline,
-                                    ),
-                                  ),
-                                  Text(
-                                    '${item.totalQuantity}',
-                                    style: const TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  IconButton(
-                                    onPressed: !_isIncrementing
-                                        ? () => _incrementCartItem(index)
-                                        : null,
-                                    iconSize: 20,
-                                    visualDensity: VisualDensity.compact,
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(
-                                      minWidth: 36,
-                                      minHeight: 36,
-                                    ),
-                                    tooltip: context.tr('Increase quantity'),
-                                    icon: const Icon(Icons.add_circle_outline),
-                                  ),
-                                ],
-                              ),
-                              ...item.allocations.map(
-                                (allocation) => Text(
-                                  context.tr('  {0}: {1}', [
-                                    allocation.location.name,
-                                    allocation.quantity,
-                                  ]),
-                                  style: const TextStyle(fontSize: 12),
-                                ),
-                              ),
-                              if (item.discountTotal > 0)
-                                Text(
-                                  context.tr(
-                                    '  Unit: {0} → {1}{2} · line -{3}',
-                                    [
-                                      money(item.variant.price),
-                                      money(
-                                        item.variant.price -
-                                            (item.unitDiscount ?? 0),
-                                      ),
-                                      item.discountIsPercent
-                                          ? context.tr(' (-{0}%)', [
-                                              item.discountController.text,
-                                            ])
-                                          : '',
-                                      money(item.discountTotal),
-                                    ],
-                                  ),
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: theme.colorScheme.primary,
-                                  ),
-                                ),
-                              Wrap(
-                                spacing: 6,
-                                runSpacing: 4,
-                                crossAxisAlignment: WrapCrossAlignment.center,
-                                children: [
-                                  SizedBox(
-                                    width: 92,
-                                    child: TextField(
-                                      controller: item.discountController,
-                                      keyboardType:
-                                          const TextInputType.numberWithOptions(
-                                            decimal: true,
-                                          ),
-                                      onChanged: (_) => setState(() {}),
-                                      style: const TextStyle(fontSize: 13),
-                                      decoration: InputDecoration(
-                                        isDense: true,
-                                        labelText: item.discountIsPercent
-                                            ? context.tr('Discount %')
-                                            : context.tr('Discount/unit'),
-                                        contentPadding:
-                                            const EdgeInsets.symmetric(
-                                              horizontal: 8,
-                                              vertical: 10,
-                                            ),
-                                      ),
-                                    ),
-                                  ),
-                                  ChoiceChip(
-                                    label: const Text('EGP'),
-                                    selected: !item.discountIsPercent,
-                                    visualDensity: VisualDensity.compact,
-                                    materialTapTargetSize:
-                                        MaterialTapTargetSize.shrinkWrap,
-                                    onSelected: (_) {
-                                      setState(() {
-                                        item.discountIsPercent = false;
-                                        item.discountController.clear();
-                                      });
-                                    },
-                                  ),
-                                  ChoiceChip(
-                                    label: const Text('%'),
-                                    selected: item.discountIsPercent,
-                                    visualDensity: VisualDensity.compact,
-                                    materialTapTargetSize:
-                                        MaterialTapTargetSize.shrinkWrap,
-                                    onSelected: (_) {
-                                      setState(() {
-                                        item.discountIsPercent = true;
-                                        item.discountController.clear();
-                                      });
-                                    },
-                                  ),
-                                ],
-                              ),
-                              if (discountError != null)
-                                Text(
-                                  discountError,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: theme.colorScheme.error,
-                                  ),
-                                ),
-                            ],
-                          ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              ConstrainedBox(
-                                // Keeps a long figure from eating the row: the
-                                // amount shrinks instead of squeezing the item.
-                                constraints: const BoxConstraints(
-                                  maxWidth: 110,
-                                ),
-                                child: FittedBox(
-                                  fit: BoxFit.scaleDown,
-                                  alignment: Alignment.centerRight,
-                                  child: item.discountTotal > 0
-                                      ? Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.end,
-                                          children: [
-                                            Text(
-                                              money(gross),
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                decoration:
-                                                    TextDecoration.lineThrough,
-                                                color:
-                                                    theme.colorScheme.outline,
-                                              ),
-                                            ),
-                                            Text(
-                                              money(net),
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.w600,
-                                                color: amountColor(
-                                                  context,
-                                                  net,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        )
-                                      : Text(
-                                          money(net),
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.w600,
-                                            color: amountColor(context, net),
-                                          ),
-                                        ),
-                                ),
-                              ),
-                              IconButton(
-                                onPressed: () => _removeCartItem(index),
-                                icon: const Icon(Icons.delete_outline),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (!_canCreate && !_isCreating)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Text(
-                      _createHint,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    onPressed: (_isCreating || !_canCreate)
-                        ? null
-                        : _createInvoice,
-                    icon: _isCreating
-                        ? const SizedBox(
-                            height: 18,
-                            width: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.receipt_long_outlined),
-                    label: Text(context.tr('Create Invoice')),
+                ],
+              ),
+            ),
+            if (item.discountTotal > 0)
+              Padding(
+                padding: const EdgeInsets.only(top: 6, right: 8),
+                child: Text(
+                  context.tr('  Unit: {0} → {1}{2} · line -{3}', [
+                    money(item.variant.price),
+                    money(item.variant.price - (item.unitDiscount ?? 0)),
+                    item.discountIsPercent
+                        ? context.tr(' (-{0}%)', [item.discountController.text])
+                        : '',
+                    money(item.discountTotal),
+                  ]),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+              ),
+            const SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: item.discountController,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      onChanged: (_) => _refresh(),
+                      decoration: InputDecoration(
+                        isDense: true,
+                        labelText: item.discountIsPercent
+                            ? context.tr('Discount %')
+                            : context.tr('Discount/unit'),
+                        errorText: discountError,
+                        errorMaxLines: 2,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  AppCurrencyPercentToggle(
+                    isPercent: item.discountIsPercent,
+                    onChanged: (isPercent) {
+                      item.discountIsPercent = isPercent;
+                      item.discountController.clear();
+                      _refresh();
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInvoiceDiscountField() {
+    final theme = Theme.of(context);
+
+    final String helper;
+
+    if (_discount > 0) {
+      helper = context.tr('Discount applied: -{0} {1}', [
+        money(_discount),
+        _discountIsPercent
+            ? context.tr('({0}% of {1})', [
+          _discountController.text.trim(),
+          money(_cartTotalAfterItemDiscounts),
+        ])
+            : context.tr('(items {0})', [
+          money(_cartTotalAfterItemDiscounts),
+        ]),
+      ]);
+    } else {
+      helper = context.tr('Invoice discount, applied after item discounts.');
+    }
+
+    String? errorText;
+
+    if (_discountEntryInvalid) {
+      errorText = context.tr('Enter a percentage up to 100.');
+    } else if (_discountEntry < 0) {
+      errorText = context.tr('Discount cannot be negative.');
+    } else if (!_discountIsPercent &&
+        _discountEntry > _cartTotalAfterItemDiscounts) {
+      errorText = context.tr('Discount cannot exceed the items total of {0}.', [
+        money(_cartTotalAfterItemDiscounts),
+      ]);
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: TextField(
+            controller: _discountController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            onChanged: (_) => _refresh(),
+            decoration: InputDecoration(
+              labelText: _discountIsPercent
+                  ? context.tr('Invoice discount %')
+                  : context.tr('Invoice discount'),
+              isDense: true,
+              prefixIcon: const Icon(Icons.sell_outlined),
+              errorText: errorText,
+              errorMaxLines: 2,
+              helperText: helper,
+              helperMaxLines: 3,
+              helperStyle: TextStyle(
+                color: _discount > 0
+                    ? amountColor(context, -_discount)
+                    : theme.colorScheme.onSurfaceVariant,
+              ),
+              suffixIcon: _discountController.text.isEmpty
+                  ? null
+                  : IconButton(
+                onPressed: () {
+                  _discountController.clear();
+                  _refresh();
+                },
+                icon: const Icon(Icons.clear),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        AppCurrencyPercentToggle(
+          isPercent: _discountIsPercent,
+          onChanged: (isPercent) {
+            _discountController.clear();
+            _refresh(() {
+              _discountIsPercent = isPercent;
+            });
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _summaryRow(String label, String value, {Color? color}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          Expanded(child: Text(label)),
+          const SizedBox(width: 12),
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: Text(
+                value,
+                style: TextStyle(fontWeight: FontWeight.w600, color: color),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTotals() {
+    final hasDiscounts = _itemDiscountTotal > 0 || _discount > 0;
+
+    if (!hasDiscounts) return const SizedBox.shrink();
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        child: Column(
+          children: [
+            _summaryRow(context.tr('Subtotal'), money(_cartTotal)),
+            if (_itemDiscountTotal > 0)
+              _summaryRow(
+                context.tr('Item discounts'),
+                moneyNegative(_itemDiscountTotal),
+                color: amountColor(context, -_itemDiscountTotal),
+              ),
+            if (_discount > 0)
+              _summaryRow(
+                context.tr('Discount'),
+                moneyNegative(_discount),
+                color: amountColor(context, -_discount),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSheetFooter(BuildContext sheetContext, {required bool compact}) {
+    final theme = Theme.of(sheetContext);
+
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_sheetMessage != null)
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.errorContainer,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  _sheetMessage!,
+                  style: TextStyle(color: theme.colorScheme.onErrorContainer),
+                ),
+              ),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    context.tr('Total'),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      money(_netTotal),
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ),
               ],
             ),
-          ),
-        ],
+            if (!compact && !_canCreate && !_isCreating && _cart.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  _createHint,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: (_isCreating || !_canCreate)
+                    ? null
+                    : () {
+                  // Close the sheet first so the confirmation, undo and
+                  // print flow all happen on the main screen.
+                  _isSheetOpen = false;
+                  Navigator.of(sheetContext).pop();
+                  _createInvoice();
+                },
+                icon: _isCreating
+                    ? const SizedBox(
+                  height: 18,
+                  width: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+                    : const Icon(Icons.receipt_long_outlined),
+                label: Text(context.tr('Create Invoice')),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1409,18 +1863,14 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       ],
       body: _isLoading
           ? const LoadingState()
-          : LayoutBuilder(
-              builder: (context, constraints) {
-                return Column(
-                  children: [
-                    _buildHeader(),
-                    const Divider(height: 1),
-                    Expanded(child: _buildVariantResults()),
-                    _buildInvoiceSummary(constraints.maxHeight),
-                  ],
-                );
-              },
-            ),
+          : Column(
+        children: [
+          _buildHeader(),
+          const Divider(height: 1),
+          Expanded(child: _buildVariantResults()),
+          _buildCheckoutBar(),
+        ],
+      ),
     );
   }
 }
@@ -1440,13 +1890,29 @@ class _InvoiceCartItem {
   int get totalQuantity {
     return allocations.fold(
       0,
-      (total, allocation) => total + allocation.quantity,
+          (total, allocation) => total + allocation.quantity,
     );
   }
 
   double? get entryValue => double.tryParse(discountController.text.trim());
 
   bool get hasEntry => discountController.text.trim().isNotEmpty;
+
+  // True when the discount entry cannot be used (same rules as
+  // [discountError], without needing a BuildContext).
+  bool get hasDiscountError {
+    if (!hasEntry) return false;
+
+    final value = entryValue;
+
+    if (value == null || value < 0) return true;
+
+    if (discountIsPercent && value > 100) return true;
+
+    if (!discountIsPercent && value > variant.price) return true;
+
+    return false;
+  }
 
   // Per-unit discount as money. Null when the entry is not valid.
   double? get unitDiscount {
@@ -1539,6 +2005,18 @@ class _AddItemDialogState extends State<_AddItemDialog> {
     super.initState();
 
     _controller = TextEditingController(text: '1');
+
+    // With a single stocked location there is nothing to choose.
+    if (widget.availableInventory.length == 1) {
+      final locationId = widget.availableInventory.first.locationId;
+      final index = widget.locations.indexWhere(
+            (location) => location.id == locationId,
+      );
+
+      if (index != -1) {
+        _selectedStockLocation = widget.locations[index];
+      }
+    }
   }
 
   @override
@@ -1549,7 +2027,7 @@ class _AddItemDialogState extends State<_AddItemDialog> {
 
   Inventory _availableAt(Location location) {
     return widget.availableInventory.firstWhere(
-      (item) => item.locationId == location.id,
+          (item) => item.locationId == location.id,
     );
   }
 
@@ -1606,94 +2084,95 @@ class _AddItemDialogState extends State<_AddItemDialog> {
 
     return AlertDialog(
       title: Text(context.tr('Add Item')),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              variant.productName,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-            ),
-            const SizedBox(height: 8),
-            Text(context.tr('Model: {0}', [variant.modelNumber])),
-            if (variant.sizeName != null)
-              Text(context.tr('Size: {0}', [variant.sizeName])),
-            if (variant.colourName != null)
-              Text(context.tr('Colour: {0}', [variant.colourName])),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Text(
-                  context.tr('Price:'),
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      money(variant.price),
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 17,
-                        color: amountColor(context, variant.price),
-                      ),
+      scrollable: true,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            variant.productName,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          ),
+          const SizedBox(height: 8),
+          Text(context.tr('Model: {0}', [variant.modelNumber])),
+          if (variant.sizeName != null)
+            Text(context.tr('Size: {0}', [variant.sizeName])),
+          if (variant.colourName != null)
+            Text(context.tr('Colour: {0}', [variant.colourName])),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Text(
+                context.tr('Price:'),
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    money(variant.price),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 17,
+                      color: amountColor(context, variant.price),
                     ),
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 18),
-            Text(
-              context.tr('Stock Location'),
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            DropdownButtonFormField<int>(
-              key: ValueKey('stock-location-${_selectedStockLocation?.id}'),
-              initialValue: _selectedStockLocation?.id,
-              isDense: true,
-              isExpanded: true,
-              decoration: InputDecoration(hintText: context.tr('Select')),
-              items: widget.availableInventory.map((item) {
-                return DropdownMenuItem<int>(
-                  value: item.locationId,
-                  child: Text(
-                    context.tr('{0} ({1})', [item.locationName, item.quantity]),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                  ),
-                );
-              }).toList(),
-              onChanged: (value) {
-                if (value == null) return;
-
-                setState(() {
-                  _selectedStockLocation = widget.locations.firstWhere(
-                    (location) => location.id == value,
-                  );
-                });
-              },
-            ),
-            if (_selectedStockLocation != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text(
-                  context.tr('Available: {0}', [
-                    _availableAt(_selectedStockLocation!).quantity,
-                  ]),
-                ),
               ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _controller,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(labelText: context.tr('Quantity')),
+            ],
+          ),
+          const SizedBox(height: 18),
+          Text(
+            context.tr('Stock Location'),
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<int>(
+            key: ValueKey('stock-location-${_selectedStockLocation?.id}'),
+            initialValue: _selectedStockLocation?.id,
+            isDense: true,
+            isExpanded: true,
+            decoration: InputDecoration(hintText: context.tr('Select')),
+            items: widget.availableInventory.map((item) {
+              return DropdownMenuItem<int>(
+                value: item.locationId,
+                child: Text(
+                  context.tr('{0} ({1})', [item.locationName, item.quantity]),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+              );
+            }).toList(),
+            onChanged: (value) {
+              if (value == null) return;
+
+              setState(() {
+                _selectedStockLocation = widget.locations.firstWhere(
+                      (location) => location.id == value,
+                );
+              });
+            },
+          ),
+          if (_selectedStockLocation != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                context.tr('Available: {0}', [
+                  _availableAt(_selectedStockLocation!).quantity,
+                ]),
+              ),
             ),
-          ],
-        ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _controller,
+            keyboardType: TextInputType.number,
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => _add(),
+            decoration: InputDecoration(labelText: context.tr('Quantity')),
+          ),
+        ],
       ),
       actions: [
         TextButton(
@@ -1717,7 +2196,7 @@ class InvoiceDetailsScreen extends StatelessWidget {
 
     final itemDiscountTotal = invoice.items.fold<double>(
       0,
-      (total, item) => total + item.discountAmount * item.quantity,
+          (total, item) => total + item.discountAmount * item.quantity,
     );
 
     final subtotal =
@@ -1773,92 +2252,139 @@ class InvoiceDetailsScreen extends StatelessWidget {
                   context.tr('Colour: {0}', [item.colourName]),
               ].join(' • ');
 
+              // A plain row instead of a ListTile: a ListTile has a fixed
+              // height for 3 lines, which overflowed once a discount line
+              // or a long model name pushed the text past that.
               return Card(
                 margin: const EdgeInsets.only(bottom: 8),
-                child: ListTile(
-                  title: Text(item.productName),
-                  subtitle: Text.rich(
-                    TextSpan(
-                      children: [
-                        TextSpan(
-                          text:
-                              '${item.modelNumber}'
-                              '${variantDetails.isEmpty ? '' : ' • $variantDetails'}\n'
-                              '${context.tr('Qty: ')}',
-                        ),
-                        TextSpan(text: '${item.quantity}'),
-                        const TextSpan(text: ' × '),
-                        if (!item.hasDiscount)
-                          TextSpan(
-                            text: money(item.unitPrice),
-                            style: TextStyle(
-                              color: amountColor(context, item.unitPrice),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          )
-                        else ...[
-                          TextSpan(
-                            text: money(item.unitPrice),
-                            style: TextStyle(
-                              decoration: TextDecoration.lineThrough,
-                              color: theme.colorScheme.outline,
-                            ),
-                          ),
-                          TextSpan(
-                            text: ' → ${money(item.unitPriceAfterDiscount)}',
-                            style: TextStyle(
-                              color: amountColor(
-                                context,
-                                item.unitPriceAfterDiscount,
-                              ),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          TextSpan(
-                            text: context.tr('\nDiscount: {0}/unit{1}', [
-                              '-${money(item.discountAmount)}',
-                              item.discountPercent == null
-                                  ? ''
-                                  : ' (${percentLabel(item.discountPercent!)})',
-                            ]),
-                            style: TextStyle(
-                              color: amountColor(context, -item.discountAmount),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  isThreeLine: true,
-                  trailing: item.hasDiscount
-                      ? Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.end,
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              money(item.totalBeforeDiscount),
-                              style: TextStyle(
-                                fontSize: 12,
-                                decoration: TextDecoration.lineThrough,
-                                color: theme.colorScheme.outline,
+                              item.productName,
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
-                            Text(
-                              money(item.totalPrice),
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: amountColor(context, item.totalPrice),
+                            const SizedBox(height: 4),
+                            Text.rich(
+                              TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text:
+                                    '${item.modelNumber}'
+                                        '${variantDetails.isEmpty ? '' : ' • $variantDetails'}\n'
+                                        '${context.tr('Qty: ')}',
+                                  ),
+                                  TextSpan(text: '${item.quantity}'),
+                                  const TextSpan(text: ' × '),
+                                  if (!item.hasDiscount)
+                                    TextSpan(
+                                      text: money(item.unitPrice),
+                                      style: TextStyle(
+                                        color: amountColor(
+                                          context,
+                                          item.unitPrice,
+                                        ),
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    )
+                                  else ...[
+                                    TextSpan(
+                                      text: money(item.unitPrice),
+                                      style: TextStyle(
+                                        decoration:
+                                        TextDecoration.lineThrough,
+                                        color: theme.colorScheme.outline,
+                                      ),
+                                    ),
+                                    TextSpan(
+                                      text:
+                                      ' → ${money(item.unitPriceAfterDiscount)}',
+                                      style: TextStyle(
+                                        color: amountColor(
+                                          context,
+                                          item.unitPriceAfterDiscount,
+                                        ),
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    TextSpan(
+                                      text: context.tr(
+                                        '\nDiscount: {0}/unit{1}',
+                                        [
+                                          '-${money(item.discountAmount)}',
+                                          item.discountPercent == null
+                                              ? ''
+                                              : ' (${percentLabel(item.discountPercent!)})',
+                                        ],
+                                      ),
+                                      style: TextStyle(
+                                        color: amountColor(
+                                          context,
+                                          -item.discountAmount,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               ),
+                              style: theme.textTheme.bodySmall,
                             ),
                           ],
-                        )
-                      : Text(
-                          money(item.totalPrice),
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: amountColor(context, item.totalPrice),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 120),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerRight,
+                          child: item.hasDiscount
+                              ? Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                money(item.totalBeforeDiscount),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  decoration: TextDecoration.lineThrough,
+                                  color: theme.colorScheme.outline,
+                                ),
+                              ),
+                              Text(
+                                money(item.totalPrice),
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: amountColor(
+                                    context,
+                                    item.totalPrice,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          )
+                              : Text(
+                            money(item.totalPrice),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: amountColor(
+                                context,
+                                item.totalPrice,
+                              ),
+                            ),
                           ),
                         ),
+                      ),
+                    ],
+                  ),
                 ),
               );
             }),
@@ -1875,7 +2401,7 @@ class InvoiceDetailsScreen extends StatelessWidget {
                 value: invoice.discountPercent == null
                     ? moneyNegative(invoice.discountAmount)
                     : '${moneyNegative(invoice.discountAmount)} '
-                          '(${percentLabel(invoice.discountPercent!)})',
+                    '(${percentLabel(invoice.discountPercent!)})',
                 valueStyle: amountStyle(context, -invoice.discountAmount),
               ),
             const SizedBox(height: 8),
@@ -1894,12 +2420,24 @@ class InvoiceDetailsScreen extends StatelessWidget {
                       color: Theme.of(context).colorScheme.onPrimaryContainer,
                     ),
                   ),
-                  const Spacer(),
-                  Text(
-                    money(invoice.totalAmount),
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          money(invoice.totalAmount),
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onPrimaryContainer,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ],

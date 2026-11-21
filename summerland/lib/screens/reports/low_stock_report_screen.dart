@@ -208,13 +208,19 @@ class _LowStockReportScreenState extends State<LowStockReportScreen>
                               (item) => Card(
                                 margin: const EdgeInsets.only(bottom: 10),
                                 child: ExpansionTile(
-                                  title: Text(item.productName),
+                                  title: Text(
+                                    item.productName,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                   subtitle: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         _variantLabel(context, item),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                         style: TextStyle(
                                           fontWeight: FontWeight.w600,
                                           color: Theme.of(context)
@@ -230,27 +236,72 @@ class _LowStockReportScreenState extends State<LowStockReportScreen>
                                               ? ''
                                               : '\n${item.categoryName}',
                                         ]),
+                                        maxLines: 3,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ],
                                   ),
                                   trailing: const LowStockBadge(),
                                   children: [
-                                    ListTile(
-                                      title: Text(context.tr('Threshold')),
-                                      trailing: Text(
-                                        '${item.lowStockThreshold}',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                        ),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 8,
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              context.tr('Threshold'),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Flexible(
+                                            child: Text(
+                                              '${item.lowStockThreshold}',
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              textAlign: TextAlign.right,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                    ListTile(
-                                      leading: const Icon(
-                                        Icons.qr_code_2_outlined,
-                                        size: 20,
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 8,
                                       ),
-                                      title: Text(context.tr('Barcode')),
-                                      trailing: Text(item.barcode),
+                                      child: Row(
+                                        children: [
+                                          const Icon(
+                                            Icons.qr_code_2_outlined,
+                                            size: 20,
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Text(
+                                              context.tr('Barcode'),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Flexible(
+                                            child: Text(
+                                              item.barcode,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              textAlign: TextAlign.right,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                     Padding(
                                       padding: const EdgeInsets.fromLTRB(
@@ -266,13 +317,33 @@ class _LowStockReportScreenState extends State<LowStockReportScreen>
                                     ),
                                     const Divider(height: 1),
                                     ...item.locations.map(
-                                      (location) => ListTile(
-                                        title: Text(location.locationName),
-                                        trailing: Text(
-                                          '${location.quantity}',
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w600,
-                                          ),
+                                      (location) => Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 8,
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                location.locationName,
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Flexible(
+                                              child: Text(
+                                                '${location.quantity}',
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                textAlign: TextAlign.right,
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     ),

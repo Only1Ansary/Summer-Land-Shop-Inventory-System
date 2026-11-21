@@ -397,6 +397,8 @@ class _SplitVariantScreenState extends State<SplitVariantScreen> {
           children: [
             Text(
               widget.product.name,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 4),
