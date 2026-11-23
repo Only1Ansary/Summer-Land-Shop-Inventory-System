@@ -19,6 +19,7 @@ import '../../ui/reconnect_reloader.dart';
 import 'product_form_screen.dart';
 import 'product_variant_form_screen.dart';
 import 'split_variant_screen.dart';
+import '../../ui/text_input_helpers.dart';
 
 /// Screens at least this wide show the variant table and the selected
 /// variant's details side by side. Narrower screens open a full page.
@@ -29,10 +30,31 @@ const double _kMasterDetailBreakpoint = 840;
 const double _kDetailPanelWidth = 500;
 
 /// Height of the pinned block: the search row plus the table header bar.
-const double _kPinnedHeaderExtent = 108;
+/// Slightly taller than before so taller Arabic glyphs never get clipped.
+const double _kPinnedHeaderExtent = 112;
+
+/// Height of the table header bar inside the pinned block.
+const double _kTableHeaderHeight = 40;
 
 /// Columns the variant table can be sorted by.
 enum _SortColumn { size, colour, price, stock }
+
+/// Numbers, prices and barcodes are always written left-to-right, even
+/// inside an Arabic (right-to-left) layout. Without this, a value such as
+/// "1,200.00 EGP" or "5%" gets its symbols shuffled by the bidi algorithm.
+/// Only the text itself is forced to LTR; the cell it sits in still follows
+/// the page direction.
+Widget _ltrText(
+    String text, {
+      TextStyle? style,
+      int? maxLines = 1,
+      TextOverflow overflow = TextOverflow.ellipsis,
+    }) {
+  return Directionality(
+    textDirection: TextDirection.ltr,
+    child: Text(text, style: style, maxLines: maxLines, overflow: overflow),
+  );
+}
 
 class ProductDetailsScreen extends StatefulWidget {
   final Product product;
@@ -450,7 +472,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
         slivers: [
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 16, 8),
               child: _buildProductInfo(),
             ),
           ),
@@ -516,7 +538,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
                     Expanded(
                       child: _MiniStat(
                         label: context.tr('Purchase Price'),
-                        value: money(_product.purchasePrice),
+                        value: money(_product.purchasePrice).replaceAll("EGP", ""),
                       ),
                     ),
                     VerticalDivider(width: 1, color: colors.outlineVariant),
@@ -530,7 +552,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
                     Expanded(
                       child: _MiniStat(
                         label: context.tr('Selling Price'),
-                        value: money(_product.sellingPrice),
+                        value: money(_product.sellingPrice).replaceAll("EGP", ""),
                         highlight: true,
                       ),
                     ),
@@ -573,14 +595,14 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
     final hasLookups = _sizes.isNotEmpty || _colours.isNotEmpty;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      padding: const EdgeInsetsDirectional.fromSTEB(16, 8, 16, 8),
       child: Row(
         children: [
           Expanded(
             child: TextField(
               controller: _searchController,
               textInputAction: TextInputAction.search,
-              autofocus: true,
+              autofocus: textFieldAutofocus(true),
               decoration: InputDecoration(
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(vertical: 12),
@@ -633,9 +655,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
     final colors = Theme.of(context).colorScheme;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+      padding: const EdgeInsetsDirectional.fromSTEB(16, 0, 16, 6),
       child: Container(
-        height: 36,
+        height: _kTableHeaderHeight,
         padding: const EdgeInsets.symmetric(horizontal: 14),
         decoration: BoxDecoration(
           color: colors.primary.withValues(alpha: 0.10),
@@ -644,7 +666,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
         child: Row(
           children: [
             _headerCell(context.tr('Size'), _SortColumn.size, flex: 3),
-            _headerCell(context.tr('Colour'), _SortColumn.colour, flex: 4),
+            _headerCell(context.tr('Colour'), _SortColumn.colour, flex: 3),
             _headerCell(
               context.tr('Price'),
               _SortColumn.price,
@@ -654,7 +676,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
             _headerCell(
               context.tr('Stock'),
               _SortColumn.stock,
-              flex: 2,
+              flex: 3,
               alignEnd: true,
             ),
           ],
@@ -677,7 +699,11 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
       child: InkWell(
         onTap: () => _sortBy(column),
         child: Align(
-          alignment: alignEnd ? Alignment.centerRight : Alignment.centerLeft,
+          // Directional on purpose: "start" is the right edge in Arabic and
+          // the left edge in English, so headers always sit over their cells.
+          alignment: alignEnd
+              ? AlignmentDirectional.centerEnd
+              : AlignmentDirectional.centerStart,
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -714,7 +740,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
     final usedSizeIds = _variants.map((v) => v.sizeId).toSet();
     final usedColourIds = _variants.map((v) => v.colourId).toSet();
 
-    final sizes = _sizes.where((size) => usedSizeIds.contains(size.id)).toList();
+    final sizes = _sizes
+        .where((size) => usedSizeIds.contains(size.id))
+        .toList();
     final colours = _colours
         .where((colour) => usedColourIds.contains(colour.id))
         .toList();
@@ -722,7 +750,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
     final labelStyle = Theme.of(context).textTheme.labelLarge;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+      padding: const EdgeInsetsDirectional.fromSTEB(16, 4, 16, 4),
       child: SizedBox(
         width: double.infinity,
         child: Card(
@@ -774,7 +802,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
                 ],
                 if (_activeFilterCount > 0)
                   Align(
-                    alignment: Alignment.centerRight,
+                    alignment: AlignmentDirectional.centerEnd,
                     child: TextButton(
                       onPressed: () {
                         setState(() {
@@ -800,7 +828,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
   List<Widget> _buildVariantSlivers({required bool wide}) {
     Widget box(Widget child) {
       return SliverPadding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 88),
+        padding: const EdgeInsetsDirectional.fromSTEB(16, 8, 16, 88),
         sliver: SliverToBoxAdapter(child: child),
       );
     }
@@ -872,8 +900,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
   }
 
   /// One rounded table row. The size sits in a tinted tag, stock in a pill,
-  /// and low stock adds a red edge on the left plus a red pill; nothing
-  /// else is coloured.
+  /// and low stock adds a red edge at the start plus a red pill; nothing
+  /// else is coloured. Every alignment is directional so the row mirrors
+  /// correctly in Arabic and lines up with the header above it.
   Widget _buildVariantRow(
       ProductVariant variant, {
         required bool wide,
@@ -886,18 +915,21 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
       if (_isDefaultVariant(variant))
         Expanded(
           flex: 7,
-          child: Text(
-            context.tr('Variant #{0}', [variant.id]),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+          child: Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(
+              context.tr('Variant #{0}', [variant.id]),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+            ),
           ),
         )
       else ...[
         Expanded(
           flex: 3,
           child: Align(
-            alignment: Alignment.centerLeft,
+            alignment: AlignmentDirectional.centerStart,
             child: variant.sizeName == null
                 ? const Text('—')
                 : Container(
@@ -923,29 +955,32 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
           ),
         ),
         Expanded(
-          flex: 4,
-          child: Text(
-            variant.colourName ?? '—',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+          flex: 3,
+          child: Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(
+              variant.colourName ?? '—',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+            ),
           ),
         ),
       ],
       Expanded(
         flex: 3,
-        child: Text(
-          money(variant.price),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          textAlign: TextAlign.end,
-          style: TextStyle(fontSize: 14, color: colors.onSurfaceVariant),
+        child: Align(
+          alignment: AlignmentDirectional.centerEnd,
+          child: _ltrText(
+            money(variant.price).replaceAll("EGP", ""),
+            style: TextStyle(fontSize: 14, color: colors.onSurfaceVariant),
+          ),
         ),
       ),
       Expanded(
-        flex: 2,
+        flex: 3,
         child: Align(
-          alignment: Alignment.centerRight,
+          alignment: AlignmentDirectional.centerEnd,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
@@ -965,7 +1000,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
                   ),
                   const SizedBox(width: 3),
                 ],
-                Text(
+                _ltrText(
                   '${variant.totalQuantity}',
                   style: TextStyle(
                     fontSize: 14,
@@ -981,7 +1016,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
     ];
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 3, 16, 3),
+      padding: const EdgeInsetsDirectional.fromSTEB(16, 3, 16, 3),
       child: Material(
         color: selected
             ? colors.primary.withValues(alpha: 0.07)
@@ -1006,8 +1041,8 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
                 child: Row(children: cells),
               ),
               if (low)
-                Positioned(
-                  left: 0,
+                PositionedDirectional(
+                  start: 0,
                   top: 0,
                   bottom: 0,
                   child: Container(width: 4, color: colors.error),
@@ -1080,7 +1115,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
 
     return SingleChildScrollView(
       key: ValueKey('detail-${variant.id}'),
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 88),
+      padding: const EdgeInsetsDirectional.fromSTEB(20, 16, 20, 88),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -1116,7 +1151,7 @@ class _VariantDetailPage extends StatelessWidget {
       ),
       bottomNavigationBar: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+          padding: const EdgeInsetsDirectional.fromSTEB(16, 8, 16, 12),
           child: Center(
             heightFactor: 1,
             child: ConstrainedBox(
@@ -1205,7 +1240,7 @@ class _VariantDetailView extends StatelessWidget {
                         ),
                       ),
                       Center(
-                        child: Text(
+                        child: _ltrText(
                           '${variant.totalQuantity}',
                           style: TextStyle(
                             fontSize: 28,
@@ -1263,7 +1298,7 @@ class _VariantDetailView extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                Text(
+                _ltrText(
                   money(variant.price),
                   style: TextStyle(
                     fontSize: 24,
@@ -1294,14 +1329,17 @@ class _VariantDetailView extends StatelessWidget {
                 Center(child: BarcodeView(variant.barcode, showText: false)),
                 const SizedBox(height: 8),
                 Center(
-                  child: SelectableText(
-                    variant.barcode.isEmpty
-                        ? context.tr('N/A')
-                        : variant.barcode,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      letterSpacing: 2,
-                      fontWeight: FontWeight.w600,
+                  child: Directionality(
+                    textDirection: TextDirection.ltr,
+                    child: SelectableText(
+                      variant.barcode.isEmpty
+                          ? context.tr('N/A')
+                          : variant.barcode,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        letterSpacing: 2,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
@@ -1344,7 +1382,7 @@ class _MiniStat extends StatelessWidget {
           const SizedBox(height: 4),
           FittedBox(
             fit: BoxFit.scaleDown,
-            child: Text(
+            child: _ltrText(
               value,
               style: TextStyle(
                 fontSize: 17,

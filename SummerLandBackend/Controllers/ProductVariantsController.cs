@@ -185,6 +185,14 @@ public class ProductVariantsController : ControllerBase
                 return Conflict(
                     "A variant with this barcode already exists.");
             }
+
+            var productBarcodeExists = await _context.Products
+                .AnyAsync(p => p.Barcode == barcode);
+
+            if (productBarcodeExists)
+            {
+                return Conflict("A product with this barcode already exists.");
+            }
         }
         else
         {
@@ -277,6 +285,14 @@ public class ProductVariantsController : ControllerBase
             if (barcodeExists)
             {
                 return Conflict("A variant with this barcode already exists.");
+            }
+
+            var productBarcodeExists = await _context.Products
+                .AnyAsync(p => p.Barcode == barcode);
+
+            if (productBarcodeExists)
+            {
+                return Conflict("A product with this barcode already exists.");
             }
 
             variant.Barcode = barcode;

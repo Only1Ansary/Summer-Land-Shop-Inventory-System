@@ -11,6 +11,7 @@ import '../../ui/app_widgets.dart';
 import '../../ui/reconnect_reloader.dart';
 import 'add_employee_screen.dart';
 import 'employee_history_screen.dart';
+import '../../ui/text_input_helpers.dart';
 
 class EmployeesScreen extends StatefulWidget {
   const EmployeesScreen({super.key});
@@ -525,7 +526,7 @@ class _PayEmployeeDialogState extends State<_PayEmployeeDialog> {
           const SizedBox(height: 12),
           TextField(
             controller: _amountController,
-            autofocus: true,
+            autofocus: textFieldAutofocus(true),
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             decoration: InputDecoration(
               labelText: context.tr('Amount paid'),

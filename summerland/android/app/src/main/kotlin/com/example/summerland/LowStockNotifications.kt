@@ -15,7 +15,7 @@ import android.os.Build
 /// stock checker.
 object LowStockNotifications {
     const val CHANNEL_ID = "low_stock_alerts"
-    private const val CHANNEL_NAME = "Low stock alerts"
+    private const val CHANNEL_NAME = "تنبيهات المخزون المنخفض"
     private const val PERMISSION_REQUEST = 4731
 
     fun ensureChannel(context: Context) {
@@ -27,7 +27,7 @@ object LowStockNotifications {
             CHANNEL_NAME,
             NotificationManager.IMPORTANCE_DEFAULT,
         ).apply {
-            description = "Alerts when a product runs low on stock after a sale."
+            description = "تنبيه عند انخفاض مخزون أحد المنتجات بعد البيع."
         }
 
         manager.createNotificationChannel(channel)

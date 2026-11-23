@@ -195,16 +195,50 @@ void main() {
     }
   });
 
-  testWidgets('focuses the search field when opened', (tester) async {
-    await pumpSearch(tester);
+  testWidgets('Android does not focus the search field when opened', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.android;
 
-    expect(tester.widget<TextField>(find.byType(TextField)).autofocus, isTrue);
-    expect(
-      FocusManager.instance.primaryFocus?.context
-          ?.findAncestorWidgetOfExactType<EditableText>(),
-      isNotNull,
-      reason: 'typing should go straight into the search field',
-    );
+    try {
+      await pumpSearch(tester);
+
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).autofocus,
+        isFalse,
+      );
+      expect(
+        FocusManager.instance.primaryFocus?.context
+            ?.findAncestorWidgetOfExactType<EditableText>(),
+        isNull,
+        reason: 'the keyboard should stay closed until the field is tapped',
+      );
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+    }
+  });
+
+  testWidgets('Windows still focuses the search field when opened', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+
+    try {
+      await pumpSearch(tester);
+
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).autofocus,
+        isTrue,
+      );
+      expect(
+        FocusManager.instance.primaryFocus?.context
+            ?.findAncestorWidgetOfExactType<EditableText>(),
+        isNotNull,
+        reason: 'typing should go straight into the search field',
+      );
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+    }
   });
 
   testWidgets('a product expands into per-location size breakdown', (

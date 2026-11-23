@@ -1,7 +1,10 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 
 import '../../localization/app_strings.dart';
 import '../../models/invoice.dart';
@@ -11,6 +14,7 @@ import '../../services/invoice_service.dart';
 import '../../ui/app_theme.dart';
 import '../../utils/payment_method.dart';
 import '../../ui/app_widgets.dart';
+import '../../ui/text_input_helpers.dart';
 
 class ShowSaleInvoiceScreen extends StatefulWidget {
   const ShowSaleInvoiceScreen({super.key, this.invoice, this.invoiceId});
@@ -90,174 +94,18 @@ class _ShowSaleInvoiceScreenState extends State<ShowSaleInvoiceScreen> {
 
     if (invoice == null || invoice.customerId == null) return;
 
-    final remaining = invoice.remainingAmount;
-    final amountController = TextEditingController(
-      text: remaining.toStringAsFixed(2),
-    );
-    var method = invoice.paymentMethod ?? paymentMethodCash;
-
+    // The dialog is its own StatefulWidget so that its TextEditingController
+    // is created and disposed by the framework together with the dialog's
+    // element tree. Disposing a controller right after `showDialog` returns
+    // runs while the route's exit animation is still building the TextField,
+    // which crashes on Android when the keyboard is open.
     final entry = await showDialog<_PaymentEntry>(
       context: context,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            final scheme = Theme.of(context).colorScheme;
-
-            return AlertDialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-              ),
-              title: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: scheme.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(Icons.add_card_outlined, color: scheme.primary),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(child: Text(context.tr('Record payment'))),
-                ],
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _pill(
-                    context,
-                    context.tr('Remaining: {0}', [money(remaining)]),
-                    scheme.error,
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: amountController,
-                    autofocus: true,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    inputFormatters: [
-                      FilteringTextInputFormatter.allow(
-                        RegExp(r'^\d*\.?\d*$'),
-                      ),
-                    ],
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                    ),
-                    decoration: InputDecoration(
-                      labelText: context.tr('Payment amount'),
-                      prefixIcon: const Icon(Icons.payments_outlined),
-                      filled: true,
-                      fillColor: scheme.surfaceContainerHighest.withValues(
-                        alpha: 0.4,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<int>(
-                    initialValue: method,
-                    isExpanded: true,
-                    borderRadius: BorderRadius.circular(16),
-                    decoration: InputDecoration(
-                      labelText: context.tr('Payment method'),
-                      prefixIcon: const Icon(Icons.credit_card_outlined),
-                      filled: true,
-                      fillColor: scheme.surfaceContainerHighest.withValues(
-                        alpha: 0.4,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
-                    items: paymentMethodValues.map((value) {
-                      return DropdownMenuItem<int>(
-                        value: value,
-                        child: Row(
-                          children: [
-                            Icon(paymentMethodIcon(value), size: 18),
-                            const SizedBox(width: 10),
-                            Flexible(
-                              child: Text(
-                                paymentMethodLabel(context, value),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      if (value == null) return;
-                      setDialogState(() => method = value);
-                    },
-                  ),
-                ],
-              ),
-              actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(),
-                  child: Text(context.tr('Cancel')),
-                ),
-                FilledButton(
-                  style: FilledButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  onPressed: () {
-                    final amount = double.tryParse(
-                      amountController.text.trim(),
-                    );
-
-                    if (amount == null || amount <= 0) {
-                      ScaffoldMessenger.of(dialogContext).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            context.tr(
-                              'Enter a payment amount greater than zero.',
-                            ),
-                          ),
-                        ),
-                      );
-                      return;
-                    }
-
-                    if (amount > remaining) {
-                      ScaffoldMessenger.of(dialogContext).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            context.tr(
-                              'Payment cannot exceed the remaining balance of {0}.',
-                              [money(remaining)],
-                            ),
-                          ),
-                        ),
-                      );
-                      return;
-                    }
-
-                    Navigator.of(dialogContext).pop(
-                      _PaymentEntry(amount: amount, method: method),
-                    );
-                  },
-                  child: Text(context.tr('Record payment')),
-                ),
-              ],
-            );
-          },
-        );
-      },
+      builder: (dialogContext) => _RecordPaymentDialog(
+        remaining: invoice.remainingAmount,
+        initialMethod: invoice.paymentMethod ?? paymentMethodCash,
+      ),
     );
-
-    amountController.dispose();
 
     if (entry == null || !mounted) return;
 
@@ -319,54 +167,6 @@ class _ShowSaleInvoiceScreenState extends State<ShowSaleInvoiceScreen> {
   // ---------------------------------------------------------------------------
   // Small visual helpers
   // ---------------------------------------------------------------------------
-
-  Widget _pill(
-      BuildContext context,
-      String text,
-      Color color, {
-        IconData? icon,
-        bool onDark = false,
-      }) {
-
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
-
-    final foregroundColor = isDark ? scheme.primaryContainer : Colors.white;
-
-    final fg = onDark ? foregroundColor : color;
-    final bg = onDark
-        ? foregroundColor.withValues(alpha: 0.2)
-        : color.withValues(alpha: 0.12);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (icon != null) ...[
-            Icon(icon, size: 13, color: fg),
-            const SizedBox(width: 4),
-          ],
-          Flexible(
-            child: Text(
-              text,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: fg,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _sectionCard(
       BuildContext context, {
@@ -465,7 +265,8 @@ class _ShowSaleInvoiceScreenState extends State<ShowSaleInvoiceScreen> {
               icon: const Icon(Icons.add_card_outlined),
               onPressed: _recordPayment,
             ),
-          if (invoice != null)
+          if (invoice != null &&
+              defaultTargetPlatform != TargetPlatform.android)
             IconButton(
               tooltip: context.tr('Print'),
               icon: const Icon(Icons.print_outlined),
@@ -575,30 +376,37 @@ class _ShowSaleInvoiceScreenState extends State<ShowSaleInvoiceScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: foregroundColor.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(
-                  Icons.receipt_long_rounded,
-                  color: foregroundColor,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  context.tr('Sale Invoice #{0}', [invoice.id]),
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    color: foregroundColor,
-                    fontWeight: FontWeight.w800,
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isNarrow = constraints.maxWidth < 450;
+
+              final invoiceTitle = Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: foregroundColor.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Icon(
+                      Icons.receipt_long_rounded,
+                      color: foregroundColor,
+                    ),
                   ),
-                ),
-              ),
-              _pill(
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      context.tr('Sale Invoice #{0}', [invoice.id]),
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        color: foregroundColor,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+
+              final paymentStatus = _pill(
                 context,
                 invoice.isFullyPaid
                     ? context.tr('Paid')
@@ -611,8 +419,27 @@ class _ShowSaleInvoiceScreenState extends State<ShowSaleInvoiceScreen> {
                     ? Icons.check_circle_rounded
                     : Icons.hourglass_bottom_rounded,
                 onDark: true,
-              ),
-            ],
+              );
+
+              if (isNarrow) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    invoiceTitle,
+                    const SizedBox(height: 12),
+                    paymentStatus,
+                  ],
+                );
+              }
+
+              return Row(
+                children: [
+                  Expanded(child: invoiceTitle),
+                  const SizedBox(width: 12),
+                  paymentStatus,
+                ],
+              );
+            },
           ),
           const SizedBox(height: 18),
           Text(
@@ -638,7 +465,7 @@ class _ShowSaleInvoiceScreenState extends State<ShowSaleInvoiceScreen> {
             spacing: 8,
             runSpacing: 8,
             children: [
-              _metaChip(Icons.event_outlined, '${invoice.createdAt}'),
+              _metaChip(Icons.event_outlined, DateFormat('yyyy/MM/dd HH:mm:ss').format(invoice.createdAt)),
               _metaChip(Icons.storefront_outlined, invoice.locationName),
               _metaChip(
                 Icons.badge_outlined,
@@ -995,7 +822,7 @@ class _ShowSaleInvoiceScreenState extends State<ShowSaleInvoiceScreen> {
                   decoration: BoxDecoration(color: scheme.primaryContainer),
                   children: [
                     _headerCell('#', alignment: Alignment.center),
-                    _headerCell(context.tr('Product')),
+                    _headerCell(context.tr('Product Name')),
                     _headerCell(context.tr('Model')),
                     _headerCell(context.tr('Size')),
                     _headerCell(context.tr('Colour')),
@@ -1091,6 +918,276 @@ class _ShowSaleInvoiceScreenState extends State<ShowSaleInvoiceScreen> {
           InfoTile(
             label: context.tr('Total Amount'),
             value: money(invoice.totalAmount),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Shared pill helper (top-level so both the screen and the dialog can use it)
+// -----------------------------------------------------------------------------
+
+Widget _pill(
+    BuildContext context,
+    String text,
+    Color color, {
+      IconData? icon,
+      bool onDark = false,
+    }) {
+  final theme = Theme.of(context);
+  final scheme = theme.colorScheme;
+  final isDark = theme.brightness == Brightness.dark;
+
+  final foregroundColor = isDark ? scheme.primaryContainer : Colors.white;
+
+  final fg = onDark ? foregroundColor : color;
+  final bg = onDark
+      ? foregroundColor.withValues(alpha: 0.2)
+      : color.withValues(alpha: 0.12);
+
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+    decoration: BoxDecoration(
+      color: bg,
+      borderRadius: BorderRadius.circular(20),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (icon != null) ...[
+          Icon(icon, size: 13, color: fg),
+          const SizedBox(width: 4),
+        ],
+        Flexible(
+          child: Text(
+            text,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: fg,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+// -----------------------------------------------------------------------------
+// Record payment dialog
+// -----------------------------------------------------------------------------
+
+class _RecordPaymentDialog extends StatefulWidget {
+  const _RecordPaymentDialog({
+    required this.remaining,
+    required this.initialMethod,
+  });
+
+  final double remaining;
+  final int initialMethod;
+
+  @override
+  State<_RecordPaymentDialog> createState() => _RecordPaymentDialogState();
+}
+
+class _RecordPaymentDialogState extends State<_RecordPaymentDialog> {
+  late final TextEditingController _amountController;
+  late int _method;
+
+  @override
+  void initState() {
+    super.initState();
+    _amountController = TextEditingController(
+      text: widget.remaining.toStringAsFixed(2),
+    );
+    _method = widget.initialMethod;
+  }
+
+  @override
+  void dispose() {
+    // Runs only once the dialog route has been fully removed from the tree.
+    _amountController.dispose();
+    super.dispose();
+  }
+
+  void _cancel() {
+    // Let the keyboard start closing before the route's exit animation.
+    FocusScope.of(context).unfocus();
+    Navigator.of(context).pop();
+  }
+
+  void _submit() {
+    final amount = double.tryParse(_amountController.text.trim());
+
+    if (amount == null || amount <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            context.tr('Enter a payment amount greater than zero.'),
+          ),
+        ),
+      );
+      return;
+    }
+
+    if (amount > widget.remaining) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            context.tr(
+              'Payment cannot exceed the remaining balance of {0}.',
+              [money(widget.remaining)],
+            ),
+          ),
+        ),
+      );
+      return;
+    }
+
+    FocusScope.of(context).unfocus();
+    Navigator.of(context).pop(_PaymentEntry(amount: amount, method: _method));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return AlertDialog(
+      scrollable: true,
+      // Keep the dialog close to the keyboard: with the default
+      // padding, the title and button bar alone can exceed the space
+      // left on small Android phones.
+      insetPadding: const EdgeInsets.symmetric(
+        horizontal: 32,
+        vertical: 8,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
+      ),
+      // Everything, including the title and the buttons, lives in the
+      // scrollable content. AlertDialog's own title/actions stay
+      // outside the scroll view and would overflow when the keyboard
+      // shrinks the available height.
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: scheme.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.add_card_outlined,
+                  color: scheme.primary,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(child: Text(context.tr('Record payment'))),
+            ],
+          ),
+          const SizedBox(height: 20),
+          _pill(
+            context,
+            context.tr('Remaining: {0}', [money(widget.remaining)]),
+            scheme.error,
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _amountController,
+            // Autofocus opens the keyboard immediately on Android,
+            // shrinking the viewport and overflowing the dialog.
+            autofocus: textFieldAutofocus(true),
+            keyboardType: const TextInputType.numberWithOptions(
+              decimal: true,
+            ),
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(
+                RegExp(r'^\d*\.?\d*$'),
+              ),
+            ],
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+            ),
+            decoration: InputDecoration(
+              labelText: context.tr('Payment amount'),
+              prefixIcon: const Icon(Icons.payments_outlined),
+              filled: true,
+              fillColor: scheme.surfaceContainerHighest.withValues(
+                alpha: 0.4,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<int>(
+            initialValue: _method,
+            isExpanded: true,
+            borderRadius: BorderRadius.circular(16),
+            decoration: InputDecoration(
+              labelText: context.tr('Payment method'),
+              prefixIcon: const Icon(Icons.credit_card_outlined),
+              filled: true,
+              fillColor: scheme.surfaceContainerHighest.withValues(
+                alpha: 0.4,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide.none,
+              ),
+            ),
+            items: paymentMethodValues.map((value) {
+              return DropdownMenuItem<int>(
+                value: value,
+                child: Row(
+                  children: [
+                    Icon(paymentMethodIcon(value), size: 18),
+                    const SizedBox(width: 10),
+                    Flexible(
+                      child: Text(
+                        paymentMethodLabel(context, value),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+            onChanged: (value) {
+              if (value == null) return;
+              setState(() => _method = value);
+            },
+          ),
+          const SizedBox(height: 20),
+          OverflowBar(
+            alignment: MainAxisAlignment.end,
+            spacing: 8,
+            overflowAlignment: OverflowBarAlignment.end,
+            children: [
+              TextButton(
+                onPressed: _cancel,
+                child: Text(context.tr('Cancel')),
+              ),
+              FilledButton(
+                style: FilledButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                onPressed: _submit,
+                child: Text(context.tr('Record payment')),
+              ),
+            ],
           ),
         ],
       ),

@@ -6,6 +6,7 @@ import '../../services/api_service.dart';
 import '../../services/supplier_service.dart';
 import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
+import '../../ui/text_input_helpers.dart';
 
 class AddSuppliersScreen extends StatefulWidget {
   const AddSuppliersScreen({super.key, this.supplier});
@@ -93,6 +94,7 @@ class _AddSuppliersScreenState extends State<AddSuppliersScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               TextFormField(
+                autofocus: textFieldAutofocus(false),
                 controller: _nameController,
                 textCapitalization: TextCapitalization.words,
                 decoration: InputDecoration(

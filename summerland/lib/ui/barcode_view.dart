@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 ///
 /// Entry is unchanged - the user still types the barcode as numbers -
 /// but every stored value (manufacturer digits like `201781` or internal
-/// codes like `SHOP-00000012`) is drawn as a proper 1D barcode that any
+/// codes like `00000012`) is drawn as a proper 1D barcode that any
 /// scanner or phone camera can read. Code 128 accepts digits of any
 /// length, so no fixed-length format or check digit is required.
 class BarcodeView extends StatelessWidget {
@@ -18,7 +18,7 @@ class BarcodeView extends StatelessWidget {
     this.showText = true,
   });
 
-  /// The stored barcode, e.g. `201781` or `SHOP-00000012`.
+  /// The stored barcode, e.g. `201781` or `00000012`.
   final String code;
 
   final double width;

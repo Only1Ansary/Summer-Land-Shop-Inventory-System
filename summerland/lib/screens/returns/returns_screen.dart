@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 
 import '../../localization/app_strings.dart';
 import '../../models/invoice.dart';
@@ -16,6 +17,7 @@ import '../../services/return_service.dart';
 import '../../ui/app_shell.dart';
 import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
+import '../../ui/text_input_helpers.dart';
 
 class ReturnsScreen extends StatefulWidget {
   const ReturnsScreen({super.key});
@@ -351,7 +353,7 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
             Expanded(
               child: TextField(
                 controller: _invoiceIdController,
-                autofocus: true,
+                autofocus: textFieldAutofocus(true),
                 keyboardType: TextInputType.number,
                 textInputAction: TextInputAction.search,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
@@ -534,7 +536,7 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
             runSpacing: 8,
             children: [
               _metaChip(Icons.storefront_outlined, invoice.locationName),
-              _metaChip(Icons.event_outlined, '${invoice.createdAt}'),
+              _metaChip(Icons.event_outlined, DateFormat('yyyy/MM/dd HH:mm:ss').format(invoice.createdAt)),
             ],
           ),
         ],
@@ -1133,6 +1135,7 @@ class _ReturnItemDialogState extends State<_ReturnItemDialog> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: TextField(
+                    autofocus: textFieldAutofocus(false),
                     controller: _quantityController,
                     keyboardType: TextInputType.number,
                     textAlign: TextAlign.center,
@@ -1163,6 +1166,7 @@ class _ReturnItemDialogState extends State<_ReturnItemDialog> {
             ),
             const SizedBox(height: 14),
             TextField(
+              autofocus: textFieldAutofocus(false),
               controller: _reasonController,
               maxLines: 3,
               decoration: _fieldDecoration(

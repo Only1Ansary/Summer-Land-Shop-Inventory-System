@@ -8,6 +8,7 @@ import '../../ui/app_widgets.dart';
 import '../../ui/reconnect_reloader.dart';
 import 'purchase_invoice_tile.dart';
 import 'show_purchase_invoice_screen.dart';
+import '../../ui/text_input_helpers.dart';
 
 class SearchPurchaseInvoicesScreen extends StatefulWidget {
   const SearchPurchaseInvoicesScreen({super.key});
@@ -196,6 +197,7 @@ class _SearchPurchaseInvoicesScreenState
         children: [
           TextField(
             controller: _nameController,
+            autofocus: textFieldAutofocus(true),
             textCapitalization: TextCapitalization.words,
             decoration: InputDecoration(
               labelText: context.tr('Supplier name'),

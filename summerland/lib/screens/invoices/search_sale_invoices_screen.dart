@@ -8,6 +8,7 @@ import '../../ui/app_widgets.dart';
 import '../../ui/reconnect_reloader.dart';
 import 'sale_invoice_tile.dart';
 import 'show_sale_invoice_screen.dart';
+import '../../ui/text_input_helpers.dart';
 
 class SearchSaleInvoicesScreen extends StatefulWidget {
   const SearchSaleInvoicesScreen({super.key});
@@ -202,7 +203,7 @@ class _SearchSaleInvoicesScreenState extends State<SearchSaleInvoicesScreen>
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           TextField(
-            autofocus: true,
+            autofocus: textFieldAutofocus(true),
             controller: _queryController,
             decoration: InputDecoration(
               labelText: context.tr('Invoice #, location or product'),

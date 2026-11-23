@@ -34,6 +34,7 @@ class PurchaseInvoiceSummary {
   final double totalCost;
   final double totalPaid;
   final double debt;
+  final int paymentMethod;
 
   PurchaseInvoiceSummary({
     required this.id,
@@ -42,6 +43,7 @@ class PurchaseInvoiceSummary {
     required this.totalCost,
     required this.totalPaid,
     required this.debt,
+    this.paymentMethod = 0,
   });
 
   factory PurchaseInvoiceSummary.fromJson(Map<String, dynamic> json) {
@@ -52,6 +54,7 @@ class PurchaseInvoiceSummary {
       totalCost: (json['totalCost'] as num? ?? 0).toDouble(),
       totalPaid: (json['totalPaid'] as num? ?? 0).toDouble(),
       debt: (json['debt'] as num? ?? 0).toDouble(),
+      paymentMethod: (json['paymentMethod'] as num?)?.toInt() ?? 0,
     );
   }
 }
@@ -61,12 +64,14 @@ class SupplierPayment {
   final double amount;
   final DateTime paidAt;
   final int? purchaseInvoiceId;
+  final int method;
 
   SupplierPayment({
     required this.id,
     required this.amount,
     required this.paidAt,
     required this.purchaseInvoiceId,
+    this.method = 0,
   });
 
   factory SupplierPayment.fromJson(Map<String, dynamic> json) {
@@ -75,6 +80,7 @@ class SupplierPayment {
       amount: (json['amount'] as num? ?? 0).toDouble(),
       paidAt: DateTime.parse(json['paidAt']),
       purchaseInvoiceId: json['purchaseInvoiceId'] as int?,
+      method: (json['method'] as num?)?.toInt() ?? 0,
     );
   }
 }

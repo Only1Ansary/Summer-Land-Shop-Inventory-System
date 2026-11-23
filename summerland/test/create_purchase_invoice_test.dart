@@ -53,6 +53,7 @@ void main() {
             'createdAt': '2024-01-01T00:00:00.000',
             'totalCost': paidFees,
             'totalPaid': totalPaid + paidFees,
+            'paymentMethod': body['paymentMethod'] ?? 0,
             'debt': unpaidFees,
             'items': <Object?>[],
             'fees': fees,
@@ -221,5 +222,43 @@ void main() {
     expect(find.textContaining('Purchase Invoice #'), findsWidgets);
     // Paid fee: counted in the total cost, and nothing is owed.
     expect(find.text('-150.00 EGP'), findsNothing);
+  });
+
+  testWidgets('the selected payment method is sent with the invoice', (
+    tester,
+  ) async {
+    await pumpScreen(tester);
+
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Supplier Name'),
+      'Acme',
+    );
+    await tester.enterText(find.widgetWithText(TextField, 'Total Paid'), '0');
+    await addFee(tester, 'Shipping', '150');
+
+    final dropdown = find.byKey(const ValueKey('purchase-payment-method'));
+    expect(dropdown, findsOneWidget);
+
+    await tester.tap(dropdown);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Visa').last);
+    await tester.pumpAndSettle();
+
+    final createButton = find.widgetWithText(
+      FilledButton,
+      'Create Purchase Invoice',
+    );
+    await tester.tap(createButton);
+    await tester.pump(const Duration(seconds: 6));
+    await tester.pumpAndSettle();
+
+    final cancelButton = find.text('Cancel');
+    if (cancelButton.evaluate().isNotEmpty) {
+      await tester.tap(cancelButton);
+      await tester.pumpAndSettle();
+    }
+
+    expect(tester.takeException(), isNull);
+    expect(created?['paymentMethod'], 1);
   });
 }

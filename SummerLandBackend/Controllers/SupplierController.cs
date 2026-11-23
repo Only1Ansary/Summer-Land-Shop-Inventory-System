@@ -36,6 +36,7 @@ public class SupplierController : ControllerBase
                     pi.CreatedAt,
                     pi.TotalCost,
                     pi.TotalPaid,
+                    PaymentMethod = (int)pi.PaymentMethod,
                     pi.Debt
                 })
             })
@@ -66,6 +67,7 @@ public class SupplierController : ControllerBase
                 pi.CreatedAt,
                 pi.TotalCost,
                 pi.TotalPaid,
+                PaymentMethod = (int)pi.PaymentMethod,
                 pi.Debt
             })
         });
@@ -85,7 +87,8 @@ public class SupplierController : ControllerBase
                 p.Id,
                 p.Amount,
                 p.PaidAt,
-                p.PurchaseInvoiceId
+                p.PurchaseInvoiceId,
+                Method = (int)p.Method
             })
             .ToListAsync();
 
@@ -129,6 +132,9 @@ public class SupplierController : ControllerBase
         if (dto.Amount <= 0)
             return BadRequest("Payment amount must be greater than zero.");
 
+        if (!Enum.IsDefined(typeof(PaymentMethod), dto.Method))
+            return BadRequest("Choose a valid payment method.");
+
         var supplier = await _context.Suppliers
             .Include(s => s.PurchaseInvoices)
             .FirstOrDefaultAsync(s => s.Id == id);
@@ -156,7 +162,11 @@ public class SupplierController : ControllerBase
         try
         {
             var remaining = dto.Amount;
+            var paidAt = DateTime.UtcNow;
+            var method = (PaymentMethod)dto.Method;
 
+            // Mirrors the customer payment flow: one payment row per invoice,
+            // so the history shows exactly which invoices were settled.
             foreach (var invoice in unpaidInvoices)
             {
                 if (remaining <= 0)
@@ -164,25 +174,39 @@ public class SupplierController : ControllerBase
 
                 var payment = Math.Min(remaining, invoice.Debt);
 
+                if (payment <= 0)
+                    continue;
+
                 invoice.TotalPaid += payment;
                 invoice.Debt -= payment;
                 remaining -= payment;
-            }
 
-            // The payment is distributed only as far as the invoices go;
-            // anything left is kept on the supplier's balance.
-            supplier.Debt -= dto.Amount - remaining;
+                _context.SupplierPayments.Add(new SupplierPayment
+                {
+                    SupplierId = supplier.Id,
+                    PurchaseInvoiceId = invoice.Id,
+                    Amount = payment,
+                    Method = method,
+                    PaidAt = paidAt
+                });
+            }
 
             var amountApplied = dto.Amount - remaining;
 
-            if (amountApplied > 0)
+            // The payment is distributed only as far as the invoices go;
+            // anything left is kept on the supplier's balance. Unpaid fees
+            // live there rather than on an invoice.
+            supplier.Debt -= amountApplied;
+
+            if (remaining > 0)
             {
                 _context.SupplierPayments.Add(new SupplierPayment
                 {
                     SupplierId = supplier.Id,
                     PurchaseInvoiceId = null,
-                    Amount = amountApplied,
-                    PaidAt = DateTime.UtcNow
+                    Amount = remaining,
+                    Method = method,
+                    PaidAt = paidAt
                 });
             }
 
@@ -194,6 +218,7 @@ public class SupplierController : ControllerBase
                 supplier.Id,
                 supplier.SupplierName,
                 supplier.Debt,
+                Method = dto.Method,
                 AmountApplied = dto.Amount - remaining,
                 PurchaseInvoices = supplier.PurchaseInvoices
                     .OrderBy(i => i.Date)
@@ -205,6 +230,7 @@ public class SupplierController : ControllerBase
                         i.CreatedAt,
                         i.TotalCost,
                         i.TotalPaid,
+                        PaymentMethod = (int)i.PaymentMethod,
                         i.Debt
                     })
             });

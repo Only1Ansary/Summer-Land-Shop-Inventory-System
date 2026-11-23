@@ -70,6 +70,36 @@ public class ProductsController : ControllerBase
         return Ok(product);
     }
 
+    // GET: api/Products/barcode-available?barcode=...&excludeId=...&excludeVariantId=...
+    /// <summary>
+    /// Lets the product and variant forms check a barcode before the form
+    /// closes. [excludeId] excludes a product and its variants;
+    /// [excludeVariantId] excludes just the variant being edited.
+    /// </summary>
+    [HttpGet("barcode-available")]
+    public async Task<ActionResult<bool>> IsBarcodeAvailable(
+        [FromQuery] string? barcode,
+        [FromQuery] int? excludeId = null,
+        [FromQuery] int? excludeVariantId = null)
+    {
+        var value = barcode?.Trim() ?? string.Empty;
+
+        if (value.Length == 0) return Ok(true);
+
+        var productHasBarcode = await _context.Products
+            .AnyAsync(p =>
+                p.Barcode == value &&
+                (!excludeId.HasValue || p.Id != excludeId.Value));
+
+        var variantHasBarcode = await _context.ProductVariants
+            .AnyAsync(v =>
+                v.Barcode == value &&
+                (!excludeId.HasValue || v.ProductId != excludeId.Value) &&
+                (!excludeVariantId.HasValue || v.Id != excludeVariantId.Value));
+
+        return Ok(!productHasBarcode && !variantHasBarcode);
+    }
+
     // POST: api/Products
     [HttpPost]
     public async Task<ActionResult<ProductResponseDto>> CreateProduct(
@@ -119,13 +149,30 @@ public class ProductsController : ControllerBase
             return Conflict("A product with this model number already exists.");
         }
 
+        var barcode = dto.Barcode?.Trim() ?? string.Empty;
 
+        // Blank means "no barcode"; it is not a duplicate. A real barcode must
+        // stay unique across both products and variants.
+        if (barcode.Length > 0)
+        {
+            var productHasBarcode = await _context.Products
+                .AnyAsync(p => p.Barcode == barcode);
+
+            var variantHasBarcode = await _context.ProductVariants
+                .AnyAsync(v => v.Barcode == barcode);
+
+            if (productHasBarcode || variantHasBarcode)
+            {
+                return Conflict(
+                    "This barcode is already used by another product or variant.");
+            }
+        }
 
         var product = new Product
         {
             ModelNumber = dto.ModelNumber.Trim(),
             Name = dto.Name.Trim(),
-            Barcode = dto.Barcode?.Trim() ?? string.Empty,
+            Barcode = barcode,
             PurchasePrice = dto.PurchasePrice,
             ProfitMargin = dto.ProfitMargin,
             CategoryId = dto.CategoryId
@@ -196,12 +243,31 @@ public class ProductsController : ControllerBase
             return Conflict("A product with this model number already exists.");
         }
 
+        var barcode = dto.Barcode?.Trim() ?? string.Empty;
+
+        // The product keeps its own barcode and its own variant barcodes, but
+        // must not take one that belongs to another product or variant.
+        if (barcode.Length > 0)
+        {
+            var anotherProductHasBarcode = await _context.Products
+                .AnyAsync(p => p.Barcode == barcode && p.Id != id);
+
+            var anotherVariantHasBarcode = await _context.ProductVariants
+                .AnyAsync(v => v.Barcode == barcode && v.ProductId != id);
+
+            if (anotherProductHasBarcode || anotherVariantHasBarcode)
+            {
+                return Conflict(
+                    "This barcode is already used by another product or variant.");
+            }
+        }
+
         var profitMarginChanged = product.ProfitMargin != dto.ProfitMargin;
 
         product.ModelNumber = dto.ModelNumber.Trim();
         product.Name = dto.Name.Trim();
         product.CategoryId = dto.CategoryId;
-        product.Barcode = dto.Barcode?.Trim() ?? string.Empty;
+        product.Barcode = barcode;
         product.PurchasePrice = dto.PurchasePrice;
         product.ProfitMargin = dto.ProfitMargin;
 

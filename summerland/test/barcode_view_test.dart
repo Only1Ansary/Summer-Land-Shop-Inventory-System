@@ -19,11 +19,11 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('renders internal codes like SHOP-00000012', (tester) async {
-    await pump(tester, const BarcodeView('SHOP-00000012'));
+  testWidgets('renders numeric internal codes', (tester) async {
+    await pump(tester, const BarcodeView('00000012'));
 
     expect(find.byType(BarcodeWidget), findsOneWidget);
-    expect(find.text('SHOP-00000012'), findsOneWidget);
+    expect(find.text('00000012'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

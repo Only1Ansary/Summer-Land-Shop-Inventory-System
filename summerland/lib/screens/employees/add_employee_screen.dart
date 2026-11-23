@@ -6,6 +6,7 @@ import '../../services/employee_service.dart';
 import '../../localization/app_strings.dart';
 import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
+import '../../ui/text_input_helpers.dart';
 
 /// Adds a new employee, or edits an existing one.
 ///
@@ -175,6 +176,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               TextFormField(
+                autofocus: textFieldAutofocus(false),
                 controller: _nameController,
                 textCapitalization: TextCapitalization.words,
                 decoration: InputDecoration(
@@ -185,6 +187,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
               ),
               const SizedBox(height: 16),
               TextFormField(
+                autofocus: textFieldAutofocus(false),
                 controller: _salaryController,
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
@@ -199,6 +202,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
               ),
               const SizedBox(height: 16),
               TextFormField(
+                autofocus: textFieldAutofocus(false),
                 controller: _targetController,
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
@@ -241,6 +245,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
+                  autofocus: textFieldAutofocus(false),
                   controller: _bonusController,
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,

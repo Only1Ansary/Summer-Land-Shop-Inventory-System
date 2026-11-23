@@ -10,6 +10,7 @@ import '../../services/location_service.dart';
 import '../../services/product_variant_service.dart';
 import '../../services/stock_transfer_service.dart';
 import '../../ui/app_widgets.dart';
+import '../../ui/text_input_helpers.dart';
 
 class CreateStockTransferScreen extends StatefulWidget {
   const CreateStockTransferScreen({super.key});
@@ -376,6 +377,7 @@ class _CreateStockTransferScreenState extends State<CreateStockTransferScreen> {
         const SizedBox(height: 8),
 
         TextField(
+          autofocus: textFieldAutofocus(false),
           controller: _searchController,
           onChanged: _onSearchChanged,
           decoration: InputDecoration(
@@ -588,6 +590,7 @@ class _CreateStockTransferScreenState extends State<CreateStockTransferScreen> {
                   SizedBox(
                     width: 96,
                     child: TextField(
+                      autofocus: textFieldAutofocus(false),
                       controller: line.quantityController,
                       keyboardType: TextInputType.number,
                       onChanged: (_) => setState(() {}),
@@ -679,7 +682,7 @@ class _QuantityDialogState extends State<_QuantityDialog> {
       title: Text(widget.title),
       content: TextField(
         controller: _controller,
-        autofocus: true,
+        autofocus: textFieldAutofocus(true),
         keyboardType: TextInputType.number,
         decoration: InputDecoration(
           labelText: context.tr('Quantity'),

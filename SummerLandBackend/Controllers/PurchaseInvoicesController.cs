@@ -39,6 +39,9 @@ public class PurchaseInvoicesController : ControllerBase
         if (dto.TotalPaid < 0)
             return BadRequest("TotalPaid cannot be negative.");
 
+        if (!Enum.IsDefined(typeof(PaymentMethod), dto.PaymentMethod))
+            return BadRequest("Choose a valid payment method.");
+
         if (dto.Items.Any(i =>
             string.IsNullOrWhiteSpace(i.Name) ||
             string.IsNullOrWhiteSpace(i.ModelNumber) ||
@@ -175,7 +178,8 @@ public class PurchaseInvoicesController : ControllerBase
                 CreatedAt = DateTime.UtcNow,
                 TotalCost = totalCost,
                 TotalPaid = dto.TotalPaid + paidFeesTotal,
-                Debt = invoiceDebt
+                Debt = invoiceDebt,
+                PaymentMethod = (PaymentMethod)dto.PaymentMethod
             };
 
             foreach (var fee in fees)
@@ -202,6 +206,26 @@ public class PurchaseInvoicesController : ControllerBase
                 {
                     return BadRequest(
                         "The model number and barcode belong to different products.");
+                }
+
+                // A new product must never reuse a barcode that is already
+                // assigned to a product or variant. An existing product may
+                // keep its own barcode (and its own variant barcode).
+                var barcodeInUse = await _context.Products
+                                       .AnyAsync(p =>
+                                           p.Barcode == productBarcode &&
+                                           (productByModel == null ||
+                                            p.Id != productByModel.Id)) ||
+                                   await _context.ProductVariants
+                                       .AnyAsync(v =>
+                                           v.Barcode == productBarcode &&
+                                           (productByModel == null ||
+                                            v.ProductId != productByModel.Id));
+
+                if (barcodeInUse)
+                {
+                    return BadRequest(
+                        "This barcode is already used by another product or variant.");
                 }
 
                 var product = productByModel ?? productByBarcode;
@@ -316,6 +340,7 @@ public class PurchaseInvoicesController : ControllerBase
                     SupplierId = supplier.Id,
                     PurchaseInvoiceId = invoice.Id,
                     Amount = dto.TotalPaid,
+                    Method = (PaymentMethod)dto.PaymentMethod,
                     PaidAt = DateTime.UtcNow
                 });
 
@@ -334,6 +359,7 @@ public class PurchaseInvoicesController : ControllerBase
                 invoice.TotalCost,
                 dto.Discount,
                 invoice.TotalPaid,
+                PaymentMethod = (int)invoice.PaymentMethod,
                 InvoiceDebt = invoice.Debt,
                 SupplierTotalDebt = supplier.Debt,
                 FeesTotal = fees.Sum(f => f.Amount),
@@ -400,6 +426,7 @@ public class PurchaseInvoicesController : ControllerBase
                 i.CreatedAt,
                 i.TotalCost,
                 i.TotalPaid,
+                PaymentMethod = (int)i.PaymentMethod,
                 InvoiceDebt = i.Debt,
                 FeesTotal = i.Fees.Sum(f => f.Amount),
                 Fees = i.Fees.Select(f => new
@@ -443,6 +470,7 @@ public class PurchaseInvoicesController : ControllerBase
             invoice.CreatedAt,
             invoice.TotalCost,
             invoice.TotalPaid,
+            PaymentMethod = (int)invoice.PaymentMethod,
             InvoiceDebt = invoice.Debt,
             SupplierTotalDebt = invoice.Supplier.Debt,
             ItemsTotal = invoice.Items.Sum(i => i.TotalPrice),
@@ -487,6 +515,11 @@ public class PurchaseInvoicesController : ControllerBase
             return BadRequest("Payment amount must be greater than zero.");
         }
 
+        if (!Enum.IsDefined(typeof(PaymentMethod), dto.Method))
+        {
+            return BadRequest("Choose a valid payment method.");
+        }
+
         var invoice = await _context.PurchaseInvoices
             .Include(i => i.Supplier)
             .FirstOrDefaultAsync(i => i.Id == id);
@@ -513,6 +546,7 @@ public class PurchaseInvoicesController : ControllerBase
             SupplierId = invoice.SupplierId,
             PurchaseInvoiceId = invoice.Id,
             Amount = dto.Amount,
+            Method = (PaymentMethod)dto.Method,
             PaidAt = DateTime.UtcNow
         });
 
@@ -523,6 +557,7 @@ public class PurchaseInvoicesController : ControllerBase
             invoice.Id,
             invoice.TotalCost,
             invoice.TotalPaid,
+            PaymentMethod = (int)invoice.PaymentMethod,
             InvoiceDebt = invoice.Debt,
             SupplierTotalDebt = invoice.Supplier.Debt
         });
@@ -537,8 +572,12 @@ public class PurchaseInvoicesController : ControllerBase
         {
             var candidate = $"{productBarcode}{suffix}";
 
-            var exists = await _context.ProductVariants
-                .AnyAsync(v => v.Barcode == candidate);
+            // Variant barcodes must also stay clear of product barcodes, so a
+            // generated suffix never takes a barcode reserved by a product.
+            var exists = await _context.Products
+                             .AnyAsync(p => p.Barcode == candidate) ||
+                         await _context.ProductVariants
+                             .AnyAsync(v => v.Barcode == candidate);
 
             if (!exists)
                 return candidate;

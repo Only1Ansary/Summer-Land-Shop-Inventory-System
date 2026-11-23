@@ -11,6 +11,7 @@ import '../../ui/app_shell.dart';
 import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
 import '../../ui/reconnect_reloader.dart';
+import '../../ui/text_input_helpers.dart';
 
 class BestSellingReportScreen extends StatefulWidget {
   const BestSellingReportScreen({super.key});
@@ -193,6 +194,7 @@ class _BestSellingReportScreenState extends State<BestSellingReportScreen>
         SizedBox(
           width: 200,
           child: TextField(
+            autofocus: textFieldAutofocus(false),
             controller: _rankController,
             keyboardType: TextInputType.number,
             textInputAction: TextInputAction.done,

@@ -10,6 +10,7 @@ import '../../ui/app_widgets.dart';
 import '../../ui/reconnect_reloader.dart';
 import '../../utils/camera_scanner_support.dart';
 import 'barcode_scanner_screen.dart';
+import '../../ui/text_input_helpers.dart';
 
 /// The inventory report's product list, without the summary stats on top.
 ///
@@ -282,7 +283,7 @@ class _InventorySearchScreenState extends State<InventorySearchScreen>
                   child: WideContent(
                     child: TextField(
                       controller: _searchController,
-                      autofocus: true,
+                      autofocus: textFieldAutofocus(true),
                       decoration: InputDecoration(
                         labelText: context.tr('Search products'),
                         hintText: context.tr('Name, model or barcode'),

@@ -5,6 +5,7 @@ import '../services/bottom_nav_service.dart';
 import 'app_destinations.dart';
 import 'app_widgets.dart';
 import 'shop_logo.dart';
+import './text_input_helpers.dart';
 
 /// Persistent, app-wide navigation shell.
 ///
@@ -49,7 +50,11 @@ class AppShell extends StatelessWidget {
 
     // Desktop layout: persistent side rail + content column.
     if (isDesktop) {
+      // Dialogs own their own text fields. Resizing this scaffold as well
+      // squeezes the screen behind them when the keyboard opens, which can
+      // overflow fixed-height content there.
       scaffold = Scaffold(
+        resizeToAvoidBottomInset: false,
         floatingActionButton: floatingActionButton,
         body: Row(
           children: [
@@ -73,6 +78,7 @@ class AppShell extends StatelessWidget {
     } else {
       // Mobile layout: drawer + bottom navigation bar.
       scaffold = Scaffold(
+        resizeToAvoidBottomInset: false,
         appBar: AppBar(title: Text(title), actions: actions),
         drawer: Drawer(
           child: SafeArea(
@@ -342,6 +348,7 @@ class _AppNavPanelState extends State<_AppNavPanel> {
                   Padding(
                     padding: const EdgeInsets.fromLTRB(10, 10, 10, 4),
                     child: TextField(
+                      autofocus: textFieldAutofocus(false),
                       controller: _searchController,
                       onChanged: (value) {
                         _searchDebounce.run(

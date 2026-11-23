@@ -10,6 +10,7 @@ class PurchaseInvoiceService {
     required String supplierName,
     required DateTime date,
     required double totalPaid,
+    required int paymentMethod,
     required double discount,
     required List<Map<String, dynamic>> items,
     List<Map<String, dynamic>> fees = const [],
@@ -18,6 +19,7 @@ class PurchaseInvoiceService {
       'supplierName': supplierName,
       'date': date.toIso8601String(),
       'totalPaid': totalPaid,
+      'paymentMethod': paymentMethod,
       'discount': discount,
       'items': items,
       'fees': fees,
@@ -69,9 +71,14 @@ class PurchaseInvoiceService {
     });
   }
 
-  Future<void> payDebt({required int invoiceId, required double amount}) async {
+  Future<void> payDebt({
+    required int invoiceId,
+    required double amount,
+    required int method,
+  }) async {
     await _apiService.post('/api/PurchaseInvoices/$invoiceId/pay', {
       'amount': amount,
+      'method': method,
     });
   }
 }

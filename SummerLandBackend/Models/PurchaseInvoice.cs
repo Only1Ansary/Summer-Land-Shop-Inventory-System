@@ -17,6 +17,9 @@
 
         public decimal Debt { get; set; }
 
+        /// <summary>How the amount paid at purchase time was handed over.</summary>
+        public PaymentMethod PaymentMethod { get; set; } = PaymentMethod.Cash;
+
         public ICollection<PurchaseInvoiceItem> Items { get; set; }
             = new List<PurchaseInvoiceItem>();
 

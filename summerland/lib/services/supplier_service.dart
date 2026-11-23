@@ -42,8 +42,12 @@ class SupplierService {
   Future<void> payDebt({
     required int supplierId,
     required double amount,
+    required int method,
   }) async {
-    await _apiService.post('$_base/$supplierId/pay', {'amount': amount});
+    await _apiService.post('$_base/$supplierId/pay', {
+      'amount': amount,
+      'method': method,
+    });
   }
 
   Future<List<SupplierPayment>> getSupplierPayments(int supplierId) async {

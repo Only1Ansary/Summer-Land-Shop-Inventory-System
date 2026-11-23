@@ -367,6 +367,9 @@ namespace SummerLandBackend.Migrations
                     b.Property<decimal>("Debt")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<int>("PaymentMethod")
+                        .HasColumnType("int");
+
                     b.Property<int>("SupplierId")
                         .HasColumnType("int");
 
@@ -741,6 +744,9 @@ namespace SummerLandBackend.Migrations
 
                     b.Property<decimal>("Amount")
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("Method")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("PaidAt")
                         .HasColumnType("datetime2");

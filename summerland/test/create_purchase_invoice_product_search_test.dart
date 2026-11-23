@@ -166,7 +166,10 @@ void main() {
     );
 
     expect(barcodeField.readOnly, isTrue);
-    expect(barcodeField.controller?.text, startsWith('SHOP-'));
+
+    final barcode = barcodeField.controller?.text ?? '';
+    expect(barcode, matches(r'^\d{8}$'));
+    expect(barcode, isNot(_products.first['barcode']));
     expect(
       find.text('The internal barcode will be generated automatically.'),
       findsOneWidget,

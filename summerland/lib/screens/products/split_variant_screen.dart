@@ -13,6 +13,7 @@ import '../../services/size_service.dart';
 
 import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
+import '../../ui/text_input_helpers.dart';
 
 /// Redistributes the stock of an auto-created default variant (no size, no
 /// colour) across new size/colour variants. The quantities entered must total
@@ -558,6 +559,7 @@ class _SplitVariantScreenState extends State<SplitVariantScreen> {
             ),
             const SizedBox(height: 12),
             TextField(
+              autofocus: textFieldAutofocus(false),
               controller: row.quantityController,
               keyboardType: TextInputType.number,
               onChanged: (_) => setState(() {}),

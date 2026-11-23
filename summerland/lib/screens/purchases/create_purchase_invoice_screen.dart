@@ -10,11 +10,13 @@ import '../../services/invoice_printer.dart';
 import '../../services/product_service.dart';
 import '../../services/purchase_invoice_service.dart';
 import '../../services/supplier_service.dart';
+import '../../utils/payment_method.dart';
 
 import '../../ui/app_shell.dart';
 import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
 import 'show_purchase_invoice_screen.dart';
+import '../../ui/text_input_helpers.dart';
 
 /// Width from which the screen switches to the two-pane desktop layout.
 const double _kWideBreakpoint = 900;
@@ -53,6 +55,10 @@ class _CreatePurchaseInvoiceScreenState
   List<String> _supplierSuggestions = [];
 
   DateTime _date = DateTime.now();
+
+  /// Cash is preselected, but the field is still validated so the method is
+  /// always part of the created invoice.
+  int? _paymentMethod = paymentMethodCash;
 
   bool _isLoading = true;
   bool _isCreating = false;
@@ -370,6 +376,12 @@ class _CreatePurchaseInvoiceScreenState
       return;
     }
 
+    if (_paymentMethod == null ||
+        !paymentMethodValues.contains(_paymentMethod!)) {
+      _showError(context.tr('Choose a payment method.'));
+      return;
+    }
+
     if (_items.isEmpty && _fees.isEmpty) {
       _showError(
         context.tr(
@@ -470,6 +482,7 @@ class _CreatePurchaseInvoiceScreenState
             supplierName: supplierName,
             date: date,
             totalPaid: totalPaid,
+            paymentMethod: _paymentMethod!,
             discount: discount,
             items: items,
             fees: fees,
@@ -490,6 +503,7 @@ class _CreatePurchaseInvoiceScreenState
           _fees.clear();
           _totalPaidController.clear();
           _discountController.clear();
+          _paymentMethod = paymentMethodCash;
         });
 
         final invoice = createdInvoice;
@@ -668,6 +682,7 @@ class _CreatePurchaseInvoiceScreenState
     final theme = Theme.of(context);
 
     final totalPaidField = TextField(
+      autofocus: textFieldAutofocus(false),
       controller: _totalPaidController,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       decoration: InputDecoration(
@@ -678,6 +693,7 @@ class _CreatePurchaseInvoiceScreenState
     );
 
     final discountField = TextField(
+      autofocus: textFieldAutofocus(false),
       controller: _discountController,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       decoration: InputDecoration(
@@ -688,6 +704,41 @@ class _CreatePurchaseInvoiceScreenState
       onChanged: (_) => setState(() {}),
     );
 
+    final paymentMethodField = DropdownButtonFormField<int>(
+      key: const ValueKey('purchase-payment-method'),
+      initialValue: _paymentMethod,
+      isExpanded: true,
+      decoration: InputDecoration(
+        labelText: context.tr('Payment method'),
+        prefixIcon: const Icon(Icons.credit_card_outlined),
+      ),
+      items: paymentMethodValues.map((method) {
+        return DropdownMenuItem<int>(
+          value: method,
+          child: Row(
+            children: [
+              Icon(paymentMethodIcon(method), size: 18),
+              const SizedBox(width: 10),
+              Flexible(
+                child: Text(
+                  paymentMethodLabel(context, method),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+      onChanged: _isCreating
+          ? null
+          : (value) {
+        if (value == null) return;
+        setState(() {
+          _paymentMethod = value;
+        });
+      },
+    );
+
     return _SectionCard(
       icon: Icons.factory_outlined,
       title: context.tr('1. Supplier'),
@@ -696,6 +747,7 @@ class _CreatePurchaseInvoiceScreenState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           TextField(
+            autofocus: textFieldAutofocus(false),
             controller: _supplierNameController,
             textCapitalization: TextCapitalization.words,
             onChanged: _onSupplierChanged,
@@ -753,6 +805,8 @@ class _CreatePurchaseInvoiceScreenState
               );
             },
           ),
+          const SizedBox(height: 12),
+          paymentMethodField,
         ],
       ),
     );
@@ -818,7 +872,6 @@ class _CreatePurchaseInvoiceScreenState
                     money(lineTotal),
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
-                      color: amountColor(context, lineTotal),
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -1017,7 +1070,6 @@ class _CreatePurchaseInvoiceScreenState
                 money(fee.amount),
                 style: TextStyle(
                   fontWeight: FontWeight.w700,
-                  color: amountColor(context, fee.amount),
                 ),
               ),
               PopupMenuButton<String>(
@@ -1130,13 +1182,12 @@ class _CreatePurchaseInvoiceScreenState
       _SummaryRow(
         label: context.tr('Items: {0}', [_items.length]),
         value: money(_totalCost),
-        valueColor: amountColor(context, _totalCost),
       ),
       if (discount > 0)
         _SummaryRow(
           label: context.tr('Discount'),
-          value: moneyNegative(discount),
-          valueColor: amountColor(context, -discount),
+          value: money(discount),
+          valueColor: amountColor(context, discount),
         ),
       if (paidFees > 0)
         _SummaryRow(
@@ -1145,8 +1196,7 @@ class _CreatePurchaseInvoiceScreenState
                 .where((f) => f.isPaid)
                 .length,
           ]),
-          value: '+${money(paidFees)}',
-          valueColor: amountColor(context, paidFees),
+          value: '${money(paidFees)}',
         ),
       if (unpaidFees > 0)
         _SummaryRow(
@@ -1205,7 +1255,6 @@ class _CreatePurchaseInvoiceScreenState
               textAlign: TextAlign.right,
               style: TextStyle(
                 fontWeight: FontWeight.w700,
-                color: amountColor(context, -debt),
               ),
             ),
           ),
@@ -1287,7 +1336,6 @@ class _CreatePurchaseInvoiceScreenState
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 22,
-                                  color: amountColor(context, _grandTotal),
                                 ),
                               ),
                             ),
@@ -1324,7 +1372,7 @@ class _CreatePurchaseInvoiceScreenState
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
                                     fontWeight: FontWeight.w700,
-                                    color: amountColor(context, -debt),
+                                    color: theme.colorScheme.onErrorContainer,
                                   ),
                                 ),
                               ],
@@ -1421,7 +1469,6 @@ class _CreatePurchaseInvoiceScreenState
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 24,
-                        color: amountColor(context, _grandTotal),
                       ),
                     ),
                   ),
@@ -1910,6 +1957,7 @@ class _PurchaseFeeDialogState extends State<_PurchaseFeeDialog> {
           children: [
             const SizedBox(height: 4),
             TextField(
+              autofocus: textFieldAutofocus(false),
               controller: _descriptionController,
               textCapitalization: TextCapitalization.sentences,
               decoration: InputDecoration(
@@ -1932,6 +1980,7 @@ class _PurchaseFeeDialogState extends State<_PurchaseFeeDialog> {
             ),
             const SizedBox(height: 16),
             TextField(
+              autofocus: textFieldAutofocus(false),
               controller: _amountController,
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
@@ -1949,7 +1998,6 @@ class _PurchaseFeeDialogState extends State<_PurchaseFeeDialog> {
                 segments: [
                   ButtonSegment<bool>(
                     value: false,
-                    icon: const Icon(Icons.schedule_rounded),
                     label: Text(
                       context.tr('Unpaid (debt)'),
                       maxLines: 1,
@@ -1958,7 +2006,6 @@ class _PurchaseFeeDialogState extends State<_PurchaseFeeDialog> {
                   ),
                   ButtonSegment<bool>(
                     value: true,
-                    icon: const Icon(Icons.check_rounded),
                     label: Text(
                       context.tr('Already paid'),
                       maxLines: 1,
@@ -2086,15 +2133,15 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
     }
   }
 
-  /// Builds a unique internal barcode in the same `SHOP-XXXXXXXX` shape the
-  /// backend uses for internally generated barcodes.
+  /// Builds a unique numeric internal barcode. The leading zeros are part of
+  /// the code, so the value stays digits-only and scannable.
   String _generateBarcode() {
     var number = DateTime
         .now()
         .microsecondsSinceEpoch % 100000000;
 
     while (true) {
-      final candidate = 'SHOP-${number.toString().padLeft(8, '0')}';
+      final candidate = number.toString().padLeft(8, '0');
 
       if (!widget.reservedBarcodes.contains(candidate)) return candidate;
 
@@ -2343,6 +2390,7 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
   Widget _buildBarcodeField({required bool singleColumn}) {
     if (_autoAssignBarcode) {
       return TextField(
+        autofocus: textFieldAutofocus(false),
         controller: _barcodeController,
         readOnly: true,
         decoration: InputDecoration(
@@ -2360,6 +2408,7 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
     }
 
     return TextField(
+      autofocus: textFieldAutofocus(false),
       controller: _barcodeController,
       decoration: InputDecoration(
         labelText: context.tr('Barcode'),
@@ -2383,6 +2432,7 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
     final lineTotal = price * quantity;
 
     final modelField = TextField(
+      autofocus: textFieldAutofocus(false),
       controller: _modelController,
       decoration: InputDecoration(
         labelText: context.tr('Model Number'),
@@ -2391,6 +2441,7 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
     );
 
     final priceField = TextField(
+      autofocus: textFieldAutofocus(false),
       controller: _priceController,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       onChanged: (_) => setState(() {}),
@@ -2401,6 +2452,7 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
     );
 
     final quantityField = TextField(
+      autofocus: textFieldAutofocus(false),
       controller: _quantityController,
       keyboardType: TextInputType.number,
       onChanged: (_) => setState(() {}),
@@ -2408,6 +2460,7 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
     );
 
     final marginField = TextField(
+      autofocus: textFieldAutofocus(false),
       controller: _marginController,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       decoration: InputDecoration(labelText: context.tr('Profit Margin')),
@@ -2431,6 +2484,7 @@ class _PurchaseItemDialogState extends State<_PurchaseItemDialog> {
               _FormGroupLabel(context.tr('Product')),
               const SizedBox(height: 12),
               TextField(
+                autofocus: textFieldAutofocus(false),
                 controller: _nameController,
                 textCapitalization: TextCapitalization.words,
                 onChanged: _onNameChanged,

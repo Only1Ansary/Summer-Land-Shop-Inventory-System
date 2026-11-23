@@ -6,6 +6,7 @@ import '../localization/app_strings.dart';
 import '../services/api_service.dart';
 import '../services/connectivity_service.dart';
 import 'app_theme.dart';
+import './text_input_helpers.dart';
 
 /// How long a change waits before it is committed, leaving the user time to
 /// undo it from the snackbar.
@@ -1293,7 +1294,7 @@ class _AppAmountDialogState extends State<_AppAmountDialog> {
       title: Text(widget.title),
       content: TextField(
         controller: _controller,
-        autofocus: true,
+        autofocus: textFieldAutofocus(true),
         keyboardType: const TextInputType.numberWithOptions(decimal: true),
         decoration: InputDecoration(
           labelText: widget.label,
@@ -1356,7 +1357,7 @@ class _AppNameDialogState extends State<_AppNameDialog> {
       title: Text(widget.title),
       content: TextField(
         controller: _controller,
-        autofocus: true,
+        autofocus: textFieldAutofocus(true),
         textCapitalization: TextCapitalization.words,
         decoration: InputDecoration(
           labelText: widget.label,

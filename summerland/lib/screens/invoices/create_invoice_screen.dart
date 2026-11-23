@@ -26,6 +26,7 @@ import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
 import '../inventory/barcode_scanner_screen.dart';
 import 'show_sale_invoice_screen.dart';
+import '../../ui/text_input_helpers.dart';
 
 class CreateInvoiceScreen extends StatefulWidget {
   const CreateInvoiceScreen({super.key});
@@ -695,8 +696,6 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
 
     // Captured now so the alert can still be shown if the screen is left
     // during the undo window.
-    final strings = AppStrings.of(context);
-
     Invoice? createdInvoice;
 
     scheduleUndoable(
@@ -735,7 +734,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         // The alert does not depend on this screen still being open, so show
         // it even if the cashier navigated away during the undo window.
         if (invoice != null) {
-          await _notifyNewlyLowStock(variantsBeforeSale, strings);
+          await _notifyNewlyLowStock(variantsBeforeSale);
         }
 
         if (!mounted) return;
@@ -814,7 +813,6 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   /// missing permission must not turn a successful sale into an error.
   Future<void> _notifyNewlyLowStock(
       Map<int, ProductVariant> variantsBeforeSale,
-      AppStrings strings,
       ) async {
     List<ProductVariant> refreshed;
 
@@ -839,19 +837,9 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     }
 
     for (final variant in becameLow) {
-      await _notifications.showLowStock(
-        variant: variant,
-        title: strings.translate('Low stock alert'),
-        body: strings.translate('{0} ({1}) is low on stock: {2} left.', [
-          variant.productName,
-          variant.modelNumber,
-          variant.totalQuantity,
-        ]),
-      );
+      await _notifications.showLowStock(variant: variant);
     }
 
-    // Tell the background checker these are already known, so it does not
-    // repeat the same alerts later.
     await _notifications.rememberLowStock(refreshed);
   }
 
@@ -892,7 +880,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
           children: [
             TextField(
               controller: _searchController,
-              autofocus: true,
+              autofocus: textFieldAutofocus(true),
               textInputAction: TextInputAction.search,
               onChanged: _onSearchChanged,
               decoration: InputDecoration(
@@ -1321,6 +1309,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
           children: [
             Expanded(
               child: TextField(
+                autofocus: textFieldAutofocus(false),
                 key: const Key('invoice-customer-phone'),
                 controller: _customerPhoneController,
                 keyboardType: TextInputType.phone,
@@ -1382,6 +1371,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
           ),
         const SizedBox(height: 12),
         TextField(
+          autofocus: textFieldAutofocus(false),
           key: const Key('invoice-customer-name'),
           controller: _customerNameController,
           textInputAction: TextInputAction.next,
@@ -1395,6 +1385,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         ),
         const SizedBox(height: 12),
         TextField(
+          autofocus: textFieldAutofocus(false),
           key: const Key('invoice-paid-amount'),
           controller: _paidAmountController,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -1591,6 +1582,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                 children: [
                   Expanded(
                     child: TextField(
+                      autofocus: textFieldAutofocus(false),
                       controller: item.discountController,
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
@@ -1663,6 +1655,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       children: [
         Expanded(
           child: TextField(
+            autofocus: textFieldAutofocus(false),
             controller: _discountController,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             onChanged: (_) => _refresh(),
@@ -2116,7 +2109,6 @@ class _AddItemDialogState extends State<_AddItemDialog> {
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 17,
-                      color: amountColor(context, variant.price),
                     ),
                   ),
                 ),
@@ -2166,6 +2158,7 @@ class _AddItemDialogState extends State<_AddItemDialog> {
             ),
           const SizedBox(height: 16),
           TextField(
+            autofocus: textFieldAutofocus(false),
             controller: _controller,
             keyboardType: TextInputType.number,
             textInputAction: TextInputAction.done,

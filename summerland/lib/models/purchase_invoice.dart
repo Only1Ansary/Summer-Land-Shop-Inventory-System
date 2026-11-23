@@ -10,6 +10,7 @@ class PurchaseInvoice {
   final double totalPaid;
   final double debt;
   final double supplierTotalDebt;
+  final int paymentMethod;
   final double itemsTotal;
   final double feesTotal;
   final List<PurchaseInvoiceFee> fees;
@@ -28,6 +29,7 @@ class PurchaseInvoice {
     required this.supplierTotalDebt,
     required this.items,
     required this.returns,
+    this.paymentMethod = 0,
     this.itemsTotal = 0,
     this.feesTotal = 0,
     this.fees = const [],
@@ -49,6 +51,7 @@ class PurchaseInvoice {
       totalPaid: (json['totalPaid'] as num? ?? 0).toDouble(),
       debt: ((json['invoiceDebt'] ?? json['debt']) as num? ?? 0).toDouble(),
       supplierTotalDebt: (json['supplierTotalDebt'] as num? ?? 0).toDouble(),
+      paymentMethod: (json['paymentMethod'] as num?)?.toInt() ?? 0,
       itemsTotal: (json['itemsTotal'] as num? ?? 0).toDouble(),
       feesTotal: (json['feesTotal'] as num? ?? 0).toDouble(),
       fees: (json['fees'] as List? ?? [])

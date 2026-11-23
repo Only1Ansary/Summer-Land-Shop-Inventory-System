@@ -207,10 +207,10 @@ void main() {
     expect(alerts, hasLength(1));
     expect(alerts.single.arguments, {
       'id': 1,
-      'title': 'Low stock alert',
+      'title': 'تنبيه انخفاض المخزون',
       'body':
-          'Summerland Cotton T-Shirt (MOD-2024-00117) is low on stock: '
-          '2 left.',
+          'مخزون Summerland Cotton T-Shirt (MOD-2024-00117) منخفض: '
+          'تبقّى 2 فقط.',
     });
 
     // The background checker is asked to verify even if the app is closed,

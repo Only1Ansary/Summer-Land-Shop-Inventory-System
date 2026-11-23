@@ -37,22 +37,16 @@ class LowStockWorker(
         val currentIds = lowStock.map { it.id.toString() }.toSet()
 
         if (hasBaseline) {
-            val arabic = isArabic()
-
+            // Notifications are always Arabic, independently of the app locale.
             for (variant in lowStock) {
                 if (variant.id.toString() in knownIds) continue
 
                 LowStockNotifications.show(
                     applicationContext,
                     variant.id,
-                    if (arabic) "تنبيه انخفاض المخزون" else "Low stock alert",
-                    if (arabic) {
-                        "مخزون ${variant.name} (${variant.model}) منخفض: " +
-                            "تبقّى ${variant.quantity} فقط."
-                    } else {
-                        "${variant.name} (${variant.model}) is low on stock: " +
-                            "${variant.quantity} left."
-                    },
+                    "تنبيه انخفاض المخزون",
+                    "مخزون ${variant.name} (${variant.model}) منخفض: " +
+                        "تبقّى ${variant.quantity} فقط.",
                 )
             }
         }
@@ -113,15 +107,6 @@ class LowStockWorker(
         val value = if (saved.isNullOrBlank()) DEFAULT_BASE_URL else saved
 
         return value.trimEnd('/')
-    }
-
-    private fun isArabic(): Boolean {
-        val preferences = applicationContext.getSharedPreferences(
-            "FlutterSharedPreferences",
-            Context.MODE_PRIVATE,
-        )
-
-        return preferences.getString("flutter.settings.language", null) == "ar"
     }
 
     private data class LowStockVariant(

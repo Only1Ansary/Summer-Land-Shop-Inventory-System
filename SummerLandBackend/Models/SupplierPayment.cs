@@ -13,5 +13,8 @@ public class SupplierPayment
 
     public decimal Amount { get; set; }
 
+    /// <summary>How this payment to the supplier was handed over.</summary>
+    public PaymentMethod Method { get; set; } = PaymentMethod.Cash;
+
     public DateTime PaidAt { get; set; } = DateTime.UtcNow;
 }

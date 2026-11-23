@@ -142,8 +142,6 @@ void main() {
       try {
         await LowStockNotificationService().showLowStock(
           variant: _variant(id: 7, isLowStock: true, quantity: 1),
-          title: 'Low stock alert',
-          body: 'Cotton T-Shirt (MOD-7) is low on stock: 1 left.',
         );
       } finally {
         debugDefaultTargetPlatformOverride = null;
@@ -153,8 +151,8 @@ void main() {
       expect(calls.single.method, 'showLowStock');
       expect(calls.single.arguments, {
         'id': 7,
-        'title': 'Low stock alert',
-        'body': 'Cotton T-Shirt (MOD-7) is low on stock: 1 left.',
+        'title': 'تنبيه انخفاض المخزون',
+        'body': 'مخزون Cotton T-Shirt (MOD-7) منخفض: تبقّى 1 فقط.',
       });
     });
 
@@ -198,8 +196,6 @@ void main() {
         await service.initialize();
         await service.showLowStock(
           variant: _variant(id: 7, isLowStock: true),
-          title: 'Low stock alert',
-          body: 'Low',
         );
         await service.rememberLowStock([_variant(id: 7, isLowStock: true)]);
         await service.scheduleBackgroundCheck();

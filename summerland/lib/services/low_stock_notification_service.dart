@@ -1,7 +1,9 @@
 import 'package:flutter/foundation.dart'
     show TargetPlatform, debugPrint, defaultTargetPlatform, kIsWeb;
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart' show Locale;
 
+import '../localization/app_strings.dart';
 import '../models/product_variant.dart';
 
 /// Returns the variants that dropped into low stock because of [soldVariantIds].
@@ -48,6 +50,9 @@ class LowStockNotificationService {
 
   final MethodChannel _channel;
 
+  /// Notifications are always Arabic, even when the app UI is in English.
+  static final AppStrings _arabicStrings = AppStrings(const Locale('ar'));
+
   static bool get isSupported =>
       !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
 
@@ -63,20 +68,19 @@ class LowStockNotificationService {
     }
   }
 
-  /// Shows one notification for [variant]. Repeated alerts for the same variant
-  /// replace the previous one instead of piling up.
-  Future<void> showLowStock({
-    required ProductVariant variant,
-    required String title,
-    required String body,
-  }) async {
+  /// Shows one Arabic notification for [variant]. Repeated alerts for the same
+  /// variant replace the previous one instead of piling up.
+  Future<void> showLowStock({required ProductVariant variant}) async {
     if (!isSupported) return;
 
     try {
       await _channel.invokeMethod<void>('showLowStock', {
         'id': variant.id,
-        'title': title,
-        'body': body,
+        'title': _arabicStrings.translate('Low stock alert'),
+        'body': _arabicStrings.translate(
+          '{0} ({1}) is low on stock: {2} left.',
+          [variant.productName, variant.modelNumber, variant.totalQuantity],
+        ),
       });
     } catch (error) {
       debugPrint('Could not show low stock notification: $error');

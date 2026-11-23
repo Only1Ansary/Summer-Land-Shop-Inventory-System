@@ -16,6 +16,7 @@ import '../../ui/reconnect_reloader.dart';
 
 import 'product_details_screen.dart';
 import 'product_form_screen.dart';
+import '../../ui/text_input_helpers.dart';
 
 class ProductsScreen extends StatefulWidget {
   const ProductsScreen({super.key});
@@ -308,6 +309,7 @@ class _ProductsScreenState extends State<ProductsScreen>
                 children: [
                   Expanded(
                     child: TextField(
+                      autofocus: textFieldAutofocus(false),
                       controller: _searchController,
                       textInputAction: TextInputAction.search,
                       onChanged: _onQueryChanged,

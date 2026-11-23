@@ -11,12 +11,14 @@ import '../../services/api_service.dart';
 import '../../services/colour_service.dart';
 import '../../services/inventory_service.dart';
 import '../../services/location_service.dart';
+import '../../services/product_service.dart';
 import '../../services/product_variant_service.dart';
 import '../../services/size_service.dart';
 
 import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
 import '../../ui/barcode_view.dart';
+import '../../ui/text_input_helpers.dart';
 
 class ProductVariantFormScreen extends StatefulWidget {
   final Product product;
@@ -42,6 +44,8 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
 
   final _barcodeController = TextEditingController();
 
+  final _barcodeFocusNode = FocusNode();
+
   final _priceController = TextEditingController();
 
   final _thresholdController = TextEditingController();
@@ -60,6 +64,8 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
 
   final LocationService _locationService = LocationService(ApiService());
 
+  final ProductService _productService = ProductService(ApiService());
+
   late List<SizeModel> _sizes;
 
   late List<Colour> _colours;
@@ -77,6 +83,8 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
   int _barcodeType = 1;
 
   bool _isSaving = false;
+
+  String? _barcodeError;
 
   bool _isCreatingOption = false;
 
@@ -128,6 +136,7 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
   @override
   void dispose() {
     _barcodeController.dispose();
+    _barcodeFocusNode.dispose();
     _priceController.dispose();
     _thresholdController.dispose();
     _stockQuantityController.dispose();
@@ -400,57 +409,96 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
       }
     }
 
-    setState(() {
-      _isSaving = true;
-    });
-
     final sizeId = _selectedSizeId;
     final colourId = _selectedColourId;
     final barcode = _barcodeController.text.trim();
     final locationId = _selectedLocationId;
 
-    final operation = isEditing
-        ? () async {
-            await _variantService.updateVariant(
-              id: widget.variant!.id,
-              sizeId: sizeId,
-              colourId: colourId,
-              barcode: barcode,
-              price: price,
-              lowStockThreshold: threshold,
-            );
-          }
-        : () async {
-            final createdVariant = await _variantService.createVariant(
-              productId: widget.product.id,
-              sizeId: sizeId,
-              colourId: colourId,
-              barcodeType: _barcodeType,
-              barcode: barcode.isEmpty ? null : barcode,
-              price: price,
-              lowStockThreshold: threshold,
-            );
+    setState(() {
+      _barcodeError = null;
+      _isSaving = true;
+    });
 
-            if (initialStock != null) {
-              await _inventoryService.addInventory(
-                productVariantId: createdVariant.id,
-                locationId: locationId!,
-                quantity: initialStock,
+    try {
+      // In edit mode the barcode field is always editable, so verify it too.
+      // This runs while the form is still open: on a duplicate (or an
+      // unavailable backend) we never return the DeferredCrud operation that
+      // would commit after the Undo window.
+      if (barcode.isNotEmpty && (isEditing || _barcodeType == 2)) {
+        final available = await _productService.isBarcodeAvailable(
+          barcode,
+          excludeVariantId: isEditing ? widget.variant!.id : null,
+        );
+
+        if (!available) {
+          if (!mounted) return;
+
+          setState(() {
+            _barcodeError = context.tr(
+              'This barcode is already used by another product or variant.',
+            );
+            _isSaving = false;
+          });
+          _barcodeFocusNode.requestFocus();
+          return;
+        }
+      }
+
+      final operation = isEditing
+          ? () async {
+              await _variantService.updateVariant(
+                id: widget.variant!.id,
+                sizeId: sizeId,
+                colourId: colourId,
+                barcode: barcode,
+                price: price,
+                lowStockThreshold: threshold,
               );
             }
-          };
+          : () async {
+              final createdVariant = await _variantService.createVariant(
+                productId: widget.product.id,
+                sizeId: sizeId,
+                colourId: colourId,
+                barcodeType: _barcodeType,
+                barcode: barcode.isEmpty ? null : barcode,
+                price: price,
+                lowStockThreshold: threshold,
+              );
 
-    Navigator.pop(
-      context,
-      DeferredCrud(
-        message: isEditing
-            ? context.tr(
-                'Changes to this variant will be saved. Tap Undo to cancel.',
-              )
-            : context.tr('This variant will be added. Tap Undo to cancel.'),
-        operation: operation,
-      ),
-    );
+              if (initialStock != null) {
+                await _inventoryService.addInventory(
+                  productVariantId: createdVariant.id,
+                  locationId: locationId!,
+                  quantity: initialStock,
+                );
+              }
+            };
+
+      if (!mounted) return;
+
+      Navigator.pop(
+        context,
+        DeferredCrud(
+          message: isEditing
+              ? context.tr(
+                  'Changes to this variant will be saved. Tap Undo to cancel.',
+                )
+              : context.tr('This variant will be added. Tap Undo to cancel.'),
+          operation: operation,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      final message = friendlyErrorMessage(context, e);
+
+      setState(() {
+        _isSaving = false;
+        _barcodeError = message;
+      });
+      _barcodeFocusNode.requestFocus();
+    }
   }
 
   Widget _buildStockSection() {
@@ -511,6 +559,7 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
               ),
               const SizedBox(height: 16),
               TextField(
+                autofocus: textFieldAutofocus(false),
                 controller: _stockQuantityController,
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
@@ -725,7 +774,7 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
                     ),
                     DropdownMenuItem(
                       value: 2,
-                      child: Text(context.tr('Manufacturer')),
+                      child: Text(context.tr('Manual')),
                     ),
                   ],
                   onChanged: (value) {
@@ -736,6 +785,7 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
 
                       if (_barcodeType == 1) {
                         _barcodeController.clear();
+                        _barcodeError = null;
                       }
                     });
                   },
@@ -745,23 +795,30 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
 
               if (isEditing || _barcodeType == 2)
                 TextFormField(
+                  autofocus: textFieldAutofocus(false),
                   controller: _barcodeController,
+                  focusNode: _barcodeFocusNode,
                   enabled: isEditing || _barcodeType == 2,
-                  onChanged: (_) => setState(() {}),
+                  onChanged: (_) {
+                    setState(() {
+                      if (_barcodeError != null) _barcodeError = null;
+                    });
+                  },
                   decoration: InputDecoration(
                     labelText: isEditing
                         ? context.tr('Barcode')
-                        : context.tr('Manufacturer Barcode'),
+                        : context.tr('Manual Barcode'),
                     prefixIcon: const Icon(Icons.barcode_reader),
                     helperText: !isEditing && _barcodeType == 2
-                        ? context.tr('Enter the manufacturer barcode.')
+                        ? context.tr('Enter the manual barcode.')
                         : null,
+                    errorText: _barcodeError,
                   ),
                   validator: (value) {
                     if (!isEditing &&
                         _barcodeType == 2 &&
                         (value == null || value.trim().isEmpty)) {
-                      return context.tr('Manufacturer barcode is required.');
+                      return context.tr('Manual barcode is required.');
                     }
 
                     if (isEditing && (value == null || value.trim().isEmpty)) {
@@ -809,6 +866,7 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
               const SizedBox(height: 16),
 
               TextFormField(
+                autofocus: textFieldAutofocus(false),
                 controller: _priceController,
                 readOnly: true,
                 keyboardType: const TextInputType.numberWithOptions(
@@ -820,6 +878,7 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
                   helperText: context.tr(
                     "Price is derived from the product's selling price and cannot be edited.",
                   ),
+                  helperMaxLines: 3,
                 ),
                 validator: (value) {
                   final price = double.tryParse(value?.trim() ?? '');
@@ -839,6 +898,7 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
               const SizedBox(height: 16),
 
               TextFormField(
+                autofocus: textFieldAutofocus(false),
                 controller: _thresholdController,
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(

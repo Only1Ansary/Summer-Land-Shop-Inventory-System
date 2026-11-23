@@ -12,6 +12,32 @@ class ProductService {
     return (data as List).map((json) => Product.fromJson(json)).toList();
   }
 
+  /// Checks a barcode before a product or variant form is closed.
+  ///
+  /// [excludeId] keeps an edited product's own barcode (and its variants) from
+  /// blocking the save. [excludeVariantId] keeps just the edited variant's own
+  /// barcode from blocking it.
+  Future<bool> isBarcodeAvailable(
+    String barcode, {
+    int? excludeId,
+    int? excludeVariantId,
+  }) async {
+    final queryParameters = <String, String>{
+      'barcode': barcode.trim(),
+      if (excludeId != null) 'excludeId': excludeId.toString(),
+      if (excludeVariantId != null)
+        'excludeVariantId': excludeVariantId.toString(),
+    };
+
+    final uri = Uri(
+      path: '/api/Products/barcode-available',
+      queryParameters: queryParameters,
+    );
+
+    final data = await _apiService.get(uri.toString());
+    return data == true;
+  }
+
   Future<Product> getProduct(int id) async {
     final data = await _apiService.get('/api/Products/$id');
 

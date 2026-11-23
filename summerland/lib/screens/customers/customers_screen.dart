@@ -12,6 +12,7 @@ import '../../ui/app_shell.dart';
 import '../../ui/app_widgets.dart';
 import '../../utils/payment_method.dart';
 import '../invoices/show_sale_invoice_screen.dart';
+import '../../ui/text_input_helpers.dart';
 
 /// Customer lookup screen. Nothing is loaded until the user types a name or
 /// phone number; selecting a result opens its invoices, balance and payments.
@@ -503,7 +504,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: TextField(
         key: const Key('customer-search'),
-        autofocus: true,
+        autofocus: textFieldAutofocus(true),
         controller: _searchController,
         onChanged: _onSearchChanged,
         textInputAction: TextInputAction.search,
@@ -929,6 +930,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           TextField(
+            autofocus: textFieldAutofocus(false),
             key: const Key('customer-payment-amount'),
             controller: _amountController,
             enabled: !_isPaying && canPay,

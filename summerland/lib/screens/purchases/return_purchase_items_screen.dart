@@ -7,6 +7,7 @@ import '../../services/api_service.dart';
 import '../../services/purchase_invoice_service.dart';
 import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
+import '../../ui/text_input_helpers.dart';
 
 class ReturnPurchaseItemsScreen extends StatefulWidget {
   const ReturnPurchaseItemsScreen({super.key, required this.invoice});
@@ -140,6 +141,7 @@ class _ReturnPurchaseItemsScreenState extends State<ReturnPurchaseItemsScreen> {
                         ),
                         const SizedBox(height: 12),
                         TextField(
+                          autofocus: textFieldAutofocus(false),
                           controller: _reasonController,
                           decoration: InputDecoration(
                             labelText: context.tr('Return Reason'),

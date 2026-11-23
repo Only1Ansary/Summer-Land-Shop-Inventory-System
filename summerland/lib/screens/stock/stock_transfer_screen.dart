@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../localization/app_strings.dart';
 import '../../models/stock_transfer.dart';
@@ -288,7 +289,7 @@ class _StockTransfersScreenState extends State<StockTransfersScreen>
                                 Align(
                                   alignment: Alignment.centerRight,
                                   child: Text(
-                                    '${transfer.createdAt.toLocal()}',
+                                    DateFormat('yyyy/MM/dd HH:mm:ss').format(transfer.createdAt),
                                     style: Theme.of(context).textTheme.bodySmall
                                         ?.copyWith(
                                           color: Theme.of(context)

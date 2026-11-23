@@ -15,6 +15,7 @@ import '../../ui/app_shell.dart';
 import '../../ui/app_widgets.dart';
 import '../../ui/home_modules.dart';
 import '../../ui/shop_logo.dart';
+import '../../ui/text_input_helpers.dart';
 
 /// App-wide preferences and information.
 class SettingsScreen extends StatefulWidget {
@@ -784,7 +785,7 @@ class _ShopNameDialogState extends State<_ShopNameDialog> {
       title: Text(context.tr('Shop name')),
       content: TextField(
         controller: _controller,
-        autofocus: true,
+        autofocus: textFieldAutofocus(true),
         textInputAction: TextInputAction.done,
         decoration: InputDecoration(
           labelText: context.tr('Name'),
@@ -857,7 +858,7 @@ class _MaxPinnedDialogState extends State<_MaxPinnedDialog> {
       title: Text(context.tr('Maximum pinned modules')),
       content: TextField(
         controller: _controller,
-        autofocus: true,
+        autofocus: textFieldAutofocus(true),
         keyboardType: TextInputType.number,
         textInputAction: TextInputAction.done,
         decoration: InputDecoration(

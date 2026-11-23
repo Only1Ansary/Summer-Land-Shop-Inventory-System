@@ -31,7 +31,7 @@ ProductVariant _defaultVariant({int quantity = 10}) => ProductVariant(
   modelNumber: 'TS-001',
   productName: 'T-Shirt',
   barcodeType: 1,
-  barcode: 'SHOP-00000007',
+  barcode: '00000007',
   price: 60,
   lowStockThreshold: 2,
   totalQuantity: quantity,

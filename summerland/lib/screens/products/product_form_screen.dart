@@ -9,6 +9,7 @@ import '../../services/product_service.dart';
 
 import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
+import '../../ui/text_input_helpers.dart';
 
 class ProductFormScreen extends StatefulWidget {
   final Product? product;
@@ -27,6 +28,8 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
 
   final _barcodeController = TextEditingController();
 
+  final _barcodeFocusNode = FocusNode();
+
   final _purchasePriceController = TextEditingController();
 
   final _profitMarginController = TextEditingController();
@@ -37,6 +40,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
 
   int? _selectedCategoryId;
   bool _isSaving = false;
+  String? _barcodeError;
 
   bool get isEditing => widget.product != null;
 
@@ -63,6 +67,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   void dispose() {
     _modelController.dispose();
     _barcodeController.dispose();
+    _barcodeFocusNode.dispose();
     _purchasePriceController.dispose();
     _profitMarginController.dispose();
     _nameController.dispose();
@@ -106,10 +111,6 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       return;
     }
 
-    setState(() {
-      _isSaving = true;
-    });
-
     final name = _nameController.text.trim();
     final modelNumber = _modelController.text.trim();
     final barcode = _barcodeController.text.trim();
@@ -117,41 +118,82 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     final profitMargin = _parseInt(_profitMarginController.text)!;
     final categoryId = _selectedCategoryId!;
 
-    final operation = isEditing
-        ? () async {
-            await _productService.updateProduct(
-              id: widget.product!.id,
-              modelNumber: modelNumber,
-              barcode: barcode,
-              purchasePrice: purchasePrice,
-              profitMargin: profitMargin,
-              name: name,
-              categoryId: categoryId,
-            );
-          }
-        : () async {
-            await _productService.createProduct(
-              modelNumber: modelNumber,
-              barcode: barcode,
-              purchasePrice: purchasePrice,
-              profitMargin: profitMargin,
-              name: name,
-              categoryId: categoryId,
-            );
-          };
+    setState(() {
+      _barcodeError = null;
+      _isSaving = true;
+    });
 
-    Navigator.pop(
-      context,
-      DeferredCrud(
-        message: isEditing
-            ? context.tr(
-                'Changes to "{0}" will be saved. Tap Undo to cancel.',
-                [name],
-              )
-            : context.tr('"{0}" will be added. Tap Undo to cancel.', [name]),
-        operation: operation,
-      ),
-    );
+    try {
+      // Check while the form is still open so the user can fix the barcode
+      // instead of only seeing an error after the Undo snackbar commits.
+      if (barcode.isNotEmpty) {
+        final available = await _productService.isBarcodeAvailable(
+          barcode,
+          excludeId: isEditing ? widget.product!.id : null,
+        );
+
+        if (!available) {
+          if (!mounted) return;
+
+          setState(() {
+            _barcodeError = context.tr(
+              'This barcode is already used by another product or variant.',
+            );
+            _isSaving = false;
+          });
+          _barcodeFocusNode.requestFocus();
+          return;
+        }
+      }
+
+      final operation = isEditing
+          ? () async {
+              await _productService.updateProduct(
+                id: widget.product!.id,
+                modelNumber: modelNumber,
+                barcode: barcode,
+                purchasePrice: purchasePrice,
+                profitMargin: profitMargin,
+                name: name,
+                categoryId: categoryId,
+              );
+            }
+          : () async {
+              await _productService.createProduct(
+                modelNumber: modelNumber,
+                barcode: barcode,
+                purchasePrice: purchasePrice,
+                profitMargin: profitMargin,
+                name: name,
+                categoryId: categoryId,
+              );
+            };
+
+      if (!mounted) return;
+
+      Navigator.pop(
+        context,
+        DeferredCrud(
+          message: isEditing
+              ? context.tr(
+                  'Changes to "{0}" will be saved. Tap Undo to cancel.',
+                  [name],
+                )
+              : context.tr('"{0}" will be added. Tap Undo to cancel.', [name]),
+          operation: operation,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _isSaving = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(friendlyErrorMessage(context, e))),
+      );
+    }
   }
 
   @override
@@ -169,6 +211,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               TextFormField(
+                autofocus: textFieldAutofocus(false),
                 controller: _modelController,
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
@@ -192,13 +235,22 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
               const SizedBox(height: 16),
 
               TextFormField(
+                autofocus: textFieldAutofocus(false),
                 controller: _barcodeController,
+                focusNode: _barcodeFocusNode,
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 decoration: InputDecoration(
                   labelText: context.tr('Barcode (optional)'),
                   prefixIcon: const Icon(Icons.qr_code_2),
+                  errorText: _barcodeError,
                 ),
+                onChanged: (_) {
+                  if (_barcodeError == null) return;
+                  setState(() {
+                    _barcodeError = null;
+                  });
+                },
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return null;
@@ -215,6 +267,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
               const SizedBox(height: 16),
 
               TextFormField(
+                autofocus: textFieldAutofocus(false),
                 controller: _nameController,
                 decoration: InputDecoration(
                   labelText: context.tr('Product Name'),
@@ -232,6 +285,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
               const SizedBox(height: 16),
 
               TextFormField(
+                autofocus: textFieldAutofocus(false),
                 controller: _purchasePriceController,
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
@@ -258,6 +312,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
               const SizedBox(height: 16),
 
               TextFormField(
+                autofocus: textFieldAutofocus(false),
                 controller: _profitMarginController,
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(

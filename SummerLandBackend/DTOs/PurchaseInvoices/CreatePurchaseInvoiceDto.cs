@@ -1,4 +1,6 @@
-﻿namespace SummerLandBackend.DTOs.PurchaseInvoices
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace SummerLandBackend.DTOs.PurchaseInvoices
 {
     public class CreatePurchaseInvoiceDto
     {
@@ -7,6 +9,9 @@
         public DateTime Date { get; set; }
 
         public decimal TotalPaid { get; set; }
+
+        [Range(0, 3, ErrorMessage = "Choose a valid payment method.")]
+        public int PaymentMethod { get; set; }
 
         public decimal Discount { get; set; }
 

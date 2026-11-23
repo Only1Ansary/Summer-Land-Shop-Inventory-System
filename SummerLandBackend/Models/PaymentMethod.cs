@@ -1,8 +1,9 @@
 namespace SummerLandBackend.Models
 {
     /// <summary>
-    /// How money for a sale invoice was handed over. Stored as an int so the
-    /// API contract stays stable and works with older clients.
+    /// How money for a sale, purchase invoice, or supplier debt payment was
+    /// handed over. Stored as an int so the API contract stays stable and
+    /// works with older clients.
     /// </summary>
     public enum PaymentMethod
     {
