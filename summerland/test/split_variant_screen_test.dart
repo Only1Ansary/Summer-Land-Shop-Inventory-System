@@ -32,7 +32,7 @@ ProductVariant _defaultVariant({int quantity = 10}) => ProductVariant(
   productName: 'T-Shirt',
   barcodeType: 1,
   barcode: '00000007',
-  price: 60,
+  sellingPrice: 60,
   lowStockThreshold: 2,
   totalQuantity: quantity,
   isLowStock: false,

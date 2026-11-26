@@ -1,6 +1,7 @@
 class CustomerPayment {
   final int id;
-  final int customerId;
+  /// Null for payments on anonymous sales that were paid in full.
+  final int? customerId;
   /// Invoice this part of the payment was applied to. Zero on older records
   /// that were created before the link was returned to the app.
   final int saleInvoiceId;
@@ -10,7 +11,7 @@ class CustomerPayment {
 
   CustomerPayment({
     required this.id,
-    required this.customerId,
+    this.customerId,
     this.saleInvoiceId = 0,
     required this.amount,
     required this.method,
@@ -22,7 +23,7 @@ class CustomerPayment {
 
     return CustomerPayment(
       id: json['id'] as int? ?? 0,
-      customerId: json['customerId'] as int? ?? 0,
+      customerId: json['customerId'] as int?,
       saleInvoiceId: json['saleInvoiceId'] as int? ?? 0,
       amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
       method: json['method'] as int? ?? 0,

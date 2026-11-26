@@ -46,7 +46,8 @@ class PurchaseInvoice {
       supplierName:
           json['supplierName'] ?? 'Supplier #${json['supplierId'] ?? '?'}',
       date: json['date'] != null ? DateTime.tryParse(json['date']) : null,
-      createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
+      createdAt:
+          DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now().toUtc(),
       totalCost: (json['totalCost'] as num? ?? 0).toDouble(),
       totalPaid: (json['totalPaid'] as num? ?? 0).toDouble(),
       debt: ((json['invoiceDebt'] ?? json['debt']) as num? ?? 0).toDouble(),

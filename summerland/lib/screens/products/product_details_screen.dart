@@ -153,7 +153,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
       _SortColumn.colour => _nameKey(
         a.colourName,
       ).compareTo(_nameKey(b.colourName)),
-      _SortColumn.price => a.price.compareTo(b.price),
+      _SortColumn.price => a.sellingPrice.compareTo(b.sellingPrice),
       _SortColumn.stock => a.totalQuantity.compareTo(b.totalQuantity),
     };
   }
@@ -972,7 +972,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
         child: Align(
           alignment: AlignmentDirectional.centerEnd,
           child: _ltrText(
-            money(variant.price).replaceAll("EGP", ""),
+            money(variant.sellingPrice).replaceAll("EGP", ""),
             style: TextStyle(fontSize: 14, color: colors.onSurfaceVariant),
           ),
         ),
@@ -1299,7 +1299,7 @@ class _VariantDetailView extends StatelessWidget {
                 ),
                 const Spacer(),
                 _ltrText(
-                  money(variant.price),
+                  money(variant.sellingPrice),
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,

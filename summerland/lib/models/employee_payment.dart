@@ -17,7 +17,7 @@ class EmployeePayment {
       id: json['id'],
       employeeId: json['employeeId'] ?? 0,
       amount: (json['amount'] as num? ?? 0).toDouble(),
-      paidAt: DateTime.tryParse(json['paidAt'] ?? '') ?? DateTime.now(),
+      paidAt: DateTime.tryParse(json['paidAt'] ?? '') ?? DateTime.now().toUtc(),
     );
   }
 }

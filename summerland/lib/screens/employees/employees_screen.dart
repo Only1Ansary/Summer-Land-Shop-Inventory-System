@@ -487,7 +487,7 @@ class _PayEmployeeDialogState extends State<_PayEmployeeDialog> {
         operation: () => _service.recordPayment(
           widget.employee.id,
           amount: amount,
-          paidAt: DateTime.now(),
+          paidAt: DateTime.now().toUtc(),
         ),
       ),
     );

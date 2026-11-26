@@ -108,7 +108,7 @@ void main() {
     productName: 'Test product',
     barcodeType: 2,
     barcode: '5555',
-    price: 120,
+    sellingPrice: 120,
     lowStockThreshold: 2,
     totalQuantity: 4,
     isLowStock: false,

@@ -99,7 +99,7 @@ namespace SummerLandBackend.Migrations
                     b.Property<decimal>("Amount")
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<int>("CustomerId")
+                    b.Property<int?>("CustomerId")
                         .HasColumnType("int");
 
                     b.Property<int>("Method")
@@ -325,11 +325,14 @@ namespace SummerLandBackend.Migrations
                     b.Property<int>("LowStockThreshold")
                         .HasColumnType("int");
 
-                    b.Property<decimal>("Price")
-                        .HasColumnType("decimal(18,2)");
-
                     b.Property<int>("ProductId")
                         .HasColumnType("int");
+
+                    b.Property<decimal>("PurchasePrice")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("SellingPrice")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<int?>("SizeId")
                         .HasColumnType("int");
@@ -771,8 +774,7 @@ namespace SummerLandBackend.Migrations
                     b.HasOne("SummerLandBackend.Models.Customer", "Customer")
                         .WithMany("Payments")
                         .HasForeignKey("CustomerId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("SummerLandBackend.Models.SaleInvoice", "SaleInvoice")
                         .WithMany("Payments")

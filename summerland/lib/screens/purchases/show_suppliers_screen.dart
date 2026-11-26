@@ -792,13 +792,11 @@ class _PaymentHistorySheetState extends State<_PaymentHistorySheet> {
     }
   }
 
-  String _formatDateTime(DateTime date) {
-    final h = date.hour % 12 == 0 ? 12 : date.hour % 12;
-    final minute = date.minute.toString().padLeft(2, '0');
-    final amPm = date.hour < 12 ? context.tr('AM') : context.tr('PM');
-
-    return '${date.day}/${date.month}/${date.year}  $h:$minute $amPm';
-  }
+  String _formatDateTime(DateTime date) => formatDisplayDateTime(
+    date,
+    am: context.tr('AM'),
+    pm: context.tr('PM'),
+  );
 
   @override
   Widget build(BuildContext context) {

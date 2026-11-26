@@ -202,6 +202,8 @@ public class StockTransfersController : ControllerBase
             [FromQuery] DateTime? from,
             [FromQuery] DateTime? to)
     {
+        var (fromDate, toDate) = QueryDateRange.Bounds(from, to);
+
         var query = _context.StockTransfers
             .Include(t => t.FromLocation)
             .Include(t => t.ToLocation)
@@ -218,15 +220,11 @@ public class StockTransfersController : ControllerBase
 
         if (from.HasValue)
         {
-            var fromDate = QueryDateRange.Start(from);
-
             query = query.Where(t => t.CreatedAt >= fromDate);
         }
 
         if (to.HasValue)
         {
-            var toDate = QueryDateRange.End(to);
-
             query = query.Where(t => t.CreatedAt <= toDate);
         }
 

@@ -242,12 +242,8 @@ class _CustomersScreenState extends State<CustomersScreen> {
     }
   }
 
-  String _formatDate(DateTime? value) {
-    if (value == null) return '-';
-
-    final local = value.toLocal();
-    return '${local.day}/${local.month}/${local.year}';
-  }
+  String _formatDate(DateTime? value) =>
+      value == null ? '-' : formatDisplayDate(value);
 
   // ---------------------------------------------------------------------------
   // Small visual helpers

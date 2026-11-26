@@ -1,36 +1,29 @@
 namespace SummerLandBackend.Services;
 
-/// Central handling of the from/to query bounds used by the reports and the
-/// invoice lists.
+/// Central handling of the from/to query bounds used by reports and lists.
 ///
-/// Picking a date in the UI sends a bare calendar date with no offset
-/// (2026-10-01T00:00:00). Two mistakes are easy to make here, and both have
-/// happened:
+/// Rows are stored as UTC instants. A picked calendar day arrives either as a
+/// bare value (`2026-10-01T00:00:00`) or as an explicit UTC instant
+/// (`2026-09-30T21:00:00Z`); the latter is what the app sends for a day in the
+/// shop's IANA zone. Explicit instants are used exactly as sent. Bare values
+/// are read as wall-clock times in the configured zone (Africa/Cairo by
+/// default), so DST decides their offset.
 ///
-/// 1. Calling DateTime.ToUniversalTime() on that value assumes the *server's*
-///    local timezone, shifting the bound by the UTC offset. With a local time
-///    of UTC+3, "to = 2026-10-01" became 2026-09-30T21:00Z. The value is
-///    instead read as UTC, matching how CreatedAt and Date are stored.
-/// 2. Using the picked date directly as an upper bound stops at midnight, so
-///    the whole picked day drops out of the result. A picked "to" date means
-///    the entire day, up to its last tick.
-///
-/// Every endpoint must use these two helpers, otherwise the same range
-/// returns different rows depending on which screen asked for it.
+/// Every endpoint must use [Bounds], otherwise the same range returns
+/// different rows depending on which screen asked for it.
 internal static class QueryDateRange
 {
-    // Unspecified is treated as UTC (values are stored with DateTime.UtcNow),
-    // instead of silently using the server's local timezone.
-    private static DateTime ToUtc(DateTime value) => value.Kind switch
-    {
-        DateTimeKind.Utc => value,
-        DateTimeKind.Local => value.ToUniversalTime(),
-        _ => DateTime.SpecifyKind(value, DateTimeKind.Utc)
-    };
+    private static DateTime ToUtc(DateTime value) =>
+        AppTimeZone.Current.ToUtc(value);
+
+    private static DateTime LocalDay(DateTime value) =>
+        AppTimeZone.Current.ToLocal(ToUtc(value)).Date;
 
     /// First tick of the picked day, or today when no date was picked.
     public static DateTime Start(DateTime? value) =>
-        value.HasValue ? ToUtc(value.Value).Date : DateTime.UtcNow.Date;
+        value.HasValue
+            ? AppTimeZone.Current.StartOfDayUtc(LocalDay(value.Value))
+            : AppTimeZone.Current.StartOfDayUtc(AppTimeZone.Current.Today);
 
     /// Last tick of the picked day, or now when no date was picked.
     public static DateTime End(DateTime? value)
@@ -43,7 +36,41 @@ internal static class QueryDateRange
         // Check the RAW value for midnight: after conversion a bare date no
         // longer looks like the start of a day.
         return value.Value.TimeOfDay == TimeSpan.Zero
-            ? ToUtc(value.Value.Date.AddDays(1)).AddTicks(-1)
+            ? AppTimeZone.Current.EndOfDayUtc(LocalDay(value.Value))
             : ToUtc(value.Value);
+    }
+
+    /// Bounds for a from/to filter.
+    ///
+    /// Explicit UTC bounds are used as sent: the app converts a local day to
+    /// UTC before sending it, and that range can span two UTC dates.
+    ///
+    /// For bare values, when both picks land on the same shop day the whole
+    /// day is returned, from its first tick through its last tick.
+    public static (DateTime Start, DateTime End) Bounds(
+        DateTime? from,
+        DateTime? to)
+    {
+        if (from.HasValue && to.HasValue &&
+            from.Value.Kind != DateTimeKind.Unspecified &&
+            to.Value.Kind != DateTimeKind.Unspecified)
+        {
+            return (ToUtc(from.Value), ToUtc(to.Value));
+        }
+
+        var start = Start(from);
+        var end = End(to);
+
+        if (from.HasValue && to.HasValue &&
+            LocalDay(from.Value) == LocalDay(to.Value))
+        {
+            var day = LocalDay(from.Value);
+
+            return (
+                AppTimeZone.Current.StartOfDayUtc(day),
+                AppTimeZone.Current.EndOfDayUtc(day));
+        }
+
+        return (start, end);
     }
 }

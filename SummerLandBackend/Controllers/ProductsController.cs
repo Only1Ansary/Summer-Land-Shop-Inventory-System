@@ -262,7 +262,9 @@ public class ProductsController : ControllerBase
             }
         }
 
-        var profitMarginChanged = product.ProfitMargin != dto.ProfitMargin;
+        var pricingChanged =
+            product.PurchasePrice != dto.PurchasePrice ||
+            product.ProfitMargin != dto.ProfitMargin;
 
         product.ModelNumber = dto.ModelNumber.Trim();
         product.Name = dto.Name.Trim();
@@ -273,10 +275,10 @@ public class ProductsController : ControllerBase
 
         await _context.SaveChangesAsync();
 
-        if (profitMarginChanged)
+        if (pricingChanged)
         {
             // SellingPrice is a stored computed column, so reload the entity to
-            // read the value the database worked out from the new margin.
+            // read the value the database worked out from the new cost/margin.
             await _context.Entry(product).ReloadAsync();
 
             var variants = await _context.ProductVariants
@@ -285,10 +287,12 @@ public class ProductsController : ControllerBase
 
             if (variants.Count > 0)
             {
-                // Keep every variant's selling price aligned with the product.
+                // The product's purchase price is authoritative, so keep every
+                // variant's cost and selling price aligned with it.
                 foreach (var variant in variants)
                 {
-                    variant.Price = product.SellingPrice;
+                    variant.PurchasePrice = product.PurchasePrice;
+                    variant.SellingPrice = product.SellingPrice;
                 }
 
                 await _context.SaveChangesAsync();
@@ -401,7 +405,9 @@ public class ProductsController : ControllerBase
 
                             Barcode = v.Barcode,
 
-                            Price = v.Price,
+                            PurchasePrice = v.PurchasePrice,
+
+                            SellingPrice = v.SellingPrice,
 
                             LowStockThreshold =
                                 v.LowStockThreshold,

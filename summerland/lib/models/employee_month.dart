@@ -1,3 +1,6 @@
+import 'package:timezone/timezone.dart' as tz;
+
+import '../services/time_zone_service.dart';
 import 'employee.dart';
 
 const List<String> _monthNames = [
@@ -45,7 +48,7 @@ class EmployeeMonth {
   }
 
   bool get isCurrentMonth {
-    final now = DateTime.now();
+    final now = tz.TZDateTime.now(TimeZoneService.instance.location);
     return year == now.year && month == now.month;
   }
 

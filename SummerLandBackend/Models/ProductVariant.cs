@@ -17,7 +17,11 @@ public class ProductVariant
 
     public string Barcode { get; set; } = string.Empty;
 
-    public decimal Price { get; set; }
+    /// <summary>Cost copied from the parent product's purchase price.</summary>
+    public decimal PurchasePrice { get; set; }
+
+    /// <summary>Selling price used by sales, reports and inventory values.</summary>
+    public decimal SellingPrice { get; set; }
 
     public int LowStockThreshold { get; set; } = 2;
 

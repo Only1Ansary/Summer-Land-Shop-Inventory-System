@@ -10,6 +10,7 @@ import '../../services/pinned_modules_service.dart';
 import '../../services/prefetch_service.dart';
 import '../../services/shop_profile_service.dart';
 import '../../services/theme_service.dart';
+import '../../services/time_zone_service.dart';
 import 'bottom_navigation_settings_screen.dart';
 import '../../ui/app_shell.dart';
 import '../../ui/app_widgets.dart';
@@ -433,6 +434,49 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ),
                       ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  SectionHeader(
+                    title: context.tr('Time zone'),
+                    subtitle: context.tr('Clock used for dates and times'),
+                  ),
+                  const SizedBox(height: 8),
+                  Card(
+                    child: ValueListenableBuilder<String>(
+                      valueListenable: TimeZoneService.instance.timeZoneId,
+                      builder: (context, id, _) => Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.schedule_outlined),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    id,
+                                    style: theme.textTheme.titleSmall?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    context.tr(
+                                      'Egypt local time (EET/EEST, DST automatic)',
+                                    ),
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color:
+                                          theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 20),

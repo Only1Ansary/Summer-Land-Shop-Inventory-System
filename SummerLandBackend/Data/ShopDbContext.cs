@@ -67,11 +67,13 @@ public class ShopDbContext : DbContext
             .HasForeignKey(i => i.CustomerId)
             .OnDelete(DeleteBehavior.SetNull);
 
+        // Anonymous sales record a payment without a customer, so the FK is
+        // optional. Deleting a customer keeps its payment history intact.
         modelBuilder.Entity<CustomerPayment>()
             .HasOne(p => p.Customer)
             .WithMany(c => c.Payments)
             .HasForeignKey(p => p.CustomerId)
-            .OnDelete(DeleteBehavior.Restrict);
+            .OnDelete(DeleteBehavior.SetNull);
 
         modelBuilder.Entity<CustomerPayment>()
             .HasOne(p => p.SaleInvoice)
@@ -103,6 +105,14 @@ public class ShopDbContext : DbContext
             .HasColumnType("decimal(18,2)")
             .HasComputedColumnSql("([PurchasePrice] + ([PurchasePrice] * [ProfitMargin] / 100))",
             stored: true);
+
+        modelBuilder.Entity<ProductVariant>()
+            .Property(v => v.PurchasePrice)
+            .HasColumnType("decimal(18,2)");
+
+        modelBuilder.Entity<ProductVariant>()
+            .Property(v => v.SellingPrice)
+            .HasColumnType("decimal(18,2)");
 
         modelBuilder.Entity<ProductVariant>()
             .HasOne(v => v.Product)

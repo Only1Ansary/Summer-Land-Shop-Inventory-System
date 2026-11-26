@@ -24,7 +24,7 @@ class ProductVariantService {
     int? colourId,
     required int barcodeType,
     String? barcode,
-    required double price,
+    required double sellingPrice,
     required int lowStockThreshold,
   }) async {
     final body = <String, dynamic>{
@@ -32,7 +32,7 @@ class ProductVariantService {
       'sizeId': sizeId,
       'colourId': colourId,
       'barcodeType': barcodeType,
-      'price': price,
+      'sellingPrice': sellingPrice,
       'lowStockThreshold': lowStockThreshold,
     };
 
@@ -51,14 +51,14 @@ class ProductVariantService {
     int? sizeId,
     int? colourId,
     String? barcode,
-    required double price,
+    required double sellingPrice,
     required int lowStockThreshold,
   }) async {
     await _apiService.put('/api/ProductVariants/$id', {
       'sizeId': sizeId,
       'colourId': colourId,
       'barcode': barcode,
-      'price': price,
+      'sellingPrice': sellingPrice,
       'lowStockThreshold': lowStockThreshold,
     });
   }

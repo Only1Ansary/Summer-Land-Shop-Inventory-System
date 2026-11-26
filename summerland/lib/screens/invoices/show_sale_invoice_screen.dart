@@ -4,8 +4,6 @@ import 'package:flutter/foundation.dart'
     show TargetPlatform, defaultTargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
-
 import '../../localization/app_strings.dart';
 import '../../models/invoice.dart';
 import '../../services/api_service.dart';
@@ -298,7 +296,12 @@ class _ShowSaleInvoiceScreenState extends State<ShowSaleInvoiceScreen> {
           _buildHeroCard(invoice),
           const SizedBox(height: 14),
           _buildItemsCard(invoice),
-          if (invoice.customerId != null) _buildCustomerPaymentCard(invoice),
+          // Anonymous sales still have a payment worth showing, even though
+          // they have no customer record to attach it to.
+          if (invoice.customerId != null ||
+              invoice.payments.isNotEmpty ||
+              invoice.paymentMethod != null)
+            _buildCustomerPaymentCard(invoice),
           _buildTotalsCard(invoice),
         ],
       ),
@@ -465,7 +468,14 @@ class _ShowSaleInvoiceScreenState extends State<ShowSaleInvoiceScreen> {
             spacing: 8,
             runSpacing: 8,
             children: [
-              _metaChip(Icons.event_outlined, DateFormat('yyyy/MM/dd HH:mm:ss').format(invoice.createdAt)),
+              _metaChip(
+                Icons.event_outlined,
+                formatDisplayDateTime(
+                  invoice.createdAt,
+                  am: context.tr('AM'),
+                  pm: context.tr('PM'),
+                ),
+              ),
               _metaChip(Icons.storefront_outlined, invoice.locationName),
               _metaChip(
                 Icons.badge_outlined,

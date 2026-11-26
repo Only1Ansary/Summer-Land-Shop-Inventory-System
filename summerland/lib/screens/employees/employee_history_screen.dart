@@ -334,9 +334,7 @@ class _PaymentTile extends StatelessWidget {
     );
   }
 
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
-  }
+  String _formatDate(DateTime date) => formatDisplayDate(date);
 }
 
 /// The employee's figures for the month in progress.

@@ -10,6 +10,7 @@ import 'package:summerland/screens/settings/settings_screen.dart';
 import 'package:summerland/services/language_service.dart';
 import 'package:summerland/services/shop_profile_service.dart';
 import 'package:summerland/services/theme_service.dart';
+import 'package:summerland/services/time_zone_service.dart';
 import 'package:summerland/ui/app_theme.dart';
 import 'package:summerland/ui/home_modules.dart';
 
@@ -218,5 +219,32 @@ void main() {
     await ShopProfileService.instance.setLogo(null);
     await ShopProfileService.instance.load();
     expect(ShopProfileService.instance.profile.value.hasLogo, isFalse);
+  });
+
+  testWidgets('settings shows Africa/Cairo as the default time zone', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    TimeZoneService.instance.resetForTest();
+
+    await pumpSettings(tester);
+
+    expect(find.text('Time zone'), findsOneWidget);
+    expect(find.text('Africa/Cairo'), findsOneWidget);
+  });
+
+  test('time zone setting persists and falls back to Cairo', () async {
+    SharedPreferences.setMockInitialValues({});
+    TimeZoneService.instance.resetForTest();
+
+    await TimeZoneService.instance.setTimeZone('Africa/Cairo');
+    expect(
+      (await SharedPreferences.getInstance()).getString('settings.timeZone'),
+      'Africa/Cairo',
+    );
+
+    TimeZoneService.instance.resetForTest('UTC');
+    await TimeZoneService.instance.load();
+    expect(TimeZoneService.instance.timeZoneId.value, 'Africa/Cairo');
   });
 }

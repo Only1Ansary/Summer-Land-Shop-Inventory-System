@@ -2,8 +2,6 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
-
 import '../../localization/app_strings.dart';
 import '../../models/invoice.dart';
 import '../../models/location.dart';
@@ -536,7 +534,14 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
             runSpacing: 8,
             children: [
               _metaChip(Icons.storefront_outlined, invoice.locationName),
-              _metaChip(Icons.event_outlined, DateFormat('yyyy/MM/dd HH:mm:ss').format(invoice.createdAt)),
+              _metaChip(
+                Icons.event_outlined,
+                formatDisplayDateTime(
+                  invoice.createdAt,
+                  am: context.tr('AM'),
+                  pm: context.tr('PM'),
+                ),
+              ),
             ],
           ),
         ],

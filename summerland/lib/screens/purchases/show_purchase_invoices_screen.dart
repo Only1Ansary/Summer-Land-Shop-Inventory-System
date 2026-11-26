@@ -99,9 +99,9 @@ class _ShowPurchaseInvoicesScreenState extends State<ShowPurchaseInvoicesScreen>
   Future<void> _pickDate(bool isFrom) async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: isFrom ? (_from ?? DateTime.now()) : (_to ?? DateTime.now()),
+      initialDate: isFrom ? (_from ?? nowInAppTimeZone()) : (_to ?? nowInAppTimeZone()),
       firstDate: DateTime(2020),
-      lastDate: DateTime.now(),
+      lastDate: nowInAppTimeZone(),
     );
 
     if (picked == null) return;
@@ -128,9 +128,7 @@ class _ShowPurchaseInvoicesScreenState extends State<ShowPurchaseInvoicesScreen>
     _loadInvoices();
   }
 
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
-  }
+  String _formatDate(DateTime date) => formatDisplayDate(date);
 
   Future<void> _openSearch() async {
     await pushScreen<void>(

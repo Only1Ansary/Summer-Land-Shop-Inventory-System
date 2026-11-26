@@ -18,8 +18,8 @@ public class CustomersController : ControllerBase
     }
 
     /// <summary>
-    /// Customers, optionally filtered by phone. Used by the sale screen to
-    /// recognise a returning customer before creating the invoice.
+    /// Customers, optionally filtered by name or phone. The Customers screen
+    /// uses [search]; the sale screen uses [phone] for exact lookup.
     /// </summary>
     [HttpGet]
     public async Task<ActionResult<IEnumerable<CustomerResponseDto>>> GetCustomers(
@@ -34,15 +34,13 @@ public class CustomersController : ControllerBase
             // The Customers screen searches by name or phone. Phone numbers
             // are compared as digits so spaces and dashes do not matter.
             var text = search.Trim();
+            var lowered = text.ToLower();
             var digits = NormalizePhone(text);
 
-            if (digits.Length == 0)
-                return Ok(Array.Empty<CustomerResponseDto>());
-
-            var lowered = text.ToLower();
-
+            // A name query has no digits. It must still reach the name match;
+            // only the phone part of the condition depends on having digits.
             query = query.Where(c =>
-                c.PhoneNumber.Contains(digits) ||
+                (digits.Length > 0 && c.PhoneNumber.Contains(digits)) ||
                 (c.Name != null && c.Name.ToLower().Contains(lowered)));
         }
         else if (!string.IsNullOrWhiteSpace(phone))

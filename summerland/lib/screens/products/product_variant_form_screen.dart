@@ -451,7 +451,7 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
                 sizeId: sizeId,
                 colourId: colourId,
                 barcode: barcode,
-                price: price,
+                sellingPrice: price,
                 lowStockThreshold: threshold,
               );
             }
@@ -462,7 +462,7 @@ class _ProductVariantFormScreenState extends State<ProductVariantFormScreen> {
                 colourId: colourId,
                 barcodeType: _barcodeType,
                 barcode: barcode.isEmpty ? null : barcode,
-                price: price,
+                sellingPrice: price,
                 lowStockThreshold: threshold,
               );
 

@@ -56,8 +56,10 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   Location? _selectedCashierLocation;
   Employee? _selectedEmployee;
 
-  // A phone is required for every sale. The customer is created on the server
-  // the first time a number is used; [lookup] only prefills the name/balance.
+  // A phone is required when a sale is not paid in full, so the outstanding
+  // balance can be tied to a customer. A fully paid sale can be anonymous.
+  // The customer is created on the server the first time a number is used;
+  // [lookup] only prefills the name/balance.
   Customer? _matchedCustomer;
 
   final TextEditingController _searchController = TextEditingController();
@@ -451,7 +453,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   double get _cartTotal {
     return _cart.fold(
       0,
-          (total, item) => total + (item.variant.price * item.totalQuantity),
+          (total, item) => total + (item.variant.sellingPrice * item.totalQuantity),
     );
   }
 
@@ -505,6 +507,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   String get _customerPhoneDigits =>
       _customerPhoneController.text.replaceAll(RegExp(r'\D'), '');
 
+  bool get _hasPhoneEntry => _customerPhoneController.text.trim().isNotEmpty;
+
   bool get _hasPhone => _customerPhoneDigits.length >= 3;
 
   double get _paidEntry =>
@@ -512,6 +516,15 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
 
   bool get _hasPaymentErrors =>
       _paidEntry < 0 || _paidEntry > _netTotal;
+
+  // An unpaid balance (including "pay later") needs a customer to track it.
+  // Paying the full total makes the phone optional.
+  bool get _phoneRequired => _paidEntry <= 0 || _paidEntry < _netTotal;
+
+  // A blank phone is fine for a fully paid sale, but a partially entered or
+  // invalid number is never accepted silently.
+  bool get _hasPhoneErrors =>
+      !_hasPhone && (_hasPhoneEntry || _phoneRequired);
 
   Future<void> _lookupCustomer() async {
     if (!_hasPhone) {
@@ -551,14 +564,15 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     }
   }
 
-  // The invoice needs a cashier location, an employee, a customer phone,
-  // valid payment details and at least one item before it can be created.
+  // The invoice needs a cashier location, an employee, a valid phone when one
+  // is required, valid payment details and at least one item before it can be
+  // created.
   bool get _canCreate =>
       _selectedCashierLocation != null &&
           _selectedEmployee != null &&
           _cart.isNotEmpty &&
           !_hasDiscountErrors &&
-          _hasPhone &&
+          !_hasPhoneErrors &&
           !_hasPaymentErrors;
 
   // What the user still has to do before the invoice can be created.
@@ -588,12 +602,18 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       return context.tr('Fix the highlighted discounts to create the invoice.');
     }
 
-    if (!_hasPhone) {
-      return context.tr('Enter the customer phone number to create the invoice.');
-    }
-
     if (_hasPaymentErrors) {
       return context.tr('Fix the paid amount to create the invoice.');
+    }
+
+    if (_phoneRequired && !_hasPhoneEntry) {
+      return context.tr(
+        'Enter the customer phone number for an unpaid or partially paid invoice.',
+      );
+    }
+
+    if (_hasPhoneErrors) {
+      return context.tr('Enter a valid customer phone number.');
     }
 
     return '';
@@ -647,11 +667,6 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       }
     }
 
-    if (!_hasPhone) {
-      _showError(context.tr('Please enter the customer phone number.'));
-      return;
-    }
-
     if (_paidEntry < 0) {
       _showError(context.tr('Paid amount cannot be negative.'));
       return;
@@ -663,6 +678,20 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
           money(_netTotal),
         ]),
       );
+      return;
+    }
+
+    if (_phoneRequired && !_hasPhoneEntry) {
+      _showError(
+        context.tr(
+          'A customer phone number is required when the invoice is not paid in full.',
+        ),
+      );
+      return;
+    }
+
+    if (_hasPhoneEntry && !_hasPhone) {
+      _showError(context.tr('Enter a valid customer phone number.'));
       return;
     }
 
@@ -1018,7 +1047,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                       fit: BoxFit.scaleDown,
                       alignment: Alignment.centerRight,
                       child: Text(
-                        money(variant.price),
+                        money(variant.sellingPrice),
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                         ),
@@ -1283,7 +1312,11 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     final theme = Theme.of(context);
 
     String? phoneError;
-    if (_customerPhoneController.text.trim().isNotEmpty && !_hasPhone) {
+    if (_phoneRequired && !_hasPhoneEntry) {
+      phoneError = context.tr(
+        'Required when paying less than the total.',
+      );
+    } else if (_hasPhoneEntry && !_hasPhone) {
       phoneError = context.tr('Enter at least 3 digits.');
     }
 
@@ -1322,7 +1355,9 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                   }
                 },
                 decoration: InputDecoration(
-                  labelText: context.tr('Customer phone'),
+                  labelText: context.tr(
+                    _phoneRequired ? 'Customer phone' : 'Customer phone (optional)',
+                  ),
                   prefixIcon: const Icon(Icons.phone_outlined),
                   isDense: true,
                   errorText: phoneError,
@@ -1430,7 +1465,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     final item = _cart[index];
     final theme = Theme.of(context);
 
-    final gross = item.variant.price * item.totalQuantity;
+    final gross = item.variant.sellingPrice * item.totalQuantity;
     final net = gross - item.discountTotal;
     final discountError = item.discountError(context);
 
@@ -1561,8 +1596,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                 padding: const EdgeInsets.only(top: 6, right: 8),
                 child: Text(
                   context.tr('  Unit: {0} → {1}{2} · line -{3}', [
-                    money(item.variant.price),
-                    money(item.variant.price - (item.unitDiscount ?? 0)),
+                    money(item.variant.sellingPrice),
+                    money(item.variant.sellingPrice - (item.unitDiscount ?? 0)),
                     item.discountIsPercent
                         ? context.tr(' (-{0}%)', [item.discountController.text])
                         : '',
@@ -1902,7 +1937,7 @@ class _InvoiceCartItem {
 
     if (discountIsPercent && value > 100) return true;
 
-    if (!discountIsPercent && value > variant.price) return true;
+    if (!discountIsPercent && value > variant.sellingPrice) return true;
 
     return false;
   }
@@ -1918,10 +1953,10 @@ class _InvoiceCartItem {
     if (discountIsPercent) {
       if (value > 100) return null;
 
-      return double.parse((variant.price * value / 100).toStringAsFixed(2));
+      return double.parse((variant.sellingPrice * value / 100).toStringAsFixed(2));
     }
 
-    return value > variant.price ? null : value;
+    return value > variant.sellingPrice ? null : value;
   }
 
   double get discountTotal => (unitDiscount ?? 0) * totalQuantity;
@@ -1939,8 +1974,8 @@ class _InvoiceCartItem {
       return context.tr('Enter a percentage up to 100.');
     }
 
-    if (!discountIsPercent && value > variant.price) {
-      return context.tr('Max {0} per unit.', [money(variant.price)]);
+    if (!discountIsPercent && value > variant.sellingPrice) {
+      return context.tr('Max {0} per unit.', [money(variant.sellingPrice)]);
     }
 
     return null;
@@ -2105,7 +2140,7 @@ class _AddItemDialogState extends State<_AddItemDialog> {
                   fit: BoxFit.scaleDown,
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    money(variant.price),
+                    money(variant.sellingPrice),
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 17,
@@ -2225,7 +2260,11 @@ class InvoiceDetailsScreen extends StatelessWidget {
                     ),
                     InfoTile(
                       label: context.tr('Date'),
-                      value: '${invoice.createdAt}',
+                      value: formatDisplayDateTime(
+                        invoice.createdAt,
+                        am: context.tr('AM'),
+                        pm: context.tr('PM'),
+                      ),
                     ),
                   ],
                 ),

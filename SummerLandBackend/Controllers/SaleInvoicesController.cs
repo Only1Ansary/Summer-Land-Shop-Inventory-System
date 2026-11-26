@@ -42,35 +42,8 @@ public class SaleInvoicesController : ControllerBase
         if (employee == null)
             return BadRequest("Invalid employee.");
 
-        var phone = NormalizePhone(dto.CustomerPhone);
-        if (phone.Length < 3)
-            return BadRequest("Enter a valid customer phone number.");
-
         if (!Enum.IsDefined(typeof(PaymentMethod), dto.PaymentMethod))
             return BadRequest("Choose a valid payment method.");
-
-        var customerName = dto.CustomerName?.Trim();
-        var customer = await _context.Customers
-            .FirstOrDefaultAsync(c => c.PhoneNumber == phone);
-
-        if (customer == null)
-        {
-            customer = new Customer
-            {
-                PhoneNumber = phone,
-                Name = string.IsNullOrWhiteSpace(customerName)
-                    ? null
-                    : customerName
-            };
-
-            _context.Customers.Add(customer);
-        }
-        else if (string.IsNullOrWhiteSpace(customer.Name) &&
-                 !string.IsNullOrWhiteSpace(customerName))
-        {
-            // A returning customer can gain a name on a later visit.
-            customer.Name = customerName;
-        }
 
         await using var transaction =
             await _context.Database.BeginTransactionAsync();
@@ -83,7 +56,6 @@ public class SaleInvoicesController : ControllerBase
                 LocationId = dto.LocationId,
                 EmployeeId = dto.EmployeeId,
                 EmployeeName = employee.Name,
-                Customer = customer,
                 PaymentMethod = dto.PaidAmount > 0
                     ? (PaymentMethod)dto.PaymentMethod
                     : null,
@@ -125,7 +97,7 @@ public class SaleInvoicesController : ControllerBase
                 if (item.DiscountPercent > 0)
                 {
                     item.DiscountAmount = Math.Round(
-                        variant.Price * item.DiscountPercent / 100m,
+                        variant.SellingPrice * item.DiscountPercent / 100m,
                         2,
                         MidpointRounding.AwayFromZero);
                 }
@@ -216,15 +188,15 @@ public class SaleInvoicesController : ControllerBase
                         "ProductVariant not found.");
                 }
 
-                if (groupedItem.DiscountAmount > variant.Price)
+                if (groupedItem.DiscountAmount > variant.SellingPrice)
                 {
                     return BadRequest(
                         $"Item discount cannot exceed the unit price of " +
-                        $"{variant.Price}.");
+                        $"{variant.SellingPrice}.");
                 }
 
                 var totalPrice =
-                    (variant.Price - groupedItem.DiscountAmount) *
+                    (variant.SellingPrice - groupedItem.DiscountAmount) *
                     groupedItem.Quantity;
 
                 var invoiceItem = new SaleInvoiceItem
@@ -238,7 +210,7 @@ public class SaleInvoicesController : ControllerBase
                         groupedItem.Quantity,
 
                     UnitPrice =
-                        variant.Price,
+                        variant.SellingPrice,
 
                     TotalPrice =
                         totalPrice,
@@ -303,6 +275,49 @@ public class SaleInvoicesController : ControllerBase
                     $"{invoice.TotalAmount}.");
             }
 
+            // A phone is only needed when the sale leaves a balance to track.
+            // Fully paid sales can be anonymous; an entered number is still
+            // validated so a typo is never stored as a customer.
+            var phone = NormalizePhone(dto.CustomerPhone);
+            if (phone.Length > 0 && phone.Length < 3)
+                return BadRequest("Enter a valid customer phone number.");
+
+            var needsCustomer =
+                dto.PaidAmount <= 0 || dto.PaidAmount < invoice.TotalAmount;
+
+            if (needsCustomer && phone.Length < 3)
+                return BadRequest("Enter the customer's phone number.");
+
+            Customer? customer = null;
+
+            if (phone.Length >= 3)
+            {
+                var customerName = dto.CustomerName?.Trim();
+                customer = await _context.Customers
+                    .FirstOrDefaultAsync(c => c.PhoneNumber == phone);
+
+                if (customer == null)
+                {
+                    customer = new Customer
+                    {
+                        PhoneNumber = phone,
+                        Name = string.IsNullOrWhiteSpace(customerName)
+                            ? null
+                            : customerName
+                    };
+
+                    _context.Customers.Add(customer);
+                }
+                else if (string.IsNullOrWhiteSpace(customer.Name) &&
+                         !string.IsNullOrWhiteSpace(customerName))
+                {
+                    // A returning customer can gain a name on a later visit.
+                    customer.Name = customerName;
+                }
+
+                invoice.Customer = customer;
+            }
+
             if (dto.PaidAmount > 0)
             {
                 _context.CustomerPayments.Add(new CustomerPayment
@@ -314,12 +329,16 @@ public class SaleInvoicesController : ControllerBase
                     PaidAt = DateTime.UtcNow
                 });
 
-                customer.TotalPaid += dto.PaidAmount;
+                if (customer != null)
+                    customer.TotalPaid += dto.PaidAmount;
             }
 
-            // Debt is the unpaid part of this invoice. A payment taken now
-            // already reduced it, so only the remainder is added.
-            customer.TotalDebt += invoice.TotalAmount - dto.PaidAmount;
+            if (customer != null)
+            {
+                // Debt is the unpaid part of this invoice. A payment taken now
+                // already reduced it, so only the remainder is added.
+                customer.TotalDebt += invoice.TotalAmount - dto.PaidAmount;
+            }
 
             // Credit the amount the customer actually pays (after every
             // discount) to the employee who made the sale.
@@ -348,8 +367,10 @@ public class SaleInvoicesController : ControllerBase
                         .ThenInclude(v => v.Colour)
                 .FirstAsync(i => i.Id == invoice.Id);
 
-            var summaries = await LoadCustomerSummariesAsync(
-                new[] { createdInvoice.CustomerId!.Value });
+            var summaries = createdInvoice.CustomerId.HasValue
+                ? await LoadCustomerSummariesAsync(
+                    new[] { createdInvoice.CustomerId.Value })
+                : new Dictionary<int, CustomerResponseDto>();
 
             return Ok(ToResponse(createdInvoice, summaries));
         }
@@ -365,6 +386,8 @@ public class SaleInvoicesController : ControllerBase
         [FromQuery] DateTime? from,
         [FromQuery] DateTime? to)
     {
+        var (fromDate, toDate) = QueryDateRange.Bounds(from, to);
+
         var query = _context.Invoices
             .Include(i => i.Location)
             .Include(i => i.Employee)
@@ -383,12 +406,12 @@ public class SaleInvoicesController : ControllerBase
 
         if (from.HasValue)
         {
-            query = query.Where(i => i.CreatedAt >= QueryDateRange.Start(from));
+            query = query.Where(i => i.CreatedAt >= fromDate);
         }
 
         if (to.HasValue)
         {
-            query = query.Where(i => i.CreatedAt <= QueryDateRange.End(to));
+            query = query.Where(i => i.CreatedAt <= toDate);
         }
 
         var invoices = await query
@@ -526,7 +549,7 @@ public class SaleInvoicesController : ControllerBase
     // Helpers
     // -----------------------------------------------------------------------
 
-    private static string NormalizePhone(string phone)
+    private static string NormalizePhone(string? phone)
     {
         return new string((phone ?? string.Empty)
             .Where(char.IsDigit)

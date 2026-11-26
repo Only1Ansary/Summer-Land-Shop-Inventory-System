@@ -52,7 +52,8 @@ public class InvoicePaymentDto
 {
     public int Id { get; set; }
 
-    public int CustomerId { get; set; }
+    // Null for payments on anonymous (fully paid) sales.
+    public int? CustomerId { get; set; }
 
     public decimal Amount { get; set; }
 

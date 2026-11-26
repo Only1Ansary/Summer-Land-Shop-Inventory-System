@@ -4,8 +4,6 @@ import 'package:flutter/foundation.dart'
     show TargetPlatform, defaultTargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
-
 import '../../localization/app_strings.dart';
 import '../../models/product.dart';
 import '../../models/purchase_invoice.dart';
@@ -633,7 +631,14 @@ class _ShowPurchaseInvoiceScreenState extends State<ShowPurchaseInvoiceScreen> {
             runSpacing: 8,
             children: [
               _metaChip(Icons.business_outlined, invoice.supplierName),
-              _metaChip(Icons.event_outlined, DateFormat('yyyy/MM/dd HH:mm:ss').format(date)),
+              _metaChip(
+                Icons.event_outlined,
+                formatDisplayDateTime(
+                  date,
+                  am: context.tr('AM'),
+                  pm: context.tr('PM'),
+                ),
+              ),
             ],
           ),
         ],

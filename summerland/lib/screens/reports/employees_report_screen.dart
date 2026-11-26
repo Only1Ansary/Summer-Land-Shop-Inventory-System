@@ -9,6 +9,9 @@ import '../../ui/app_shell.dart';
 import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
 import '../../ui/reconnect_reloader.dart';
+import '../../ui/report_widgets.dart';
+
+enum _EmployeeSort { sales, leftToPay, name }
 
 class EmployeesReportScreen extends StatefulWidget {
   const EmployeesReportScreen({super.key});
@@ -25,8 +28,10 @@ class _EmployeesReportScreenState extends State<EmployeesReportScreen>
   bool _loading = true;
   String? _error;
 
-  int _year = DateTime.now().year;
-  int _month = DateTime.now().month;
+  _EmployeeSort _sort = _EmployeeSort.sales;
+
+  int _year = nowInAppTimeZone().year;
+  int _month = nowInAppTimeZone().month;
 
   @override
   void initState() {
@@ -80,6 +85,23 @@ class _EmployeesReportScreenState extends State<EmployeesReportScreen>
     await _loadReport();
   }
 
+  List<EmployeeReportItem> _sorted(List<EmployeeReportItem> list) {
+    final result = List<EmployeeReportItem>.of(list);
+
+    switch (_sort) {
+      case _EmployeeSort.sales:
+        result.sort((a, b) => b.totalSales.compareTo(a.totalSales));
+      case _EmployeeSort.leftToPay:
+        result.sort((a, b) => b.leftToPay.compareTo(a.leftToPay));
+      case _EmployeeSort.name:
+        result.sort(
+              (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+        );
+    }
+
+    return result;
+  }
+
   @override
   Widget build(BuildContext context) {
     final report = _report;
@@ -92,104 +114,164 @@ class _EmployeesReportScreenState extends State<EmployeesReportScreen>
           : _error != null
           ? ErrorState(message: _error!, onRetry: _loadReport)
           : RefreshIndicator(
-              onRefresh: _loadReport,
-              child: WideContent(
-                child: ListView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.all(16),
-                  children: [
-                    MonthFilterBar(
-                      label: monthLabel(_year, _month),
-                      onTap: _pickMonth,
-                    ),
-                    const SizedBox(height: 16),
-                    if (report!.employeeOfTheMonth.isNotEmpty) ...[
-                      _EmployeeOfTheMonthCard(
-                        winners: report.employeeOfTheMonth,
-                        monthLabel: monthLabel(_year, _month),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-                    SectionHeader(
-                      title: context.tr('Overview'),
-                      subtitle: context.tr(
-                        'Standings for {0} and what has been paid out',
-                        [monthLabel(_year, _month)],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    StatGrid(
-                      stats: [
-                        StatData(
-                          label: context.tr('Employees'),
-                          value: '${report.employeeCount}',
-                          icon: Icons.people_outline,
-                        ),
-                        StatData(
-                          label: context.tr('Total Sales'),
-                          value: money(report.totalSales),
-                          icon: Icons.shopping_cart_outlined,
-                        ),
-                        StatData(
-                          label: context.tr('Targets Met'),
-                          value: '${report.targetMetCount}',
-                          icon: Icons.flag_outlined,
-                        ),
-                        StatData(
-                          label: context.tr('Monthly Salaries'),
-                          value: money(report.totalMonthlySalaries),
-                          icon: Icons.payments_outlined,
-                        ),
-                        StatData(
-                          label: context.tr('Bonus Owed'),
-                          value: money(report.totalBonusOwed),
-                          icon: Icons.card_giftcard_outlined,
-                        ),
-                        StatData(
-                          label: context.tr('Paid in Month'),
-                          value: money(report.paymentTotalInMonth),
-                          icon: Icons.check_circle_outline,
-                        ),
-                        StatData(
-                          label: context.tr('Total Paid (All Time)'),
-                          value: money(report.totalPaid),
-                          icon: Icons.history,
-                        ),
-                        StatData(
-                          label: context.tr('Left to Pay'),
-                          value: money(report.totalLeftToPay),
-                          icon: Icons.pending_actions_outlined,
-                          valueColor: amountColor(
-                            context,
-                            -report.totalLeftToPay,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    SectionHeader(
-                      title: context.tr('By Employee'),
-                      subtitle: context.tr('One card for each member of staff'),
-                    ),
-                    const SizedBox(height: 12),
-                    if (report.employees.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 40),
-                        child: EmptyState(
-                          icon: Icons.badge_outlined,
-                          title: context.tr('No employees yet'),
-                          message: context.tr(
-                            'Add employees before running this report.',
-                          ),
-                        ),
-                      )
-                    else
-                      for (final item in report.employees)
-                        _EmployeeReportTile(item: item),
-                  ],
+        onRefresh: _loadReport,
+        child: WideContent(
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16),
+            children: [
+              MonthFilterBar(
+                label: monthLabel(_year, _month),
+                onTap: _pickMonth,
+              ),
+              const SizedBox(height: 16),
+              if (report!.employeeOfTheMonth.isNotEmpty) ...[
+                _EmployeeOfTheMonthCard(
+                  winners: report.employeeOfTheMonth,
+                  monthLabel: monthLabel(_year, _month),
+                ),
+                const SizedBox(height: 16),
+              ],
+              _PayrollHero(report: report),
+              const SizedBox(height: 16),
+              SectionHeader(
+                title: context.tr('Performance'),
+                subtitle: context.tr(
+                  'Sales and targets for {0}',
+                  [monthLabel(_year, _month)],
                 ),
               ),
-            ),
+              const SizedBox(height: 8),
+              StatGrid(
+                stats: [
+                  StatData(
+                    label: context.tr('Employees'),
+                    value: '${report.employeeCount}',
+                    icon: Icons.people_outline,
+                  ),
+                  StatData(
+                    label: context.tr('Total Sales'),
+                    value: money(report.totalSales),
+                    icon: Icons.shopping_cart_outlined,
+                  ),
+                  StatData(
+                    label: context.tr('Targets Met'),
+                    value:
+                    '${report.targetMetCount} / ${report.employeeCount}',
+                    icon: Icons.flag_outlined,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              SectionHeader(
+                title: context.tr('Payroll'),
+                subtitle: context.tr('What is owed and what was paid'),
+              ),
+              const SizedBox(height: 8),
+              StatGrid(
+                stats: [
+                  StatData(
+                    label: context.tr('Monthly Salaries'),
+                    value: money(report.totalMonthlySalaries),
+                    icon: Icons.payments_outlined,
+                  ),
+                  StatData(
+                    label: context.tr('Bonus Owed'),
+                    value: money(report.totalBonusOwed),
+                    icon: Icons.card_giftcard_outlined,
+                  ),
+                  StatData(
+                    label: context.tr('Paid in Month'),
+                    value: money(report.paymentTotalInMonth),
+                    icon: Icons.check_circle_outline,
+                  ),
+                  StatData(
+                    label: context.tr('Total Paid (All Time)'),
+                    value: money(report.totalPaid),
+                    icon: Icons.history,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              SectionHeader(
+                title: context.tr('By Employee'),
+                subtitle: context.tr('Tap a card for the full breakdown'),
+              ),
+              const SizedBox(height: 8),
+              ReportChoiceChips<_EmployeeSort>(
+                selected: _sort,
+                onSelected: (value) => setState(() => _sort = value),
+                options: [
+                  ChoiceOption(
+                    _EmployeeSort.sales,
+                    context.tr('Top sales'),
+                    icon: Icons.emoji_events_outlined,
+                  ),
+                  ChoiceOption(
+                    _EmployeeSort.leftToPay,
+                    context.tr('Left to pay'),
+                    icon: Icons.pending_actions_outlined,
+                  ),
+                  ChoiceOption(
+                    _EmployeeSort.name,
+                    context.tr('Name'),
+                    icon: Icons.sort_by_alpha_rounded,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              if (report.employees.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 40),
+                  child: EmptyState(
+                    icon: Icons.badge_outlined,
+                    title: context.tr('No employees yet'),
+                    message: context.tr(
+                      'Add employees before running this report.',
+                    ),
+                  ),
+                )
+              else
+                for (final item in _sorted(report.employees))
+                  _EmployeeReportTile(item: item),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The payroll headline: how much is still owed to staff this month.
+class _PayrollHero extends StatelessWidget {
+  const _PayrollHero({required this.report});
+
+  final EmployeesReport report;
+
+  @override
+  Widget build(BuildContext context) {
+    final owing = report.totalLeftToPay > 0;
+
+    return ReportHeroCard(
+      label: context.tr('Left to Pay'),
+      value: money(report.totalLeftToPay),
+      icon: owing ? Icons.pending_actions_outlined : Icons.verified_rounded,
+      color: owing ? AppPalette.warning : AppPalette.success,
+      caption: owing
+          ? context.tr('Still owed to staff')
+          : context.tr('Everyone is paid up'),
+      chips: [
+        ReportPill(
+          label: context.tr('Paid {0}', [money(report.paymentTotalInMonth)]),
+          icon: Icons.check_circle_outline,
+          color: AppPalette.success,
+        ),
+        ReportPill(
+          label: context.tr('Bonus {0}', [money(report.totalBonusOwed)]),
+          icon: Icons.card_giftcard_outlined,
+          color: Theme.of(context).colorScheme.tertiary,
+        ),
+      ],
     );
   }
 }
@@ -338,17 +420,32 @@ class _EmployeeReportTileState extends State<_EmployeeReportTile> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        item.achievedTarget
-                            ? StatusBadge(
-                                label: context.tr('TARGET MET'),
-                                color: AppPalette.success,
-                                icon: Icons.check_circle_outline,
-                              )
-                            : StatusBadge(
-                                label: context.tr('BELOW TARGET'),
-                                color: theme.colorScheme.outline,
-                                icon: Icons.remove_circle_outline,
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            item.achievedTarget
+                                ? StatusBadge(
+                              label: context.tr('TARGET MET'),
+                              color: AppPalette.success,
+                              icon: Icons.check_circle_outline,
+                            )
+                                : StatusBadge(
+                              label: context.tr('BELOW TARGET'),
+                              color: theme.colorScheme.outline,
+                              icon: Icons.remove_circle_outline,
+                            ),
+                            if (item.leftToPay > 0)
+                              ReportPill(
+                                label: context.tr('Left {0}', [
+                                  money(item.leftToPay),
+                                ]),
+                                icon: Icons.pending_actions_outlined,
+                                color: AppPalette.warning,
                               ),
+                          ],
+                        ),
                       ],
                     ),
                   ),

@@ -199,7 +199,9 @@ public class EmployeesController : ControllerBase
         {
             EmployeeId = id,
             Amount = dto.Amount,
-            PaidAt = dto.PaidAt?.ToUniversalTime() ?? DateTime.UtcNow,
+            PaidAt = dto.PaidAt.HasValue
+                ? AppTimeZone.Current.ToUtc(dto.PaidAt.Value)
+                : DateTime.UtcNow,
         };
 
         // A fixed bonus settles in one go, so it is cleared afterwards and is

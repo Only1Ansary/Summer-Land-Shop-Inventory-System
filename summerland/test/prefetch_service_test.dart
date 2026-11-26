@@ -7,6 +7,7 @@ import 'package:summerland/services/api_service.dart';
 import 'package:summerland/services/cache_store.dart';
 import 'package:summerland/services/connectivity_service.dart';
 import 'package:summerland/services/prefetch_service.dart';
+import 'package:summerland/ui/app_widgets.dart';
 
 void main() {
   final requested = <String>[];
@@ -74,6 +75,32 @@ void main() {
     expect(CacheStore.instance.has('/api/Products'), isTrue);
     expect(CacheStore.instance.has('/api/Employees'), isTrue);
     expect(CacheStore.instance.has('/api/Reports/inventory'), isTrue);
+  });
+
+  test('the default range starts and ends on today', () async {
+    await PrefetchService.instance.warmUp();
+
+    final url = requested.firstWhere(
+      (r) => r.startsWith('/api/SaleInvoices?from='),
+    );
+    final query = Uri.parse(url).queryParameters;
+    final from = DateTime.parse(query['from']!);
+    final to = DateTime.parse(query['to']!);
+    final today = defaultFilterToDate();
+
+    expect(from.isUtc, isTrue);
+    expect(to.isUtc, isTrue);
+    expect(from.toIso8601String(), filterFromUtc(today).toIso8601String());
+    expect(to.toIso8601String(), filterToUtc(today).toIso8601String());
+
+    // Reports no longer send a device offset; the backend groups by IANA zone.
+    final salesUrl = requested.firstWhere(
+      (r) => r.startsWith('/api/Reports/sales?from='),
+    );
+    expect(
+      Uri.parse(salesUrl).queryParameters.containsKey('tzOffsetMinutes'),
+      isFalse,
+    );
   });
 
   test('reconnecting warms the cache again', () async {

@@ -129,20 +129,24 @@ class PrefetchService {
   List<String> _endpoints() {
     final from = defaultFilterFromDate();
     final to = defaultFilterToDate();
-    final range =
-        'from=${Uri.encodeComponent(from.toIso8601String())}'
-        '&to=${Uri.encodeComponent(to.toIso8601String())}';
 
-    final now = DateTime.now();
+    String fromParam(DateTime date) =>
+        'from=${Uri.encodeComponent(filterFromUtc(date).toIso8601String())}';
+    String toParam(DateTime date) =>
+        'to=${Uri.encodeComponent(filterToUtc(date).toIso8601String())}';
+
+    final range = '${fromParam(from)}&${toParam(to)}';
+
+    final now = nowInAppTimeZone();
     final employeeReportRange = 'year=${now.year}&month=${now.month}';
 
     // Also cache common alternative ranges for reports (some screens may use
     // slightly different defaults or users may have opened with different ranges)
     final ranges = <String>[
       range,
-      'from=${Uri.encodeComponent(now.subtract(const Duration(days: 7)).toIso8601String())}&to=${Uri.encodeComponent(to.toIso8601String())}',
-      'from=${Uri.encodeComponent(DateTime(now.year, now.month, 1).toIso8601String())}&to=${Uri.encodeComponent(to.toIso8601String())}',
-      'from=${Uri.encodeComponent(DateTime(now.year, 1, 1).toIso8601String())}&to=${Uri.encodeComponent(to.toIso8601String())}',
+      '${fromParam(now.subtract(const Duration(days: 7)))}&${toParam(to)}',
+      '${fromParam(DateTime(now.year, now.month, 1))}&${toParam(to)}',
+      '${fromParam(DateTime(now.year, 1, 1))}&${toParam(to)}',
     ];
 
     final endpoints = <String>[

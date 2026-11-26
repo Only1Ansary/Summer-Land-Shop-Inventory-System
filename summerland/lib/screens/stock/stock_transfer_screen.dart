@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-
 import '../../localization/app_strings.dart';
 import '../../models/stock_transfer.dart';
 import '../../services/api_service.dart';
@@ -95,9 +93,9 @@ class _StockTransfersScreenState extends State<StockTransfersScreen>
   Future<void> _pickDate(bool isFrom) async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: isFrom ? (_from ?? DateTime.now()) : (_to ?? DateTime.now()),
+      initialDate: isFrom ? (_from ?? nowInAppTimeZone()) : (_to ?? nowInAppTimeZone()),
       firstDate: DateTime(2020),
-      lastDate: DateTime.now(),
+      lastDate: nowInAppTimeZone(),
     );
 
     if (picked == null) return;
@@ -113,9 +111,7 @@ class _StockTransfersScreenState extends State<StockTransfersScreen>
     await _loadTransfers();
   }
 
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
-  }
+  String _formatDate(DateTime date) => formatDisplayDate(date);
 
   String _itemCountLabel(BuildContext context, StockTransfer transfer) {
     final count = transfer.items.length;
@@ -289,7 +285,11 @@ class _StockTransfersScreenState extends State<StockTransfersScreen>
                                 Align(
                                   alignment: Alignment.centerRight,
                                   child: Text(
-                                    DateFormat('yyyy/MM/dd HH:mm:ss').format(transfer.createdAt),
+                                    formatDisplayDateTime(
+                                      transfer.createdAt,
+                                      am: context.tr('AM'),
+                                      pm: context.tr('PM'),
+                                    ),
                                     style: Theme.of(context).textTheme.bodySmall
                                         ?.copyWith(
                                           color: Theme.of(context)

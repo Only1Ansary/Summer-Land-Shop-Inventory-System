@@ -38,7 +38,9 @@ public class ProductSearchVariantDto
 
     public string Barcode { get; set; } = string.Empty;
 
-    public decimal Price { get; set; }
+    public decimal PurchasePrice { get; set; }
+
+    public decimal SellingPrice { get; set; }
 
     public int LowStockThreshold { get; set; }
 

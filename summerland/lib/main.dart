@@ -12,12 +12,15 @@ import 'services/low_stock_notification_service.dart';
 import 'services/prefetch_service.dart';
 import 'services/shop_profile_service.dart';
 import 'services/theme_service.dart';
+import 'services/time_zone_service.dart';
 import 'ui/app_theme.dart';
 import 'utils/api_config.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  TimeZoneService.ensureInitialized();
   await ApiConfig.load();
+  await TimeZoneService.instance.load();
   await CacheStore.instance.load();
   ThemeService.instance.load();
   LanguageService.instance.load();
@@ -51,6 +54,7 @@ class SummerlandApp extends StatelessWidget {
         ThemeService.instance.variant,
         LanguageService.instance.language,
         ShopProfileService.instance.profile,
+        TimeZoneService.instance.timeZoneId,
       ]),
       builder: (context, _) => MaterialApp(
         title: ShopProfileService.instance.profile.value.name,

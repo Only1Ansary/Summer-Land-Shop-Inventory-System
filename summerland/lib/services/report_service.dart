@@ -4,6 +4,7 @@ import '../models/reports/inventory_report.dart';
 import '../models/reports/low_stock_report.dart';
 import '../models/reports/stock_movement_report.dart';
 import '../models/reports/best_selling_report.dart';
+import '../ui/app_widgets.dart';
 import 'api_service.dart';
 
 class ReportService {
@@ -11,19 +12,20 @@ class ReportService {
 
   ReportService(this._apiService);
 
-  String _date(DateTime date) {
-    return date.toIso8601String();
-  }
+  String _from(DateTime date) =>
+      filterFromUtc(date).toIso8601String();
+
+  String _to(DateTime date) => filterToUtc(date).toIso8601String();
 
   Future<SalesReport> getSalesReport({DateTime? from, DateTime? to}) async {
     final query = <String>[];
 
     if (from != null) {
-      query.add('from=${Uri.encodeComponent(_date(from))}');
+      query.add('from=${Uri.encodeComponent(_from(from))}');
     }
 
     if (to != null) {
-      query.add('to=${Uri.encodeComponent(_date(to))}');
+      query.add('to=${Uri.encodeComponent(_to(to))}');
     }
 
     final endpoint = query.isEmpty
@@ -80,11 +82,11 @@ class ReportService {
     final query = <String>[];
 
     if (from != null) {
-      query.add('from=${Uri.encodeComponent(_date(from))}');
+      query.add('from=${Uri.encodeComponent(_from(from))}');
     }
 
     if (to != null) {
-      query.add('to=${Uri.encodeComponent(_date(to))}');
+      query.add('to=${Uri.encodeComponent(_to(to))}');
     }
 
     if (locationId != null) {
@@ -112,11 +114,11 @@ class ReportService {
     final query = <String>[];
 
     if (from != null) {
-      query.add('from=${Uri.encodeComponent(_date(from))}');
+      query.add('from=${Uri.encodeComponent(_from(from))}');
     }
 
     if (to != null) {
-      query.add('to=${Uri.encodeComponent(_date(to))}');
+      query.add('to=${Uri.encodeComponent(_to(to))}');
     }
 
     if (categoryId != null) {

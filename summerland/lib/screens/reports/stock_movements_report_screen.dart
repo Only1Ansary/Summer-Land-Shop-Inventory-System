@@ -11,6 +11,9 @@ import '../../ui/app_shell.dart';
 import '../../ui/app_theme.dart';
 import '../../ui/app_widgets.dart';
 import '../../ui/reconnect_reloader.dart';
+import '../../ui/report_widgets.dart';
+
+enum _Direction { all, incoming, outgoing }
 
 class StockMovementsReportScreen extends StatefulWidget {
   const StockMovementsReportScreen({super.key});
@@ -31,6 +34,7 @@ class _StockMovementsReportScreenState extends State<StockMovementsReportScreen>
   int? _selectedLocationId;
   DateTime? _from;
   DateTime? _to;
+  _Direction _direction = _Direction.all;
 
   bool _loading = true;
   String? _error;
@@ -106,9 +110,11 @@ class _StockMovementsReportScreenState extends State<StockMovementsReportScreen>
   Future<void> _pickDate(bool isFrom) async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: isFrom ? (_from ?? DateTime.now()) : (_to ?? DateTime.now()),
+      initialDate: isFrom
+          ? (_from ?? nowInAppTimeZone())
+          : (_to ?? nowInAppTimeZone()),
       firstDate: DateTime(2020),
-      lastDate: DateTime.now(),
+      lastDate: nowInAppTimeZone(),
     );
 
     if (picked == null) return;
@@ -124,14 +130,59 @@ class _StockMovementsReportScreenState extends State<StockMovementsReportScreen>
     await _loadData();
   }
 
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
-  }
+  String _formatDate(DateTime date) => formatDisplayDate(date);
+
+  bool _sameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
+
+  String _signed(int value) => value > 0 ? '+$value' : '$value';
 
   @override
   Widget build(BuildContext context) {
     final report = _report;
     final items = report?.items ?? const <StockMovementReportItem>[];
+
+    // Totals are for the whole period, whatever the direction filter shows.
+    var unitsIn = 0;
+    var unitsOut = 0;
+
+    for (final item in items) {
+      final change = item.quantityChange.toInt();
+
+      if (change > 0) {
+        unitsIn += change;
+      } else {
+        unitsOut += -change;
+      }
+    }
+
+    final net = unitsIn - unitsOut;
+
+    final visible = items.where((item) {
+      final change = item.quantityChange;
+
+      switch (_direction) {
+        case _Direction.all:
+          return true;
+        case _Direction.incoming:
+          return change > 0;
+        case _Direction.outgoing:
+          return change < 0;
+      }
+    }).toList();
+
+    // Day headers are added while walking the current page only.
+    final rows = <Widget>[];
+    DateTime? lastDay;
+
+    for (final item in _pageSlice(visible)) {
+      if (lastDay == null || !_sameDay(lastDay, item.createdAt)) {
+        rows.add(_DayHeader(label: formatDisplayDate(item.createdAt)));
+        lastDay = item.createdAt;
+      }
+
+      rows.add(_MovementTile(item: item));
+    }
 
     return AppShell(
       title: context.tr('Stock Movements'),
@@ -141,167 +192,246 @@ class _StockMovementsReportScreenState extends State<StockMovementsReportScreen>
           : _error != null
           ? ErrorState(message: _error!, onRetry: _loadData)
           : Column(
-              children: [
-                Expanded(
-                  child: RefreshIndicator(
-                    onRefresh: _loadData,
-                    child: WideContent(
-                      child: ListView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.all(16),
-                        children: [
-                          DateFilterBar(
-                            fromLabel: _from == null
-                                ? context.tr('From')
-                                : _formatDate(_from!),
-                            toLabel: _to == null
-                                ? context.tr('To')
-                                : _formatDate(_to!),
-                            onFrom: () => _pickDate(true),
-                            onTo: () => _pickDate(false),
+        children: [
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _loadData,
+              child: WideContent(
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    ReportFiltersCard(
+                      children: [
+                        DatePresetBar(
+                          from: _from,
+                          to: _to,
+                          today: nowInAppTimeZone(),
+                          onSelected: (from, to) {
+                            setState(() {
+                              _from = from;
+                              _to = to;
+                            });
+                            _loadData();
+                          },
+                        ),
+                        DateFilterBar(
+                          fromLabel: _from == null
+                              ? context.tr('From')
+                              : _formatDate(_from!),
+                          toLabel: _to == null
+                              ? context.tr('To')
+                              : _formatDate(_to!),
+                          onFrom: () => _pickDate(true),
+                          onTo: () => _pickDate(false),
+                        ),
+                        DropdownButtonFormField<int?>(
+                          key: ValueKey('location-$_selectedLocationId'),
+                          initialValue: _selectedLocationId,
+                          decoration: InputDecoration(
+                            labelText: context.tr('Location'),
+                            prefixIcon: const Icon(
+                              Icons.location_on_outlined,
+                            ),
                           ),
-                          const SizedBox(height: 12),
-                          DropdownButtonFormField<int?>(
-                            key: ValueKey('location-$_selectedLocationId'),
-                            initialValue: _selectedLocationId,
-                            decoration: InputDecoration(
-                              labelText: context.tr('Location'),
-                              prefixIcon: const Icon(
-                                Icons.location_on_outlined,
+                          items: [
+                            DropdownMenuItem<int?>(
+                              value: null,
+                              child: Text(context.tr('All Locations')),
+                            ),
+                            ..._locations.map(
+                                  (location) => DropdownMenuItem<int?>(
+                                value: location.id,
+                                child: Text(location.name),
                               ),
                             ),
-                            items: [
-                              DropdownMenuItem<int?>(
-                                value: null,
-                                child: Text(context.tr('All Locations')),
-                              ),
-                              ..._locations.map(
-                                (location) => DropdownMenuItem<int?>(
-                                  value: location.id,
-                                  child: Text(location.name),
-                                ),
-                              ),
-                            ],
-                            onChanged: (value) async {
-                              setState(() {
-                                _selectedLocationId = value;
-                              });
+                          ],
+                          onChanged: (value) async {
+                            setState(() {
+                              _selectedLocationId = value;
+                            });
 
-                              await _loadData();
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                          StatGrid(
-                            stats: [
-                              StatData(
-                                label: context.tr('Movements'),
-                                value: '${report!.movementCount}',
-                                icon: Icons.swap_vert_rounded,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          SectionHeader(
-                            title: context.tr('Movement History'),
-                            subtitle: context.tr(
-                              'Quantity changes from transfers and refills',
+                            await _loadData();
+                          },
+                        ),
+                        ReportChoiceChips<_Direction>(
+                          selected: _direction,
+                          onSelected: (value) => setState(() {
+                            _direction = value;
+                            _currentPage = 0;
+                          }),
+                          options: [
+                            ChoiceOption(
+                              _Direction.all,
+                              context.tr('All'),
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          ..._pageSlice(items).map(
-                            (item) => Card(
-                              margin: const EdgeInsets.only(bottom: 10),
-                              child: Padding(
-                                padding: const EdgeInsets.all(12),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            item.productName,
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .titleSmall
-                                                ?.copyWith(
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            item.modelNumber,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodySmall,
-                                          ),
-                                          Text(
-                                            '${item.locationName} \u2022 ${context.tr(item.reason)}',
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodySmall,
-                                          ),
-                                          Text(
-                                            '${item.createdAt}',
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodySmall,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    ConstrainedBox(
-                                      constraints: const BoxConstraints(
-                                        maxWidth: 120,
-                                      ),
-                                      child: FittedBox(
-                                        fit: BoxFit.scaleDown,
-                                        alignment: Alignment.centerRight,
-                                        child: StatusBadge(
-                                          label: item.quantityChange > 0
-                                              ? '+${item.quantityChange}'
-                                              : '${item.quantityChange}',
-                                          color: item.quantityChange > 0
-                                              ? AppPalette.success
-                                              : AppPalette.danger,
-                                          icon: item.quantityChange > 0
-                                              ? Icons.arrow_upward_rounded
-                                              : Icons.arrow_downward_rounded,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                            ChoiceOption(
+                              _Direction.incoming,
+                              context.tr('Incoming'),
+                              icon: Icons.arrow_upward_rounded,
                             ),
-                          ),
-                        ],
+                            ChoiceOption(
+                              _Direction.outgoing,
+                              context.tr('Outgoing'),
+                              icon: Icons.arrow_downward_rounded,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    SectionHeader(
+                      title: context.tr('Movement History'),
+                      subtitle: context.tr(
+                        'Quantity changes from transfers and refills',
                       ),
                     ),
-                  ),
+                    const SizedBox(height: 4),
+                    if (visible.isEmpty)
+                      SizedBox(
+                        height: 220,
+                        child: EmptyState(
+                          icon: Icons.swap_vert_rounded,
+                          title: context.tr('No movements found'),
+                          message: context.tr(
+                            'Adjust the dates or filters.',
+                          ),
+                        ),
+                      )
+                    else
+                      ...rows,
+                  ],
                 ),
-                if (items.isNotEmpty)
-                  WideContent(
-                    child: PaginationBar(
-                      page: _currentPage,
-                      pageSize: _pageSize,
-                      totalItems: items.length,
-                      onPageChanged: _goToPage,
+              ),
+            ),
+          ),
+          if (visible.isNotEmpty)
+            WideContent(
+              child: PaginationBar(
+                page: _currentPage,
+                pageSize: _pageSize,
+                totalItems: visible.length,
+                onPageChanged: _goToPage,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DayHeader extends StatelessWidget {
+  const _DayHeader({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 12, 4, 6),
+      child: Text(
+        label,
+        style: theme.textTheme.labelLarge?.copyWith(
+          fontWeight: FontWeight.w700,
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      ),
+    );
+  }
+}
+
+class _MovementTile extends StatelessWidget {
+  const _MovementTile({required this.item});
+
+  final StockMovementReportItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final change = item.quantityChange;
+    final incoming = change > 0;
+    final color = incoming ? AppPalette.success : AppPalette.danger;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                incoming
+                    ? Icons.arrow_upward_rounded
+                    : Icons.arrow_downward_rounded,
+                color: color,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.productName,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
-              ],
+                  const SizedBox(height: 2),
+                  Text(
+                    '${item.modelNumber} \u2022 ${item.locationName}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      ReportPill(
+                        label: context.tr(item.reason),
+                        color: theme.colorScheme.secondary,
+                      ),
+                      Text(
+                        formatDisplayDateTime(
+                          item.createdAt,
+                          am: context.tr('AM'),
+                          pm: context.tr('PM'),
+                        ),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
+            const SizedBox(width: 10),
+            Text(
+              incoming ? '+$change' : '$change',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

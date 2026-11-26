@@ -102,9 +102,6 @@ class PurchaseInvoiceTile extends StatelessWidget {
     );
   }
 
-  String _formatDate(DateTime? date) {
-    if (date == null) return '-';
-
-    return '${date.day}/${date.month}/${date.year}';
-  }
+  String _formatDate(DateTime? date) =>
+      date == null ? '-' : formatDisplayDate(date);
 }

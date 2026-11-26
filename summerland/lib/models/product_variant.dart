@@ -13,7 +13,8 @@ class ProductVariant {
   final int barcodeType;
   final String barcode;
 
-  final double price;
+  final double purchasePrice;
+  final double sellingPrice;
   final int lowStockThreshold;
 
   final int totalQuantity;
@@ -30,7 +31,8 @@ class ProductVariant {
     this.colourName,
     required this.barcodeType,
     required this.barcode,
-    required this.price,
+    this.purchasePrice = 0,
+    required this.sellingPrice,
     required this.lowStockThreshold,
     required this.totalQuantity,
     required this.isLowStock,
@@ -48,10 +50,18 @@ class ProductVariant {
       colourName: json['colourName'],
       barcodeType: json['barcodeType'],
       barcode: json['barcode'],
-      price: (json['price'] as num).toDouble(),
+      purchasePrice: _toDouble(json['purchasePrice']),
+      // Cached/offline records may still use the old "price" key.
+      sellingPrice: _toDouble(json['sellingPrice'] ?? json['price']),
       lowStockThreshold: json['lowStockThreshold'] ?? 0,
       totalQuantity: json['totalQuantity'] ?? 0,
       isLowStock: json['isLowStock'] ?? false,
     );
+  }
+
+  static double _toDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+
+    return 0;
   }
 }

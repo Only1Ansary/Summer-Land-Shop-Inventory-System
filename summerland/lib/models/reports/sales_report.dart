@@ -15,8 +15,11 @@ class SalesReport {
   final double employeePaymentTotal;
   final int supplierCount;
   final double supplierDebtTotal;
+  final double costOfGoodsSold;
+  final double grossProfit;
   final double profit;
   final List<CategorySales> categorySales;
+  final List<DailySales> dailySales;
 
   final int customerCount;
   final int customerPaymentCount;
@@ -43,6 +46,9 @@ class SalesReport {
     required this.supplierDebtTotal,
     required this.profit,
     required this.categorySales,
+    this.costOfGoodsSold = 0.0,
+    this.grossProfit = 0.0,
+    this.dailySales = const [],
     this.customerCount = 0,
     this.customerPaymentCount = 0,
     this.customerPaymentsTotal = 0.0,
@@ -70,7 +76,12 @@ class SalesReport {
       employeePaymentTotal: amount('employeePaymentTotal'),
       supplierCount: json['supplierCount'] ?? 0,
       supplierDebtTotal: amount('supplierDebtTotal'),
+      costOfGoodsSold: amount('costOfGoodsSold'),
+      grossProfit: amount('grossProfit'),
       profit: amount('profit'),
+      dailySales: (json['dailySales'] as List<dynamic>? ?? [])
+          .map((e) => DailySales.fromJson(e as Map<String, dynamic>))
+          .toList(),
       categorySales: (json['categorySales'] as List<dynamic>? ?? [])
           .map((e) => CategorySales.fromJson(e as Map<String, dynamic>))
           .toList(),
@@ -80,7 +91,7 @@ class SalesReport {
       customerDebtTotal: amount('customerDebtTotal'),
       paymentsByMethod: (json['paymentsByMethod'] as List<dynamic>? ?? [])
           .map((e) =>
-              PaymentMethodTotal.fromJson(e as Map<String, dynamic>))
+          PaymentMethodTotal.fromJson(e as Map<String, dynamic>))
           .toList(),
     );
   }
@@ -122,6 +133,26 @@ class CategorySales {
       categoryName: json['categoryName'] as String? ?? 'Uncategorized',
       quantitySold: json['quantitySold'] ?? 0,
       amount: (json['amount'] as num? ?? 0).toDouble(),
+    );
+  }
+}
+
+class DailySales {
+  final DateTime date;
+  final double netSales;
+  final int invoiceCount;
+
+  DailySales({
+    required this.date,
+    required this.netSales,
+    required this.invoiceCount,
+  });
+
+  factory DailySales.fromJson(Map<String, dynamic> json) {
+    return DailySales(
+      date: DateTime.parse(json['date']),
+      netSales: (json['netSales'] as num? ?? 0).toDouble(),
+      invoiceCount: json['invoiceCount'] ?? 0,
     );
   }
 }

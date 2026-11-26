@@ -24,8 +24,7 @@ public class ReportsController : ControllerBase
     [FromQuery] DateTime? to,
     CancellationToken ct)
     {
-        var fromDate = QueryDateRange.Start(from);
-        var toDate = QueryDateRange.End(to);
+        var (fromDate, toDate) = QueryDateRange.Bounds(from, to);
 
         if (fromDate > toDate)
             return BadRequest("From date cannot be greater than To date.");
@@ -46,6 +45,11 @@ public class ReportsController : ControllerBase
         var lines = invoices.SelectMany(i => i.Items);
 
         var retainedQuantity = await lines.SumAsync(i => (int?)i.Quantity, ct) ?? 0;
+
+        // Cost of goods sold: what the items we actually kept (net of returns)
+        // cost us, using each variant's cost price.
+        var costOfGoodsSold = await lines
+            .SumAsync(l => (decimal?)(l.Quantity * l.ProductVariant.PurchasePrice), ct) ?? 0m;
 
         // ---------- Sales by category ----------
         // Each invoice's discount is spread pro-rata over its lines, so the
@@ -126,7 +130,10 @@ public class ReportsController : ControllerBase
             .Where(i => i.CustomerId != null)
             .SumAsync(i => (decimal?)i.TotalAmount, ct) ?? 0m;
 
+        // Anonymous (fully paid) sales have a payment but no customer, so
+        // they must not reduce the outstanding balance owed by customers.
         var customerPaidAllTime = await _context.CustomerPayments.AsNoTracking()
+            .Where(p => p.CustomerId != null)
             .SumAsync(p => (decimal?)p.Amount, ct) ?? 0m;
 
         var customerDebtTotal = Math.Max(0,
@@ -144,9 +151,41 @@ public class ReportsController : ControllerBase
         var itemsSold = retainedQuantity;
 
         var grossSales = netSales + returnsAmount;
-        // Profit accounts for the purchase cost actually incurred in the
-        // period and what was paid out to employees.
-        var profit = netSales - purchases.Sum(p => p.TotalPaid) - employeePaymentTotal;
+        // Real profit: revenue minus the cost of what was sold, minus staff
+        // payments. Stock purchases are NOT subtracted here (that would count
+        // stock still on the shelf as a cost); the cost of the items sold is
+        // already covered by costOfGoodsSold.
+        var grossProfit = netSales - costOfGoodsSold;
+        var profit = grossProfit - employeePaymentTotal;
+
+        // ---------- Daily sales (one entry per day, empty days included) ----------
+        // Bucket by the day the user sees, not by the UTC date the row was
+        // stored under. The configured IANA zone resolves EET/EEST per instant.
+        var invoiceDays = await invoices
+            .Select(i => new { i.CreatedAt, i.TotalAmount })
+            .ToListAsync(ct);
+
+        var byDay = invoiceDays
+            .GroupBy(i => AppTimeZone.Current.ToLocal(i.CreatedAt).Date)
+            .ToDictionary(
+                g => g.Key,
+                g => new { Net = g.Sum(i => i.TotalAmount), Count = g.Count() });
+
+        var dailySales = new List<DailySalesDto>();
+        for (var day = AppTimeZone.Current.ToLocal(fromDate).Date;
+             day <= AppTimeZone.Current.ToLocal(toDate).Date;
+             day = day.AddDays(1))
+        {
+            byDay.TryGetValue(day, out var entry);
+            dailySales.Add(new DailySalesDto
+            {
+                // A calendar-day label, not an instant; the JSON converter
+                // still writes it as an unambiguous ISO 8601 UTC value.
+                Date = DateTime.SpecifyKind(day, DateTimeKind.Unspecified),
+                NetSales = entry?.Net ?? 0m,
+                InvoiceCount = entry?.Count ?? 0
+            });
+        }
 
         return Ok(new SalesReportDto
         {
@@ -185,7 +224,10 @@ public class ReportsController : ControllerBase
                 })
                 .ToList(),
 
+            CostOfGoodsSold = costOfGoodsSold,
+            GrossProfit = grossProfit,
             Profit = profit,
+            DailySales = dailySales,
 
             CategorySales = categorySales
         });
@@ -197,18 +239,19 @@ public class ReportsController : ControllerBase
         [FromQuery] int? month,
         CancellationToken ct)
     {
-        var now = DateTime.UtcNow;
-        var reportYear = year ?? now.Year;
-        var reportMonth = month ?? now.Month;
+        var today = AppTimeZone.Current.Today;
+        var reportYear = year ?? today.Year;
+        var reportMonth = month ?? today.Month;
 
         if (reportMonth < 1 || reportMonth > 12)
         {
             return BadRequest("Month must be between 1 and 12.");
         }
 
-        var monthStart = new DateTime(reportYear, reportMonth, 1,
-            0, 0, 0, DateTimeKind.Utc);
-        var monthEnd = monthStart.AddMonths(1);
+        var monthStart = AppTimeZone.Current.StartOfDayUtc(
+            new DateTime(reportYear, reportMonth, 1));
+        var monthEnd = AppTimeZone.Current.StartOfDayUtc(
+            new DateTime(reportYear, reportMonth, 1).AddMonths(1));
 
         var employees = await _context.Employees.AsNoTracking()
             .OrderBy(e => e.Name)
@@ -348,11 +391,11 @@ public class ReportsController : ControllerBase
                     ColourName = v.Colour?.Name,
 
                     Barcode = v.Barcode,
-                    Price = v.Price,
+                    Price = v.SellingPrice,
 
                     LowStockThreshold = v.LowStockThreshold,
                     TotalQuantity = totalQuantity,
-                    InventoryValue = totalQuantity * v.Price,
+                    InventoryValue = totalQuantity * v.SellingPrice,
 
                     IsLowStock = totalQuantity <= v.LowStockThreshold,
 
@@ -423,7 +466,7 @@ public class ReportsController : ControllerBase
                     ColourName = v.Colour?.Name,
 
                     Barcode = v.Barcode,
-                    Price = v.Price,
+                    Price = v.SellingPrice,
 
                     LowStockThreshold = v.LowStockThreshold,
                     TotalQuantity = totalQuantity,
@@ -459,9 +502,7 @@ public class ReportsController : ControllerBase
     [FromQuery] int? locationId,
     [FromQuery] int? productVariantId)
     {
-        var fromDate = QueryDateRange.Start(from);
-
-        var toDate = QueryDateRange.End(to);
+        var (fromDate, toDate) = QueryDateRange.Bounds(from, to);
 
         if (fromDate > toDate)
         {
@@ -541,9 +582,7 @@ public class ReportsController : ControllerBase
     [FromQuery] DateTime? to,
     [FromQuery] int? categoryId)
     {
-        var fromDate = QueryDateRange.Start(from);
-
-        var toDate = QueryDateRange.End(to);
+        var (fromDate, toDate) = QueryDateRange.Bounds(from, to);
 
         if (fromDate > toDate)
         {

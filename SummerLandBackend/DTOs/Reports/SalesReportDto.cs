@@ -45,10 +45,28 @@
         public List<PaymentMethodTotalDto> PaymentsByMethod { get; set; }
             = new List<PaymentMethodTotalDto>();
 
+        // Net revenue minus cost of goods sold.
+        public decimal CostOfGoodsSold { get; set; }
+
+        public decimal GrossProfit { get; set; }
+
+        // Gross profit minus staff payments (real profit).
         public decimal Profit { get; set; }
+
+        public List<DailySalesDto> DailySales { get; set; }
+            = new List<DailySalesDto>();
 
         public List<CategorySalesDto> CategorySales { get; set; }
             = new List<CategorySalesDto>();
+    }
+
+    public class DailySalesDto
+    {
+        public DateTime Date { get; set; }
+
+        public decimal NetSales { get; set; }
+
+        public int InvoiceCount { get; set; }
     }
 
     public class PaymentMethodTotalDto

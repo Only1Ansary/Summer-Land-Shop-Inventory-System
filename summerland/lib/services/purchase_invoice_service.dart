@@ -1,4 +1,5 @@
 import '../models/purchase_invoice.dart';
+import '../ui/app_widgets.dart';
 import 'api_service.dart';
 
 class PurchaseInvoiceService {
@@ -17,7 +18,7 @@ class PurchaseInvoiceService {
   }) async {
     final data = await _apiService.post('/api/PurchaseInvoices', {
       'supplierName': supplierName,
-      'date': date.toIso8601String(),
+      'date': toAppUtc(date).toIso8601String(),
       'totalPaid': totalPaid,
       'paymentMethod': paymentMethod,
       'discount': discount,
@@ -41,11 +42,15 @@ class PurchaseInvoiceService {
     final query = <String>[];
 
     if (from != null) {
-      query.add('from=${Uri.encodeComponent(from.toIso8601String())}');
+      query.add(
+        'from=${Uri.encodeComponent(filterFromUtc(from).toIso8601String())}',
+      );
     }
 
     if (to != null) {
-      query.add('to=${Uri.encodeComponent(to.toIso8601String())}');
+      query.add(
+        'to=${Uri.encodeComponent(filterToUtc(to).toIso8601String())}',
+      );
     }
 
     final endpoint = query.isEmpty

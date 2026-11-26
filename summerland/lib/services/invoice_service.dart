@@ -1,4 +1,5 @@
 import '../models/invoice.dart';
+import '../ui/app_widgets.dart';
 import 'api_service.dart';
 
 class InvoiceService {
@@ -10,11 +11,15 @@ class InvoiceService {
     final query = <String>[];
 
     if (from != null) {
-      query.add('from=${Uri.encodeComponent(from.toIso8601String())}');
+      query.add(
+        'from=${Uri.encodeComponent(filterFromUtc(from).toIso8601String())}',
+      );
     }
 
     if (to != null) {
-      query.add('to=${Uri.encodeComponent(to.toIso8601String())}');
+      query.add(
+        'to=${Uri.encodeComponent(filterToUtc(to).toIso8601String())}',
+      );
     }
 
     final endpoint = query.isEmpty

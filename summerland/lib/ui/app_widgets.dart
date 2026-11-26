@@ -1,10 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 import '../localization/app_strings.dart';
 import '../services/api_service.dart';
 import '../services/connectivity_service.dart';
+import '../services/time_zone_service.dart';
 import 'app_theme.dart';
 import './text_input_helpers.dart';
 
@@ -235,12 +237,89 @@ String percentLabel(double value) =>
 DateTime dateOnly(DateTime value) =>
     DateTime(value.year, value.month, value.day);
 
-/// Default start of a date filter that has not been set: yesterday.
-DateTime defaultFilterFromDate() =>
-    dateOnly(DateTime.now().subtract(const Duration(days: 1)));
+/// Current instant on the app's clock (Africa/Cairo by default).
+DateTime nowInAppTimeZone() =>
+    tz.TZDateTime.now(TimeZoneService.instance.location);
+
+/// Converts a UTC instant (as returned by the API) to the app's clock.
+///
+/// Uses IANA data rather than the device offset, so EET/EEST changes are
+/// applied for the specific instant being formatted.
+DateTime inAppTimeZone(DateTime value) =>
+    tz.TZDateTime.from(value, TimeZoneService.instance.location);
+
+/// Calendar day of an API timestamp on the app's clock.
+DateTime localDateOnly(DateTime value) {
+  final local = inAppTimeZone(value);
+
+  return DateTime(local.year, local.month, local.day);
+}
+
+/// Builds a wall-clock value in the app's timezone from a picked calendar date.
+///
+/// Date pickers return local calendar components, not instants; reading the
+/// components avoids shifting the picked day on devices in another zone.
+tz.TZDateTime appWallClock(DateTime value) => tz.TZDateTime(
+  TimeZoneService.instance.location,
+  value.year,
+  value.month,
+  value.day,
+  value.hour,
+  value.minute,
+  value.second,
+  value.millisecond,
+  value.microsecond,
+);
+
+/// Converts a wall-clock value picked in the app's timezone to a UTC instant.
+DateTime toAppUtc(DateTime value) => appWallClock(value).toUtc();
+
+/// Start of [value]'s day in the app's timezone, as the UTC instant sent to
+/// the API. In Cairo this is 22:00Z in winter and 21:00Z in summer.
+DateTime filterFromUtc(DateTime value) => toAppUtc(value);
+
+/// Last tick of [value]'s day in the app's timezone, as a UTC instant.
+DateTime filterToUtc(DateTime value) =>
+    appWallClock(
+      DateTime(
+        value.year,
+        value.month,
+        value.day,
+        23,
+        59,
+        59,
+        999,
+        999,
+      ),
+    ).toUtc();
+
+/// Date-only label for an API timestamp.
+String formatDisplayDate(DateTime value) {
+  final local = inAppTimeZone(value);
+
+  return '${local.day}/${local.month}/${local.year}';
+}
+
+/// Timestamp label in 12-hour time, converted to the app's timezone.
+String formatDisplayDateTime(
+  DateTime value, {
+  String am = 'AM',
+  String pm = 'PM',
+}) {
+  final local = inAppTimeZone(value);
+  final hour = local.hour % 12 == 0 ? 12 : local.hour % 12;
+  String two(int v) => v.toString().padLeft(2, '0');
+  final suffix = local.hour < 12 ? am : pm;
+
+  return '${local.year}/${two(local.month)}/${two(local.day)} '
+      '${two(hour)}:${two(local.minute)}:${two(local.second)} $suffix';
+}
+
+/// Default start of a date filter that has not been set: today.
+DateTime defaultFilterFromDate() => dateOnly(nowInAppTimeZone());
 
 /// Default end of a date filter that has not been set: today.
-DateTime defaultFilterToDate() => dateOnly(DateTime.now());
+DateTime defaultFilterToDate() => dateOnly(nowInAppTimeZone());
 
 /// Pushes a screen using an instant (zero-duration) route.
 ///
@@ -781,28 +860,54 @@ class DateFilterBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Expanded(
-          child: OutlinedButton.icon(
-            onPressed: onFrom,
-            icon: const Icon(Icons.calendar_month_outlined, size: 18),
-            label: Text(fromLabel),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-            ),
-          ),
+        _dateButton(
+          context,
+          hint: context.tr('From'),
+          label: fromLabel,
+          onPressed: onFrom,
         ),
         const SizedBox(width: 12),
-        Expanded(
-          child: OutlinedButton.icon(
-            onPressed: onTo,
-            icon: const Icon(Icons.calendar_month_outlined, size: 18),
-            label: Text(toLabel),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-            ),
-          ),
+        _dateButton(
+          context,
+          hint: context.tr('To'),
+          label: toLabel,
+          onPressed: onTo,
         ),
       ],
+    );
+  }
+
+  Widget _dateButton(
+    BuildContext context, {
+    required String hint,
+    required String label,
+    required VoidCallback onPressed,
+  }) {
+    final showDate = label != hint && label.isNotEmpty;
+
+    return Expanded(
+      child: OutlinedButton.icon(
+        onPressed: onPressed,
+        icon: const Icon(Icons.calendar_month_outlined, size: 18),
+        label: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              hint,
+              style: Theme.of(context).textTheme.labelSmall,
+            ),
+            if (showDate)
+              Text(
+                label,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+          ],
+        ),
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+        ),
+      ),
     );
   }
 }

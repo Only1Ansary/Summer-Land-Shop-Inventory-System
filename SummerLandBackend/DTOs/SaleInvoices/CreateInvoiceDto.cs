@@ -13,10 +13,12 @@ namespace SummerLandBackend.DTOs.SaleInvoices
             ErrorMessage = "Choose an employee for the invoice.")]
         public int EmployeeId { get; set; }
 
-        [Required(ErrorMessage = "Enter the customer's phone number.")]
-        [StringLength(50, MinimumLength = 3,
+        // Optional for a sale paid in full. The controller requires it when
+        // the invoice leaves an unpaid balance, and validates its length
+        // whenever a number is supplied.
+        [StringLength(50,
             ErrorMessage = "Enter a valid customer phone number.")]
-        public string CustomerPhone { get; set; } = string.Empty;
+        public string? CustomerPhone { get; set; }
 
         [StringLength(100,
             ErrorMessage = "Customer name cannot be longer than 100 characters.")]

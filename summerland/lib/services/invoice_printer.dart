@@ -1,5 +1,4 @@
 import 'package:flutter/services.dart' show rootBundle;
-import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -7,6 +6,7 @@ import 'package:printing/printing.dart';
 import '../models/invoice.dart';
 import '../models/purchase_invoice.dart';
 import '../services/shop_profile_service.dart';
+import '../ui/app_widgets.dart';
 
 /// Result of a print attempt that did not fail.
 enum PrintOutcome { printed, cancelled }
@@ -57,7 +57,6 @@ class InvoicePrinter {
   InvoicePrinter._();
 
   static const PdfPageFormat _format = PdfPageFormat.roll80;
-  static final DateFormat _dateFormat = DateFormat('yyyy/MM/dd HH:mm:ss');
   static const double _epsilon = 0.005;
 
   // ---------------------------------------------------------------------------
@@ -304,7 +303,7 @@ class InvoicePrinter {
                   textStyle: const pw.TextStyle(fontSize: 10),
                 ),
                 pw.Text(
-                  _dateFormat.format(date.toLocal()),
+                  formatDisplayDateTime(date),
                   style: const pw.TextStyle(fontSize: 10),
                 ),
               ],

@@ -37,7 +37,8 @@ public class ProductVariantsController : ControllerBase
                 ColourName = v.Colour != null ? v.Colour.Name : null,
                 BarcodeType = v.BarcodeType,
                 Barcode = v.Barcode,
-                Price = v.Price,
+                PurchasePrice = v.PurchasePrice,
+                SellingPrice = v.SellingPrice,
                 LowStockThreshold = v.LowStockThreshold,
                 TotalQuantity = v.Inventory.Sum(i => i.Quantity),
                 IsLowStock = v.Inventory.Sum(i => i.Quantity)
@@ -69,7 +70,8 @@ public class ProductVariantsController : ControllerBase
                 ColourName = v.Colour != null ? v.Colour.Name : null,
                 BarcodeType = v.BarcodeType,
                 Barcode = v.Barcode,
-                Price = v.Price,
+                PurchasePrice = v.PurchasePrice,
+                SellingPrice = v.SellingPrice,
                 LowStockThreshold = v.LowStockThreshold,
                 TotalQuantity = v.Inventory.Sum(i => i.Quantity),
                 IsLowStock = v.Inventory.Sum(i => i.Quantity)
@@ -89,11 +91,12 @@ public class ProductVariantsController : ControllerBase
     public async Task<ActionResult<ProductVariantResponseDto>> CreateVariant(
         CreateProductVariantDto dto)
     {
-        // Product must exist
-        var productExists = await _context.Products
-            .AnyAsync(p => p.Id == dto.ProductId);
+        // Product must exist; its purchase price is the default cost for a
+        // variant when the caller does not supply one.
+        var product = await _context.Products
+            .FirstOrDefaultAsync(p => p.Id == dto.ProductId);
 
-        if (!productExists)
+        if (product == null)
         {
             return BadRequest("Product does not exist.");
         }
@@ -122,10 +125,15 @@ public class ProductVariantsController : ControllerBase
             }
         }
 
-        // Validate price
-        if (dto.Price < 0)
+        // Validate prices
+        if (dto.SellingPrice < 0)
         {
-            return BadRequest("Price cannot be negative.");
+            return BadRequest("Selling price cannot be negative.");
+        }
+
+        if (dto.PurchasePrice.HasValue && dto.PurchasePrice.Value < 0)
+        {
+            return BadRequest("Purchase price cannot be negative.");
         }
 
         // Validate threshold
@@ -139,14 +147,6 @@ public class ProductVariantsController : ControllerBase
 
         if (dto.BarcodeType == BarcodeType.Internal)
         {
-            var product = await _context.Products
-                .FirstOrDefaultAsync(p => p.Id == dto.ProductId);
-
-            if (product == null)
-            {
-                return BadRequest("Product not found.");
-            }
-
             var baseBarcode = product.Barcode;
 
             var suffix = 1;
@@ -218,7 +218,8 @@ public class ProductVariantsController : ControllerBase
             ColourId = dto.ColourId,
             BarcodeType = dto.BarcodeType,
             Barcode = barcode,
-            Price = dto.Price,
+            PurchasePrice = dto.PurchasePrice ?? product.PurchasePrice,
+            SellingPrice = dto.SellingPrice,
             LowStockThreshold = dto.LowStockThreshold
         };
 
@@ -263,9 +264,14 @@ public class ProductVariantsController : ControllerBase
             }
         }
 
-        if (dto.Price < 0)
+        if (dto.SellingPrice < 0)
         {
-            return BadRequest("Price cannot be negative.");
+            return BadRequest("Selling price cannot be negative.");
+        }
+
+        if (dto.PurchasePrice.HasValue && dto.PurchasePrice.Value < 0)
+        {
+            return BadRequest("Purchase price cannot be negative.");
         }
 
         if (dto.LowStockThreshold < 0)
@@ -304,7 +310,11 @@ public class ProductVariantsController : ControllerBase
 
         variant.SizeId = dto.SizeId;
         variant.ColourId = dto.ColourId;
-        variant.Price = dto.Price;
+        if (dto.PurchasePrice.HasValue)
+        {
+            variant.PurchasePrice = dto.PurchasePrice.Value;
+        }
+        variant.SellingPrice = dto.SellingPrice;
         variant.LowStockThreshold = dto.LowStockThreshold;
 
         var duplicateVariant = await _context.ProductVariants
@@ -374,7 +384,8 @@ public class ProductVariantsController : ControllerBase
 
             Barcode = variant.Barcode,
 
-            Price = variant.Price,
+            PurchasePrice = variant.PurchasePrice,
+            SellingPrice = variant.SellingPrice,
 
             TotalQuantity = totalQuantity,
             LocationQuantity = locationQuantity
@@ -555,7 +566,8 @@ public class ProductVariantsController : ControllerBase
                 ColourId = line.ColourId,
                 BarcodeType = BarcodeType.Internal,
                 Barcode = variantBarcode,
-                Price = source.Price,
+                PurchasePrice = source.PurchasePrice,
+                SellingPrice = source.SellingPrice,
                 LowStockThreshold = line.LowStockThreshold ?? source.LowStockThreshold
             };
 
@@ -644,7 +656,8 @@ public class ProductVariantsController : ControllerBase
                 ColourName = v.Colour != null ? v.Colour.Name : null,
                 BarcodeType = v.BarcodeType,
                 Barcode = v.Barcode,
-                Price = v.Price,
+                PurchasePrice = v.PurchasePrice,
+                SellingPrice = v.SellingPrice,
                 LowStockThreshold = v.LowStockThreshold,
                 TotalQuantity = v.Inventory.Sum(i => i.Quantity),
                 IsLowStock = v.Inventory.Sum(i => i.Quantity)

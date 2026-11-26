@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -11,15 +11,15 @@ namespace SummerLandBackend.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AddColumn<int>(
-                name: "Method",
-                table: "SupplierPayments",
+                name: "PaymentMethod",
+                table: "PurchaseInvoices",
                 type: "int",
                 nullable: false,
                 defaultValue: 0);
 
             migrationBuilder.AddColumn<int>(
-                name: "PaymentMethod",
-                table: "PurchaseInvoices",
+                name: "Method",
+                table: "SupplierPayments",
                 type: "int",
                 nullable: false,
                 defaultValue: 0);
@@ -29,12 +29,12 @@ namespace SummerLandBackend.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(
-                name: "Method",
-                table: "SupplierPayments");
-
-            migrationBuilder.DropColumn(
                 name: "PaymentMethod",
                 table: "PurchaseInvoices");
+
+            migrationBuilder.DropColumn(
+                name: "Method",
+                table: "SupplierPayments");
         }
     }
 }

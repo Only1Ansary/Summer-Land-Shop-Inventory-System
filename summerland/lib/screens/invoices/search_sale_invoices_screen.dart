@@ -117,13 +117,12 @@ class _SearchSaleInvoicesScreenState extends State<SearchSaleInvoicesScreen>
     }).toList();
   }
 
-  DateTime _dateOnly(DateTime value) =>
-      DateTime(value.year, value.month, value.day);
+  DateTime _dateOnly(DateTime value) => localDateOnly(value);
 
   Future<void> _pickFromDate() async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: _fromDate ?? DateTime.now(),
+      initialDate: _fromDate ?? nowInAppTimeZone(),
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
     );
@@ -138,7 +137,7 @@ class _SearchSaleInvoicesScreenState extends State<SearchSaleInvoicesScreen>
   Future<void> _pickToDate() async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: _toDate ?? DateTime.now(),
+      initialDate: _toDate ?? nowInAppTimeZone(),
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
     );
@@ -233,10 +232,9 @@ class _SearchSaleInvoicesScreenState extends State<SearchSaleInvoicesScreen>
                 child: OutlinedButton.icon(
                   onPressed: _pickFromDate,
                   icon: const Icon(Icons.event_outlined),
-                  label: Text(
-                    _fromDate == null
-                        ? context.tr('From date')
-                        : _formatDate(_fromDate!),
+                  label: _dateLabel(
+                    context.tr('From date'),
+                    _fromDate == null ? null : _formatDate(_fromDate!),
                   ),
                 ),
               ),
@@ -245,10 +243,9 @@ class _SearchSaleInvoicesScreenState extends State<SearchSaleInvoicesScreen>
                 child: OutlinedButton.icon(
                   onPressed: _pickToDate,
                   icon: const Icon(Icons.event_outlined),
-                  label: Text(
-                    _toDate == null
-                        ? context.tr('To date')
-                        : _formatDate(_toDate!),
+                  label: _dateLabel(
+                    context.tr('To date'),
+                    _toDate == null ? null : _formatDate(_toDate!),
                   ),
                 ),
               ),
@@ -303,7 +300,18 @@ class _SearchSaleInvoicesScreenState extends State<SearchSaleInvoicesScreen>
     );
   }
 
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
+  String _formatDate(DateTime date) => formatDisplayDate(date);
+
+  /// Shows which picker is which even when a date is already selected.
+  Widget _dateLabel(String hint, String? date) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(hint, style: Theme.of(context).textTheme.labelSmall),
+        if (date != null)
+          Text(date, style: Theme.of(context).textTheme.bodyMedium),
+      ],
+    );
   }
 }

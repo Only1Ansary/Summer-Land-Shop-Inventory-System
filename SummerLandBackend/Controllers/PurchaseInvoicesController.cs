@@ -174,7 +174,7 @@ public class PurchaseInvoicesController : ControllerBase
             var invoice = new PurchaseInvoice
             {
                 SupplierId = supplier.Id,
-                Date = dto.Date,
+                Date = AppTimeZone.Current.ToUtc(dto.Date),
                 CreatedAt = DateTime.UtcNow,
                 TotalCost = totalCost,
                 TotalPaid = dto.TotalPaid + paidFeesTotal,
@@ -257,11 +257,20 @@ public class PurchaseInvoicesController : ControllerBase
                 // Reload to obtain the database-computed SellingPrice.
                 await _context.Entry(product).ReloadAsync();
 
-                var variant = await _context.ProductVariants
-                    .FirstOrDefaultAsync(v =>
-                        v.ProductId == product.Id &&
-                        v.SizeId == null &&
-                        v.ColourId == null);
+                var variants = await _context.ProductVariants
+                    .Where(v => v.ProductId == product.Id)
+                    .ToListAsync();
+
+                // The product's purchase price is authoritative; keep every
+                // variant's cost and selling price in sync with it.
+                foreach (var existingVariant in variants)
+                {
+                    existingVariant.PurchasePrice = product.PurchasePrice;
+                    existingVariant.SellingPrice = product.SellingPrice;
+                }
+
+                var variant = variants.FirstOrDefault(v =>
+                    v.SizeId == null && v.ColourId == null);
 
                 if (variant == null)
                 {
@@ -275,17 +284,13 @@ public class PurchaseInvoicesController : ControllerBase
                         ColourId = null,
                         BarcodeType = (BarcodeType)InternalBarcodeType,
                         Barcode = variantBarcode,
-                        Price = product.SellingPrice,
+                        PurchasePrice = product.PurchasePrice,
+                        SellingPrice = product.SellingPrice,
                         LowStockThreshold = 5
                     };
 
                     _context.ProductVariants.Add(variant);
                     await _context.SaveChangesAsync();
-                }
-                else
-                {
-                    // Keep the variant's selling price aligned with the product.
-                    variant.Price = product.SellingPrice;
                 }
 
                 var inventory = await _context.Inventory
@@ -399,6 +404,8 @@ public class PurchaseInvoicesController : ControllerBase
         [FromQuery] DateTime? from,
         [FromQuery] DateTime? to)
     {
+        var (fromDate, toDate) = QueryDateRange.Bounds(from, to);
+
         var query = _context.PurchaseInvoices
             .Include(i => i.Supplier)
             .Include(i => i.Items)
@@ -407,12 +414,12 @@ public class PurchaseInvoicesController : ControllerBase
 
         if (from.HasValue)
         {
-            query = query.Where(i => i.Date >= QueryDateRange.Start(from));
+            query = query.Where(i => i.Date >= fromDate);
         }
 
         if (to.HasValue)
         {
-            query = query.Where(i => i.Date <= QueryDateRange.End(to));
+            query = query.Where(i => i.Date <= toDate);
         }
 
         var invoices = await query

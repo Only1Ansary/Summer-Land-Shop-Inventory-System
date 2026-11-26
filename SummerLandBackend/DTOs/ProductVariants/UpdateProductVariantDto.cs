@@ -14,9 +14,14 @@ namespace SummerLandBackend.DTOs.ProductVariants
 
         public string? Barcode { get; set; }
 
+        // Null keeps the variant's current purchase price.
         [Range(0, double.MaxValue,
-            ErrorMessage = "Price cannot be negative.")]
-        public decimal Price { get; set; }
+            ErrorMessage = "Purchase price cannot be negative.")]
+        public decimal? PurchasePrice { get; set; }
+
+        [Range(0, double.MaxValue,
+            ErrorMessage = "Selling price cannot be negative.")]
+        public decimal SellingPrice { get; set; }
 
         [Range(0, int.MaxValue,
             ErrorMessage = "Low stock threshold cannot be negative.")]

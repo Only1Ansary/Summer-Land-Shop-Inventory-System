@@ -6,7 +6,12 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddControllers();
+// All instants are stored/serialized in UTC; this IANA zone drives the
+// shop-facing day used by filters and reports, including Egypt's DST rules.
+AppTimeZone.Configure(builder.Configuration["TimeZone:Id"]);
+
+builder.Services.AddControllers().AddJsonOptions(options =>
+    options.JsonSerializerOptions.Converters.Add(new UtcIsoDateTimeConverter()));
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();

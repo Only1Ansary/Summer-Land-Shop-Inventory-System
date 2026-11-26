@@ -9,8 +9,9 @@ namespace SummerLandBackend.Models
     {
         public int Id { get; set; }
 
-        public int CustomerId { get; set; }
-        public Customer Customer { get; set; } = null!;
+        // Null for payments on anonymous sales that were paid in full.
+        public int? CustomerId { get; set; }
+        public Customer? Customer { get; set; }
 
         public int SaleInvoiceId { get; set; }
         public SaleInvoice SaleInvoice { get; set; } = null!;

@@ -54,7 +54,7 @@ class _CreatePurchaseInvoiceScreenState
   /// Existing supplier names matching what has been typed so far.
   List<String> _supplierSuggestions = [];
 
-  DateTime _date = DateTime.now();
+  DateTime _date = nowInAppTimeZone();
 
   /// Cash is preselected, but the field is still validated so the method is
   /// always part of the created invoice.
@@ -241,7 +241,7 @@ class _CreatePurchaseInvoiceScreenState
   }
 
   Future<void> _pickDate() async {
-    final now = DateTime.now();
+    final now = nowInAppTimeZone();
     final picked = await showDatePicker(
       context: context,
       initialDate: _date,

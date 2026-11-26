@@ -92,7 +92,5 @@ class SaleInvoiceTile extends StatelessWidget {
     );
   }
 
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
-  }
+  String _formatDate(DateTime date) => formatDisplayDate(date);
 }

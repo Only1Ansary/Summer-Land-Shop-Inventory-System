@@ -27,7 +27,7 @@ ProductVariant _variant({
     colourName: null,
     barcodeType: 0,
     barcode: '62011001170$id',
-    price: 100,
+    sellingPrice: 100,
     lowStockThreshold: threshold,
     totalQuantity: quantity,
     isLowStock: isLowStock,
